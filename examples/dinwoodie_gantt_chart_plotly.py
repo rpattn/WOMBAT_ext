@@ -311,62 +311,7 @@ def create_detailed_gantt_chart_plotly(
     fig.update_xaxes(title="Time")
 
     height = max(500, 28 * len(completed_df))
-    fig.update_layout(height=height, legend_title_text="Task Type / Vessel")
-
-    # Overlay vessel work segments (time actually spent by each vessel)
-    # Extract segments from events where action is maintenance/repair with duration
-    events = simulation.metrics.events
-    vessel_segments = events[
-        (events["action"].isin(["maintenance", "repair"]))
-        & (events["request_id"].isin(completed_df["request_id"]))
-        & (events["duration"].astype(float) > 0)
-    ].copy()
-
-    if not vessel_segments.empty:
-        vessel_segments["start"] = pd.to_datetime(vessel_segments["env_datetime"])
-        vessel_segments["finish"] = vessel_segments["start"] + pd.to_timedelta(
-            vessel_segments["duration"].astype(float), unit="h"
-        )
-        # Map to request rows
-        request_to_row = dict(
-            zip(completed_df["request_id"].astype(str), completed_df["row_label"])
-        )
-        vessel_segments["request_id"] = vessel_segments["request_id"].astype(str)
-        vessel_segments["row_label"] = vessel_segments["request_id"].map(request_to_row)
-        vessel_segments = vessel_segments.dropna(subset=["row_label"]).copy()
-        vessel_segments = vessel_segments.rename(columns={"agent": "vessel"})
-
-        # Build a vessel color palette
-        vessels = pd.unique(vessel_segments["vessel"].astype(str))
-        palette = (
-            px.colors.qualitative.Set2
-            + px.colors.qualitative.Plotly
-            + px.colors.qualitative.Safe
-            + px.colors.qualitative.D3
-        )
-        vessel_color_map = {v: palette[i % len(palette)] for i, v in enumerate(vessels)}
-
-        seg_fig = px.timeline(
-            vessel_segments,
-            x_start="start",
-            x_end="finish",
-            y="row_label",
-            color="vessel",
-            color_discrete_map=vessel_color_map,
-            hover_data={
-                "vessel": True,
-                "action": True,
-                "duration": ":.2f",
-                "part_name": True,
-                "request_id": True,
-            },
-            category_orders=category_orders,
-        )
-
-        # Make vessel segments semi-transparent and group legend entries
-        for t in seg_fig.data:
-            t.update(opacity=0.35, legendgroup="vessel", showlegend=True, name=f"Vessel: {t.name}")
-        fig.add_traces(list(seg_fig.data))
+    fig.update_layout(height=height, legend_title_text="Task Type")
 
     # Save PNG via Kaleido
     try:
