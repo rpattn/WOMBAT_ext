@@ -169,30 +169,51 @@ def create_gantt_chart_plotly(
     seg["finish"] = seg["start"] + pd.to_timedelta(seg["duration"].astype(float), unit="h")
     seg = seg.rename(columns={"agent": "vessel"})
 
+    # Map vessel name -> vessel type (capability label)
+    name_to_type: dict[str, str] = {}
+    try:
+        for equipment in simulation.service_equipment.values():  # type: ignore[attr-defined]
+            name = getattr(equipment.settings, "name", getattr(equipment, "name", ""))
+            caps = getattr(equipment.settings, "capability", [])
+            if isinstance(caps, (list, tuple, set)):
+                cap_labels = [c.value if hasattr(c, "value") else str(c).upper() for c in caps]
+                cap_label = "+".join(sorted(set(cap_labels)))
+            else:
+                cap_label = caps.value if hasattr(caps, "value") else str(caps).upper()
+            if name:
+                name_to_type[str(name)] = cap_label
+    except Exception:
+        pass
+    seg["vessel_type"] = seg["vessel"].map(name_to_type).fillna("CTV")
+
+    # Use vessel on y-axis; color also distinguishes vessels
+    vessel_orders = sorted(seg["vessel"].unique().tolist())
     fig = px.timeline(
         seg,
         x_start="start",
         x_end="finish",
-        y="row_label",
+        y="vessel",
         color="vessel",
         hover_data={
             "vessel": True,
             "action": True,
             "duration": ":.2f",
-            "part_name": True,
+            "system_id": True,
             "request_id": True,
+            "part_name": True,
         },
-        category_orders=category_orders,
-        title="DINWOODIE CTV Work Timeline (Requests)",
+        category_orders={"vessel": vessel_orders},
+        title="DINWOODIE CTV Work Timeline by Vessel",
         template="plotly_white",
     )
 
     fig.update_yaxes(title="")
     fig.update_xaxes(title="Time")
 
-    # Dynamic height: 28 px per row, min 500px
-    height = max(500, 28 * len(timeline_df))
-    fig.update_layout(height=height, legend_title_text="CTV Vessel")
+    # Dynamic height: scale by number of vessels
+    n_vessels = max(1, len(vessel_orders))
+    height = max(400, 60 * n_vessels)
+    fig.update_layout(height=height, legend_title_text="Vessel")
 
     # Save PNG via Kaleido
     try:
