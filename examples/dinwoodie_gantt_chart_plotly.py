@@ -21,6 +21,7 @@ import plotly.express as px
 from wombat import Simulation
 from wombat.core.library import DINWOODIE
 from wombat.core.library import load_yaml
+from wombat.core.data_classes import EquipmentClass
 
 
 def run_dinwoodie_simulation(config_name: str = "base", sim_years: Optional[int] = 1) -> Simulation:
@@ -96,11 +97,13 @@ def ensure_results_directory(output_path: Path) -> None:
 
 def create_gantt_chart_plotly(
     maintenance_data: pd.DataFrame,
+    simulation: Simulation,
     output_file: str = "examples/results/dinwoodie_maintenance_gantt.html",
 ) -> None:
-    """Create an interactive Gantt chart of maintenance/repair requests.
+    """Create an interactive chart showing ONLY CTV work overlays per request.
 
-    Each request is rendered as a short bar (1 hour) at the request time.
+    This chart omits the request markers and displays the time spent by Crew
+    Transfer Vessels (CTVs) on each request, colored by vessel.
     """
     if maintenance_data.empty:
         print("No maintenance requests found in simulation data.")
@@ -109,42 +112,78 @@ def create_gantt_chart_plotly(
     output_path = Path(output_file)
     ensure_results_directory(output_path)
 
-    timeline_df = maintenance_data.copy()
-    # Ensure a vessel column exists (may contain Unassigned if not completed yet)
-    if "vessel" not in timeline_df.columns:
-        timeline_df["vessel"] = "Unassigned"
-    timeline_df["start"] = timeline_df["datetime"]
-    timeline_df["finish"] = timeline_df["datetime"] + pd.to_timedelta(1, unit="h")
-
-    # Create a compact label for the y-axis
-    timeline_df = timeline_df.reset_index(drop=True)
+    # Build labels per request
+    timeline_df = maintenance_data.copy().reset_index(drop=True)
     timeline_df["row_label"] = (
         (timeline_df.index + 1).astype(str) + ". " + timeline_df["task_description"].astype(str)
     )
+    category_orders = {"row_label": timeline_df.sort_values("datetime")["row_label"].tolist()}
 
-    color_map = {"maintenance": "#2E86AB", "repair": "#A23B72"}
+    # Derive CTV work segments from events
+    events = simulation.metrics.events
+    seg = events[
+        (events["action"].isin(["maintenance", "repair"]))
+        & (events["duration"].astype(float) > 0)
+    ].copy()
+    if seg.empty:
+        print("No vessel work segments found in events.")
+        return
 
-    # Order tasks by time
-    category_orders = {"row_label": timeline_df.sort_values("start")["row_label"].tolist()}
+    # Identify CTVs via simulation service equipment capabilities
+    ctv_names = set()
+    try:
+        for equipment in simulation.service_equipment.values():  # type: ignore[attr-defined]
+            caps = getattr(equipment.settings, "capability", [])
+            # Normalize capability to iterable of EquipmentClass
+            if isinstance(caps, (list, tuple, set)):
+                is_ctv = any(cap == EquipmentClass.CTV for cap in caps)
+            else:
+                is_ctv = caps == EquipmentClass.CTV or str(caps).upper() == "CTV"
+            if is_ctv:
+                ctv_names.add(getattr(equipment.settings, "name", getattr(equipment, "name", "")))
+    except Exception:
+        # Fallback: use metrics service_equipment_names if available and filter later
+        pass
+
+    if ctv_names:
+        seg = seg[seg["agent"].isin(ctv_names)].copy()
+    else:
+        # As a fallback, filter by known CTV-like substrings in agent name
+        seg = seg.assign(agent=seg["agent"].astype(str))
+        seg = seg[seg["agent"].str.contains(r"\bCTV\b|crew transfer", case=False, na=False)].copy()
+
+    if seg.empty:
+        print("No CTV segments found in events (check service equipment capabilities and names).")
+        return
+
+    # Map to requests present in maintenance_data
+    req_to_row = dict(zip(maintenance_data["request_id"].astype(str), timeline_df["row_label"]))
+    seg["request_id"] = seg["request_id"].astype(str)
+    seg["row_label"] = seg["request_id"].map(req_to_row)
+    seg = seg.dropna(subset=["row_label"])  # keep only segments tied to shown requests
+    if seg.empty:
+        print("No CTV segments matched the displayed requests.")
+        return
+
+    seg["start"] = pd.to_datetime(seg["env_datetime"])
+    seg["finish"] = seg["start"] + pd.to_timedelta(seg["duration"].astype(float), unit="h")
+    seg = seg.rename(columns={"agent": "vessel"})
 
     fig = px.timeline(
-        timeline_df,
+        seg,
         x_start="start",
         x_end="finish",
         y="row_label",
-        color="request_type",
-        color_discrete_map=color_map,
+        color="vessel",
         hover_data={
-            "row_label": False,
-            "task_description": True,
-            "part_name": True,
-            "reason": True,
-            "datetime": True,
-            "request_type": True,
             "vessel": True,
+            "action": True,
+            "duration": ":.2f",
+            "part_name": True,
+            "request_id": True,
         },
         category_orders=category_orders,
-        title="DINWOODIE Wind Farm Maintenance Requests Timeline (All Requests)",
+        title="DINWOODIE CTV Work Timeline (Requests)",
         template="plotly_white",
     )
 
@@ -153,7 +192,17 @@ def create_gantt_chart_plotly(
 
     # Dynamic height: 28 px per row, min 500px
     height = max(500, 28 * len(timeline_df))
-    fig.update_layout(height=height, legend_title_text="Request Type")
+    fig.update_layout(height=height, legend_title_text="CTV Vessel")
+
+    # Save PNG via Kaleido
+    try:
+        png_path = output_path.with_suffix(".png")
+        fig.write_image(str(png_path), scale=2, engine="kaleido")
+        print(f"PNG saved as: {png_path}")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"PNG export failed (kaleido): {exc}. Install kaleido: `pip install -U kaleido`"
+        )
 
     fig.write_html(str(output_path), include_plotlyjs="cdn", full_html=True)
     print(f"Gantt chart saved as: {output_path}")
@@ -298,6 +347,16 @@ def create_detailed_gantt_chart_plotly(
             t.update(opacity=0.35, legendgroup="vessel", showlegend=True, name=f"Vessel: {t.name}")
         fig.add_traces(list(seg_fig.data))
 
+    # Save PNG via Kaleido
+    try:
+        png_path = output_path.with_suffix(".png")
+        fig.write_image(str(png_path), scale=2, engine="kaleido")
+        print(f"PNG saved as: {png_path}")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"PNG export failed (kaleido): {exc}. Install kaleido: `pip install -U kaleido`"
+        )
+
     fig.write_html(str(output_path), include_plotlyjs="cdn", full_html=True)
     print(f"Detailed Gantt chart saved as: {output_path}")
 
@@ -362,6 +421,7 @@ def main() -> None:
 
         create_gantt_chart_plotly(
             maintenance_data,
+            simulation,
             output_file=str(outdir / "dinwoodie_maintenance_gantt.html"),
         )
         create_detailed_gantt_chart_plotly(
