@@ -21,11 +21,14 @@ import plotly.express as px
 from wombat import Simulation
 from wombat.core.library import DINWOODIE
 from wombat.core.library import load_yaml
-from wombat.core.data_classes import EquipmentClass
 from wombat.utilities.gantt import (
     ensure_results_directory as utils_ensure_results_directory,
     extract_maintenance_requests as utils_extract_maintenance_requests,
     get_ctv_segments,
+    get_ctv_segments_filtered,
+    get_vessel_type_map,
+    build_completed_tasks,
+    save_plotly_figure,
 )
 
 
@@ -115,20 +118,7 @@ def create_gantt_chart_plotly(
         return
 
     # Map vessel name -> vessel type (capability label)
-    name_to_type: dict[str, str] = {}
-    try:
-        for equipment in simulation.service_equipment.values():  # type: ignore[attr-defined]
-            name = getattr(equipment.settings, "name", getattr(equipment, "name", ""))
-            caps = getattr(equipment.settings, "capability", [])
-            if isinstance(caps, (list, tuple, set)):
-                cap_labels = [c.value if hasattr(c, "value") else str(c).upper() for c in caps]
-                cap_label = "+".join(sorted(set(cap_labels)))
-            else:
-                cap_label = caps.value if hasattr(caps, "value") else str(caps).upper()
-            if name:
-                name_to_type[str(name)] = cap_label
-    except Exception:
-        pass
+    name_to_type = get_vessel_type_map(simulation)
     seg["vessel_type"] = seg["vessel"].map(name_to_type).fillna("CTV")
 
     # Use vessel on y-axis; color also distinguishes vessels
@@ -159,18 +149,7 @@ def create_gantt_chart_plotly(
     height = max(400, 60 * n_vessels)
     fig.update_layout(height=height, legend_title_text="Vessel")
 
-    # Save PNG via Kaleido
-    try:
-        png_path = output_path.with_suffix(".png")
-        fig.write_image(str(png_path), scale=2, engine="kaleido")
-        print(f"PNG saved as: {png_path}")
-    except Exception as exc:  # noqa: BLE001
-        print(
-            f"PNG export failed (kaleido): {exc}. Install kaleido: `pip install -U kaleido`"
-        )
-
-    fig.write_html(str(output_path), include_plotlyjs="cdn", full_html=True)
-    print(f"Gantt chart saved as: {output_path}")
+    save_plotly_figure(fig, output_path)
 
 
 def create_detailed_gantt_chart_plotly(
@@ -186,27 +165,7 @@ def create_detailed_gantt_chart_plotly(
     output_path = Path(output_file)
     ensure_results_directory(output_path)
 
-    events = simulation.metrics.events
-    completion_events = events[events["action"].isin(["maintenance complete", "repair complete"])].copy()
-
-    request_data = maintenance_data[[
-        "request_id",
-        "datetime",
-        "task_description",
-        "request_type",
-        "part_name",
-    ]].copy()
-    request_data = request_data.rename(columns={"datetime": "request_time"})
-
-    completion_data = completion_events[["request_id", "env_datetime", "agent"]].copy()
-    completion_data["completion_time"] = pd.to_datetime(completion_data["env_datetime"])
-
-    detailed_df = request_data.merge(
-        completion_data[["request_id", "completion_time", "agent"]],
-        on="request_id",
-        how="left",
-    )
-    completed_df = detailed_df.dropna(subset=["completion_time"]).copy()
+    completed_df = build_completed_tasks(simulation, maintenance_data)
 
     if completed_df.empty:
         print("No completed maintenance tasks found.")
@@ -229,6 +188,18 @@ def create_detailed_gantt_chart_plotly(
     # Order tasks by request time
     category_orders = {"row_label": completed_df.sort_values("request_time")["row_label"].tolist()}
 
+    hover_fields = {
+        "row_label": False,
+        "task_description": True,
+        "part_name": True,
+        "request_time": True,
+        "completion_time": True,
+        "duration_days": ":.1f",
+        "request_type": True,
+    }
+    if "vessel" in completed_df.columns:
+        hover_fields["vessel"] = True
+
     fig = px.timeline(
         completed_df,
         x_start="request_time",
@@ -236,16 +207,7 @@ def create_detailed_gantt_chart_plotly(
         y="row_label",
         color="request_type",
         color_discrete_map=color_map,
-        hover_data={
-            "row_label": False,
-            "task_description": True,
-            "part_name": True,
-            "request_time": True,
-            "completion_time": True,
-            "duration_days": ":.1f",
-            "request_type": True,
-            "vessel": True,
-        },
+        hover_data=hover_fields,
         category_orders=category_orders,
         title="DINWOODIE Wind Farm Maintenance Task Durations",
         template="plotly_white",
@@ -257,18 +219,7 @@ def create_detailed_gantt_chart_plotly(
     height = max(500, 28 * len(completed_df))
     fig.update_layout(height=height, legend_title_text="Task Type")
 
-    # Save PNG via Kaleido
-    try:
-        png_path = output_path.with_suffix(".png")
-        fig.write_image(str(png_path), scale=2, engine="kaleido")
-        print(f"PNG saved as: {png_path}")
-    except Exception as exc:  # noqa: BLE001
-        print(
-            f"PNG export failed (kaleido): {exc}. Install kaleido: `pip install -U kaleido`"
-        )
-
-    fig.write_html(str(output_path), include_plotlyjs="cdn", full_html=True)
-    print(f"Detailed Gantt chart saved as: {output_path}")
+    save_plotly_figure(fig, output_path)
 
 
 def create_repair_gantt_chart_plotly(
@@ -284,32 +235,7 @@ def create_repair_gantt_chart_plotly(
     output_path = Path(output_file)
     ensure_results_directory(output_path)
 
-    # Build completed task dataset like detailed chart
-    events = simulation.metrics.events
-    completion_events = events[events["action"].isin(["maintenance complete", "repair complete"])].copy()
-
-    request_data = maintenance_data[[
-        "request_id",
-        "datetime",
-        "task_description",
-        "request_type",
-        "part_name",
-        "system_id",
-    ]].copy()
-    request_data = request_data.rename(columns={"datetime": "request_time"})
-
-    completion_data = completion_events[["request_id", "env_datetime"]].copy()
-    completion_data["completion_time"] = pd.to_datetime(completion_data["env_datetime"])
-
-    detailed_df = request_data.merge(
-        completion_data[["request_id", "completion_time"]],
-        on="request_id",
-        how="left",
-    )
-    completed_df = detailed_df.dropna(subset=["completion_time"]).copy()
-
-    # Filter only repairs
-    completed_df = completed_df[completed_df["request_type"] == "repair"].copy()
+    completed_df = build_completed_tasks(simulation, maintenance_data, request_type_filter="repair")
     if completed_df.empty:
         print("No completed repair tasks found.")
         return
@@ -357,18 +283,7 @@ def create_repair_gantt_chart_plotly(
     height = max(500, 28 * len(completed_df))
     fig.update_layout(height=height)
 
-    # Save PNG via Kaleido
-    try:
-        png_path = output_path.with_suffix(".png")
-        fig.write_image(str(png_path), scale=2, engine="kaleido")
-        print(f"PNG saved as: {png_path}")
-    except Exception as exc:  # noqa: BLE001
-        print(
-            f"PNG export failed (kaleido): {exc}. Install kaleido: `pip install -U kaleido`"
-        )
-
-    fig.write_html(str(output_path), include_plotlyjs="cdn", full_html=True)
-    print(f"Repair Gantt chart saved as: {output_path}")
+    save_plotly_figure(fig, output_path)
 
 
 def create_ctv_duration_gantt_chart_plotly(
@@ -384,18 +299,9 @@ def create_ctv_duration_gantt_chart_plotly(
     output_path = Path(output_file)
     ensure_results_directory(output_path)
 
-    seg = get_ctv_segments(simulation, maintenance_data)
+    seg = get_ctv_segments_filtered(simulation, maintenance_data, request_types={"repair"})
     if seg.empty:
-        print("No CTV segments found in events (check service equipment capabilities and names).")
-        return
-
-    # Restrict to repair events only
-    seg = seg.merge(
-        maintenance_data[["request_id", "request_type"]], on="request_id", how="left"
-    )
-    seg = seg[seg["request_type"] == "repair"].copy()
-    if seg.empty:
-        print("No CTV repair segments found.")
+        print("No CTV repair segments found in events.")
         return
 
     # Use duration in hours for color mapping
@@ -431,18 +337,7 @@ def create_ctv_duration_gantt_chart_plotly(
     height = max(400, 60 * n_vessels)
     fig.update_layout(height=height)
 
-    # Save PNG via Kaleido
-    try:
-        png_path = output_path.with_suffix(".png")
-        fig.write_image(str(png_path), scale=2, engine="kaleido")
-        print(f"PNG saved as: {png_path}")
-    except Exception as exc:  # noqa: BLE001
-        print(
-            f"PNG export failed (kaleido): {exc}. Install kaleido: `pip install -U kaleido`"
-        )
-
-    fig.write_html(str(output_path), include_plotlyjs="cdn", full_html=True)
-    print(f"CTV duration Gantt chart saved as: {output_path}")
+    save_plotly_figure(fig, output_path)
 
 def print_summary_statistics(maintenance_data: pd.DataFrame) -> None:
     if maintenance_data.empty:
