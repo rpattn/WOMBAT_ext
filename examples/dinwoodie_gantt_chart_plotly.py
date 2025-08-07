@@ -271,6 +271,179 @@ def create_detailed_gantt_chart_plotly(
     print(f"Detailed Gantt chart saved as: {output_path}")
 
 
+def create_repair_gantt_chart_plotly(
+    maintenance_data: pd.DataFrame,
+    simulation: Simulation,
+    output_file: str = "examples/results/dinwoodie_repair_gantt.html",
+) -> None:
+    """Create a Gantt chart showing only repair events colored by duration (short→green, long→red)."""
+    if maintenance_data.empty:
+        print("No maintenance requests found in simulation data.")
+        return
+
+    output_path = Path(output_file)
+    ensure_results_directory(output_path)
+
+    # Build completed task dataset like detailed chart
+    events = simulation.metrics.events
+    completion_events = events[events["action"].isin(["maintenance complete", "repair complete"])].copy()
+
+    request_data = maintenance_data[[
+        "request_id",
+        "datetime",
+        "task_description",
+        "request_type",
+        "part_name",
+        "system_id",
+    ]].copy()
+    request_data = request_data.rename(columns={"datetime": "request_time"})
+
+    completion_data = completion_events[["request_id", "env_datetime"]].copy()
+    completion_data["completion_time"] = pd.to_datetime(completion_data["env_datetime"])
+
+    detailed_df = request_data.merge(
+        completion_data[["request_id", "completion_time"]],
+        on="request_id",
+        how="left",
+    )
+    completed_df = detailed_df.dropna(subset=["completion_time"]).copy()
+
+    # Filter only repairs
+    completed_df = completed_df[completed_df["request_type"] == "repair"].copy()
+    if completed_df.empty:
+        print("No completed repair tasks found.")
+        return
+
+    completed_df["duration"] = completed_df["completion_time"] - completed_df["request_time"]
+    completed_df["duration_hours"] = completed_df["duration"].dt.total_seconds() / 3600.0
+    completed_df["duration_days"] = completed_df["duration"].dt.total_seconds() / (24 * 3600)
+
+    # y labels
+    completed_df = completed_df.reset_index(drop=True)
+    completed_df["row_label"] = (
+        (completed_df.index + 1).astype(str)
+        + ". "
+        + completed_df["task_description"].astype(str)
+    )
+
+    category_orders = {"row_label": completed_df.sort_values("request_time")["row_label"].tolist()}
+
+    fig = px.timeline(
+        completed_df,
+        x_start="request_time",
+        x_end="completion_time",
+        y="row_label",
+        color="duration_hours",
+        color_continuous_scale="RdYlGn_r",  # green (short) → red (long)
+        hover_data={
+            "row_label": False,
+            "task_description": True,
+            "system_id": True,
+            "part_name": True,
+            "request_time": True,
+            "completion_time": True,
+            "duration_hours": ":.1f",
+            "duration_days": ":.1f",
+        },
+        category_orders=category_orders,
+        title="DINWOODIE Repair Durations (short→green, long→red)",
+        template="plotly_white",
+    )
+
+    fig.update_yaxes(title="")
+    fig.update_xaxes(title="Time")
+    fig.update_layout(coloraxis_colorbar_title="Hours")
+
+    height = max(500, 28 * len(completed_df))
+    fig.update_layout(height=height)
+
+    # Save PNG via Kaleido
+    try:
+        png_path = output_path.with_suffix(".png")
+        fig.write_image(str(png_path), scale=2, engine="kaleido")
+        print(f"PNG saved as: {png_path}")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"PNG export failed (kaleido): {exc}. Install kaleido: `pip install -U kaleido`"
+        )
+
+    fig.write_html(str(output_path), include_plotlyjs="cdn", full_html=True)
+    print(f"Repair Gantt chart saved as: {output_path}")
+
+
+def create_ctv_duration_gantt_chart_plotly(
+    maintenance_data: pd.DataFrame,
+    simulation: Simulation,
+    output_file: str = "examples/results/dinwoodie_ctv_duration_gantt.html",
+) -> None:
+    """Create a CTV work-only chart colored by duration (short→green, long→red)."""
+    if maintenance_data.empty:
+        print("No maintenance requests found in simulation data.")
+        return
+
+    output_path = Path(output_file)
+    ensure_results_directory(output_path)
+
+    seg = get_ctv_segments(simulation, maintenance_data)
+    if seg.empty:
+        print("No CTV segments found in events (check service equipment capabilities and names).")
+        return
+
+    # Restrict to repair events only
+    seg = seg.merge(
+        maintenance_data[["request_id", "request_type"]], on="request_id", how="left"
+    )
+    seg = seg[seg["request_type"] == "repair"].copy()
+    if seg.empty:
+        print("No CTV repair segments found.")
+        return
+
+    # Use duration in hours for color mapping
+    seg = seg.copy()
+    seg["duration_hours"] = seg["duration"].astype(float)
+
+    vessel_orders = sorted(seg["vessel"].unique().tolist())
+
+    fig = px.timeline(
+        seg,
+        x_start="start",
+        x_end="finish",
+        y="vessel",
+        color="duration_hours",
+        color_continuous_scale="RdYlGn_r",
+        hover_data={
+            "vessel": True,
+            "duration_hours": ":.2f",
+            "system_id": True,
+            "request_id": True,
+            "part_name": True,
+        },
+        category_orders={"vessel": vessel_orders},
+        title="DINWOODIE CTV Work Duration (short→green, long→red)",
+        template="plotly_white",
+    )
+
+    fig.update_yaxes(title="")
+    fig.update_xaxes(title="Time")
+    fig.update_layout(coloraxis_colorbar_title="Hours")
+
+    n_vessels = max(1, len(vessel_orders))
+    height = max(400, 60 * n_vessels)
+    fig.update_layout(height=height)
+
+    # Save PNG via Kaleido
+    try:
+        png_path = output_path.with_suffix(".png")
+        fig.write_image(str(png_path), scale=2, engine="kaleido")
+        print(f"PNG saved as: {png_path}")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"PNG export failed (kaleido): {exc}. Install kaleido: `pip install -U kaleido`"
+        )
+
+    fig.write_html(str(output_path), include_plotlyjs="cdn", full_html=True)
+    print(f"CTV duration Gantt chart saved as: {output_path}")
+
 def print_summary_statistics(maintenance_data: pd.DataFrame) -> None:
     if maintenance_data.empty:
         print("No maintenance requests found.")
@@ -338,6 +511,16 @@ def main() -> None:
             maintenance_data,
             simulation,
             output_file=str(outdir / "dinwoodie_detailed_gantt.html"),
+        )
+        create_repair_gantt_chart_plotly(
+            maintenance_data,
+            simulation,
+            output_file=str(outdir / "dinwoodie_repair_gantt.html"),
+        )
+        create_ctv_duration_gantt_chart_plotly(
+            maintenance_data,
+            simulation,
+            output_file=str(outdir / "dinwoodie_ctv_duration_gantt.html"),
         )
     else:
         print("No maintenance requests found in the simulation data.")
