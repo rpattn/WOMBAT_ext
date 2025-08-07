@@ -14,9 +14,10 @@ import numpy as np
 
 from wombat import Simulation
 from wombat.core.library import DINWOODIE
+from wombat.core.library import load_yaml
 
 
-def run_dinwoodie_simulation(config_name="base"):
+def run_dinwoodie_simulation(config_name="base", sim_years=1):
     """
     Run the DINWOODIE simulation with the specified configuration.
     
@@ -24,6 +25,8 @@ def run_dinwoodie_simulation(config_name="base"):
     ----------
     config_name : str
         Name of the configuration file (without .yaml extension)
+    sim_years : int
+        Number of years to run the sim for
         
     Returns
     -------
@@ -33,11 +36,27 @@ def run_dinwoodie_simulation(config_name="base"):
     print(f"Running DINWOODIE simulation with config: {config_name}")
     
     # Create and run the simulation
-    sim = Simulation(DINWOODIE, f"{config_name}.yaml", random_seed=2023)
-    sim.run()
+    #sim = Simulation(DINWOODIE, f"{config_name}.yaml", random_seed=2023)
+    configDict = load_yaml(DINWOODIE, f"project/config/{config_name}.yaml")
+
+    # Set end_year if sim_years provided
+    if not sim_years is None:
+        start_year = configDict['start_year']
+        end_year = configDict['end_year']
+        max_years = (end_year - start_year)
+
+        if (sim_years > max_years):
+            print(f"The requested number of simulation years, {sim_years}, is greater than the maximum, {max_years} years")
+            print(f"Provide more weather data. Defualting to {max_years} years")
+            sim_years = max_years
+        
+        configDict['end_year'] = (start_year + sim_years)
     
-    print(f"Simulation completed: {sim.config.name}")
-    return sim
+    _sim = Simulation(DINWOODIE, configDict, random_seed=2023)
+    _sim.run()
+    
+    print(f"Simulation completed: {_sim.config.name}")
+    return _sim
 
 
 def extract_maintenance_requests(sim):
@@ -310,10 +329,10 @@ def main():
     
     # Run the simulation
     try:
-        sim = run_dinwoodie_simulation("base_2yr")
+        sim = run_dinwoodie_simulation("base", sim_years=1) #"base" "base_2yr"
     except Exception as e:
         print(f"Error running simulation: {e}")
-        return
+        raise Exception
     
     # Extract maintenance data
     maintenance_data = extract_maintenance_requests(sim)

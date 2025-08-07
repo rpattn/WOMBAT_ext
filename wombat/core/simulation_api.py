@@ -436,6 +436,7 @@ class Simulation(FromDictMixin):
         create_metrics: bool = True,
         save_metrics_inputs: bool = True,
         delete_logs: bool = False,
+        convert_logs_to_pqt = False
     ):
         """Calls ``WombatEnvironment.run()`` and gathers the results for
         post-processing. See ``wombat.simulation.WombatEnvironment.run`` or
@@ -474,7 +475,9 @@ class Simulation(FromDictMixin):
             raise ValueError(msg)
 
         self.env.run(until=until)
-        self.env.convert_logs_to_pqt()
+        
+        if convert_logs_to_pqt:
+            self.env.convert_logs_to_pqt()
 
         if create_metrics:
             self.initialize_metrics()
