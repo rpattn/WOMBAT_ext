@@ -1,3 +1,34 @@
+# Extended WOMBAT (Windfarm Operations & Maintenance cost-Benefit Analysis Tool)
+Extended version of the NREL WOMBAT Project!
+
+## Installation
+Reccommended installation vs. WOMBAT guide
+
+1. Install UV:\
+`curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+2. Create Virtual Environment (venv):\
+`uv venv $name` where `$name` is the name of the venv, e.g. venv
+
+3. Activate venv:\
+Bash: `source .$name/bin/activate`\
+Windows: `.$name\bin\activate(.bat or .ps1)`
+
+4. Install requirements:\
+Dev: `uv pip install -e '.[dev]'`\
+Standard: `uv pip install .`
+
+5. Set python interpreter:\
+Set python interpreter to `.$name/bin/python` in VS code or as kernel in ipynb notebook
+
+## Additions
+
+### Gantt Chart
+See `examples/dinwoodie_gantt_chart.py` proof of concept
+
+<details>
+<summary>WOMBAT/main README.md</summary>
+
 # WOMBAT: Windfarm Operations & Maintenance cost-Benefit Analysis Tool
 
 [![DOI 10.2172/1894867](https://img.shields.io/badge/DOI-10.2172%2F1894867-brightgreen?link=https://doi.org/10.2172/1894867)](https://www.osti.gov/biblio/1894867)
@@ -253,3 +284,4 @@ Optional "docs" dependencies:
 * sphinxcontrib-autoyaml
 * sphinxcontrib-bibtex>=2.4
 * sphinxcontrib-spelling>=7
+</details>

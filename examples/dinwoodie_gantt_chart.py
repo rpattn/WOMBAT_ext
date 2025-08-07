@@ -81,7 +81,7 @@ def extract_maintenance_requests(sim):
     return maintenance_events
 
 
-def create_gantt_chart(maintenance_data, output_file="dinwoodie_maintenance_gantt.png"):
+def create_gantt_chart(maintenance_data, output_file="examples/results/dinwoodie_maintenance_gantt.png"):
     """
     Create a Gantt chart of maintenance requests.
     
@@ -158,7 +158,7 @@ def create_gantt_chart(maintenance_data, output_file="dinwoodie_maintenance_gant
     plt.show()
 
 
-def create_detailed_gantt_chart(maintenance_data, sim, output_file="dinwoodie_detailed_gantt.png"):
+def create_detailed_gantt_chart(maintenance_data, sim, output_file="examples/results/dinwoodie_detailed_gantt.png"):
     """
     Create a more detailed Gantt chart showing request and completion times.
     
