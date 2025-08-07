@@ -201,6 +201,10 @@ def build_completed_tasks(
     )
     df = df.dropna(subset=["completion_time"]).copy()
 
+    # Ensure datetime dtypes for vectorized operations
+    df["request_time"] = pd.to_datetime(df["request_time"], errors="coerce")
+    df["completion_time"] = pd.to_datetime(df["completion_time"], errors="coerce")
+
     if request_type_filter is not None:
         df = df[df["request_type"] == request_type_filter].copy()
 
