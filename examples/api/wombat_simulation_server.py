@@ -51,13 +51,40 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     )
 
     try:
+        running = False
+        done_event: threading.Event | None = None
+        ticker_task: asyncio.Task | None = None
+
         while True:
             data = await websocket.receive_text()
             text = (data or "").strip().lower()
 
             if text.startswith("run"):
+                if running:
+                    await websocket.send_text("simulation already running")
+                    continue
+
                 await websocket.send_text("starting simulation...")
                 loop = asyncio.get_running_loop()
+
+                done_event = threading.Event()
+                running = True
+
+                async def ticker() -> None:
+                    seconds = 1
+                    while done_event is not None and not done_event.is_set():
+                        try:
+                            await websocket.send_text(f"running... {seconds}s")
+                        except Exception:
+                            break
+                        seconds += 10
+                        await asyncio.sleep(10)
+
+                ticker_task = loop.create_task(ticker())
+
+                def set_not_running() -> None:
+                    nonlocal running
+                    running = False
 
                 def worker() -> None:
                     try:
@@ -75,12 +102,21 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         except Exception:
                             pass
 
+                    # Signal ticker to stop and clear running flag
+                    if done_event is not None:
+                        done_event.set()
+                    loop.call_soon_threadsafe(set_not_running)
+
                 t = threading.Thread(target=worker, name="wombat-sim-thread", daemon=True)
                 t.start()
                 continue
 
             await websocket.send_text(f"Echo: {data}")
     except WebSocketDisconnect:
-        return
+        try:
+            if done_event is not None and not done_event.is_set():
+                done_event.set()
+        finally:
+            return
 
 
