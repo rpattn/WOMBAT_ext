@@ -1,5 +1,5 @@
 # Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+name: Deploy static content to Pages 
 
 on:
   # Runs on pushes targeting the default branch
@@ -28,7 +28,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Configure NPM
+      - name: Configure NPM dir
         working-directory: client
       - name: Checkout
         uses: actions/checkout@v4
