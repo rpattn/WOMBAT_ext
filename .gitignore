@@ -166,3 +166,4 @@ ENV/
 # Example files & data
 *.zip
 /examples/results/
+/server/temp/

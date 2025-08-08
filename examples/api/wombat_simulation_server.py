@@ -1,34 +1,32 @@
-"""Run with: fastapi dev examples/api/wombat_simulation_server.py"""
-
 from __future__ import annotations
 
 import asyncio
+import os
+import shutil
 from typing import Any
 import threading
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+
+from wombat.api.simulation_setup import create_temp_config, create_temp_library
 
 app = FastAPI(title="WOMBAT Simulation Server")
 
-try:
-    from fastapi.middleware.cors import CORSMiddleware  # type: ignore
-except Exception:
-    CORSMiddleware = None  # type: ignore[assignment]
-
-if CORSMiddleware is not None:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:5174",
-            "http://127.0.0.1:5174",
-            "*",
-        ],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "*",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/healthz")
@@ -40,14 +38,25 @@ def _run_wombat_simulation(library: str = "DINWOODIE", config: str = "base_2yr.y
     # Local import to keep example self-contained and to avoid import cycles.
     from wombat.api.simulation_runner import run_simulation
 
-    return run_simulation(library=library, config=config)
+    # Create temporary library and config
+    temp_library = create_temp_library()
+    temp_config = create_temp_config(temp_library, config)
+    
+    try:
+        # Run simulation with temp library path
+        result = run_simulation(library=str(temp_library), config=config)
+        return result
+    finally:
+        # Clean up temp directory (optional - you might want to keep results)
+        # shutil.rmtree(temp_library)
+        pass
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
     await websocket.send_text(
-        "Connected. Send 'run' to start a WOMBAT simulation (DINWOODIE/base_2yr.yaml)."
+        "Connected. Send 'run' to start a WOMBAT simulation in temp library."
     )
 
     try:
@@ -93,6 +102,10 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                             websocket.send_text(f"simulation finished: {result}"),
                             loop,
                         )
+                        asyncio.run_coroutine_threadsafe(
+                            websocket.send_text(f"Send 'clear_temp' to clean files when done"),
+                            loop,
+                        )
                     except Exception as exc:  # noqa: BLE001
                         try:
                             asyncio.run_coroutine_threadsafe(
@@ -110,6 +123,15 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 t = threading.Thread(target=worker, name="wombat-sim-thread", daemon=True)
                 t.start()
                 continue
+            elif text == "clear_temp":
+                temp_dir = Path("server/temp")
+                print("Found ", os.listdir(temp_dir))
+                for folder_name in os.listdir(temp_dir):
+                    path = os.path.join(temp_dir, folder_name)
+                    if os.path.isdir(path):
+                        shutil.rmtree(path)
+                        print("Cleaned ", path)
+                continue
 
             await websocket.send_text(f"Echo: {data}")
     except WebSocketDisconnect:
@@ -119,4 +141,6 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         finally:
             return
 
-
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
