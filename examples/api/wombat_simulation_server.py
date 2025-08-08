@@ -37,12 +37,10 @@ async def health() -> dict[str, str]:
 
 
 def _run_wombat_simulation(library: str = "DINWOODIE", config: str = "base_2yr.yaml") -> dict[str, Any]:
-    from wombat import Simulation
+    # Local import to keep example self-contained and to avoid import cycles.
+    from wombat.api.simulation_runner import run_simulation
 
-    sim = Simulation.from_config(library, config)
-    sim.run()
-    # Minimal result payload; expand as needed
-    return {"status": "completed", "name": sim.config.name}
+    return run_simulation(library=library, config=config)
 
 
 @app.websocket("/ws")
