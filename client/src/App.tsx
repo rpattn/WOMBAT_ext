@@ -1,6 +1,31 @@
 import './App.css'
+import Settings from './components/SettingsEditor'
 import WebSocketClient from './components/WebSocketClient'
 
+const exampleData = {
+  name: "dinwoodie_base",
+  library: "DINWOODIE",
+  weather: "alpha_ventus_weather_2002_2014.csv",
+  service_equipment: [
+    "ctv1.yaml",
+    "ctv2.yaml",
+    "ctv3.yaml",
+    "fsv_requests.yaml",
+    "hlv_requests.yaml"
+  ],
+  layout: "layout.csv",
+  inflation_rate: 0,
+  fixed_costs: "fixed_costs.yaml",
+  workday_start: 7,
+  workday_end: 19,
+  start_year: 2003,
+  end_year: 2012,
+  project_capacity: 240
+};
+
 export default function App() {
-  return <WebSocketClient />
+  return (<>
+    <WebSocketClient />
+    <Settings data={exampleData}/>
+  </>)
 }
