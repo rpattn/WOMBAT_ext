@@ -117,6 +117,20 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 config = get_simulation()
                 await websocket.send_text(config)
                 continue
+            
+            # Try to parse as JSON for structured events
+            try:
+                import json
+                json_data = json.loads(data)
+                if isinstance(json_data, dict) and "event" in json_data:
+                    event_type = json_data.get("event")
+                    if event_type == "settings_update":
+                        print(f"Received settings_update event with data: {json_data.get('data', {})}")
+                        await websocket.send_text("Settings received successfully")
+                        continue
+            except json.JSONDecodeError:
+                # Not JSON, continue with normal processing
+                pass
 
             await websocket.send_text(f"Echo: {data}")
     except WebSocketDisconnect:
