@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 
 type WebSocketClientProps = {
   initialUrl?: string
+  onMessage?: (message: string) => void
+  onSendReady?: (sendFunction: (message: string) => boolean) => void
 }
 
 const fallbackUrl = (import.meta as any).env?.VITE_WS_URL ?? 'ws://127.0.0.1:8000/ws'
 
-export default function WebSocketClient({ initialUrl }: WebSocketClientProps) {
+export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: WebSocketClientProps) {
   const [wsUrl, setWsUrl] = useState<string>(initialUrl ?? fallbackUrl)
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const [messages, setMessages] = useState<string[]>([])
@@ -27,10 +29,17 @@ export default function WebSocketClient({ initialUrl }: WebSocketClientProps) {
       socket.onopen = () => {
         setIsConnected(true)
         appendMessage(`[client] connected -> ${wsUrl}`)
+        // Automatically send "get_config" upon connection
+        socket.send('get_config')
+        appendMessage(`[client] get_config`)
+        // Expose send function to parent component
+        onSendReady?.(sendProgrammaticMessage)
       }
 
       socket.onmessage = (event: MessageEvent) => {
         appendMessage(`[server] ${event.data}`)
+        // Call the callback if provided
+        onMessage?.(event.data)
       }
 
       socket.onerror = (event) => {
@@ -72,12 +81,20 @@ export default function WebSocketClient({ initialUrl }: WebSocketClientProps) {
     setOutgoing('')
   }
 
-  useEffect(() => {
-    return () => {
-      try {
-        websocketRef.current?.close()
-      } catch {}
+  const sendProgrammaticMessage = (message: string) => {
+    const socket = websocketRef.current
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      appendMessage('[client] cannot send: socket not open')
+      return false
     }
+    socket.send(message)
+    appendMessage(`[client] ${message}`)
+    return true
+  }
+
+  useEffect(() => {
+    // Auto-connect when component mounts
+    connect()
   }, [])
 
   return (

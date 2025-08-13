@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 
 type ConfigData = {
   name: string;
@@ -18,29 +18,27 @@ type ConfigData = {
 interface SettingsProps {
   data: ConfigData;
   onChange?: (updatedData: ConfigData) => void;
+  onSendSettings?: () => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ data, onChange }) => {
-  const [config, setConfig] = useState<ConfigData>(data);
-
+const Settings: React.FC<SettingsProps> = ({ data, onChange, onSendSettings }) => {
   const handleChange = (field: keyof ConfigData, value: any) => {
-    const updated = { ...config, [field]: value };
-    setConfig(updated);
+    const updated = { ...data, [field]: value };
     onChange?.(updated);
   };
 
   const handleEquipmentChange = (index: number, value: string) => {
-    const updatedList = [...config.service_equipment];
+    const updatedList = [...data.service_equipment];
     updatedList[index] = value;
     handleChange("service_equipment", updatedList);
   };
 
   const addEquipment = () => {
-    handleChange("service_equipment", [...config.service_equipment, ""]);
+    handleChange("service_equipment", [...data.service_equipment, ""]);
   };
 
   const removeEquipment = (index: number) => {
-    const updatedList = [...config.service_equipment];
+    const updatedList = [...data.service_equipment];
     updatedList.splice(index, 1);
     handleChange("service_equipment", updatedList);
   };
@@ -49,12 +47,12 @@ const Settings: React.FC<SettingsProps> = ({ data, onChange }) => {
     <div style={{ maxWidth: 600, margin: "0 auto" }}>
       <h2>YAML Config Editor</h2>
 
-      {Object.entries(config).map(([key, value]) => {
+      {Object.entries(data).map(([key, value]) => {
         if (key === "service_equipment") {
           return (
             <div key={key}>
               <label><strong>{key}</strong></label>
-              {config.service_equipment.map((item, idx) => (
+              {data.service_equipment.map((item: string, idx: number) => (
                 <div key={idx} style={{ display: "flex", gap: "8px", marginBottom: "4px" }}>
                   <input
                     type="text"
@@ -84,6 +82,25 @@ const Settings: React.FC<SettingsProps> = ({ data, onChange }) => {
           </div>
         );
       })}
+      
+      {onSendSettings && (
+        <div style={{ marginTop: "20px", textAlign: "center" }}>
+          <button 
+            onClick={onSendSettings}
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              fontSize: "16px",
+              cursor: "pointer"
+            }}
+          >
+            Send Settings to Server
+          </button>
+        </div>
+      )}
     </div>
   );
 };
