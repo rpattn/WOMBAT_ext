@@ -4,6 +4,10 @@
 from typing import Any
 
 
+def get_simulation(library: str = "DINWOODIE"):
+    from wombat.api.simulation_runner import get_simulation_dict
+    return get_simulation_dict(library)
+
 def run_wombat_simulation(library: str = "DINWOODIE", config: str = "base_2yr.yaml") -> dict[str, Any]:
     # Local import to keep example self-contained and to avoid import cycles.
     from wombat.api.simulation_setup import create_temp_config, create_temp_library

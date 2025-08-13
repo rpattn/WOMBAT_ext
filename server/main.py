@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from simulations import run_wombat_simulation  # type: ignore
+from simulations import run_wombat_simulation, get_simulation  # type: ignore
 
 app = FastAPI(title="WOMBAT Simulation Server")
 
@@ -112,6 +112,10 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                     if os.path.isdir(path):
                         shutil.rmtree(path)
                         print("Cleaned ", path)
+                continue
+            elif text == "get_config":
+                config = get_simulation()
+                await websocket.send_text(config)
                 continue
 
             await websocket.send_text(f"Echo: {data}")
