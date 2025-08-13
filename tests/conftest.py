@@ -301,3 +301,71 @@ SCHEDULED_VESSEL = {
         "n_hourly_rate": 0,
     },
 }
+
+
+# ============================================================================
+# Server Test Fixtures
+# ============================================================================
+
+# Add the server directory to Python path so server tests can import modules
+import sys
+from pathlib import Path
+server_dir = Path(__file__).parent / "server"
+if str(server_dir) not in sys.path:
+    sys.path.insert(0, str(server_dir))
+
+
+@pytest.fixture
+def mock_websocket():
+    """Fixture providing a mock WebSocket object."""
+    from unittest.mock import Mock, AsyncMock
+    
+    websocket = Mock()
+    websocket.send_text = AsyncMock()
+    websocket.receive_text = AsyncMock()
+    websocket.accept = AsyncMock()
+    websocket.close = AsyncMock()
+    
+    return websocket
+
+
+@pytest.fixture
+def sample_client_id():
+    """Fixture providing a sample client ID."""
+    return "test-client-12345678"
+
+
+@pytest.fixture
+def sample_settings_data():
+    """Fixture providing sample settings data."""
+    return {
+        "name": "test_config",
+        "library": "TEST_LIB",
+        "weather": "test_weather.csv",
+        "service_equipment": ["ctv1.yaml", "ctv2.yaml"],
+        "layout": "test_layout.csv",
+        "inflation_rate": 0.02,
+        "fixed_costs": "test_costs.yaml",
+        "workday_start": 7,
+        "workday_end": 19,
+        "start_year": 2020,
+        "end_year": 2025,
+        "project_capacity": 150
+    }
+
+
+@pytest.fixture
+def sample_json_event():
+    """Fixture providing a sample JSON event."""
+    return {
+        "event": "settings_update",
+        "data": {
+            "name": "test_config",
+            "library": "TEST_LIB",
+            "project_capacity": 100
+        }
+    }
+
+
+# Configure pytest to handle async tests
+pytest_plugins = ('pytest_asyncio',)
