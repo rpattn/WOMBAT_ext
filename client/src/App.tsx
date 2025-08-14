@@ -217,60 +217,31 @@ export default function App() {
     }
   };
 
-  const buttonStyle = {
-    padding: '10px 20px',
-    marginRight: '12px',
-    marginBottom: '8px',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  };
-
-  const primaryButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#007bff',
-    color: 'white'
-  };
-
-  const secondaryButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#6c757d',
-    color: 'white'
-  };
-
-  const dangerButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#dc3545',
-    color: 'white'
-  };
+  // styles moved to App.css
 
   return (<>
     <WebSocketClient onMessage={handleWebSocketMessage} onSendReady={handleSendReady} />
-    <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ marginBottom: '16px', color: '#DDD' }}>Simulation Controls</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-start' }}>
-          <button onClick={handleRunSimulation} style={primaryButtonStyle}>
+    <div className="app-container">
+      <div className="section">
+        <h3 className="section-title">Simulation Controls</h3>
+        <div className="controls">
+          <button onClick={handleRunSimulation} className="btn-app btn-primary">
             🚀 Run Simulation
           </button>
-          <button onClick={handleGetConfig} style={secondaryButtonStyle}>
+          <button onClick={handleGetConfig} className="btn-app btn-secondary">
             📋 Get Config
           </button>
-          <button onClick={handleClearTemp} style={dangerButtonStyle}>
+          <button onClick={handleClearTemp} className="btn-app btn-danger">
             🗑️ Clear Temp
           </button>
-          <button onClick={handleGetLibraryFiles} style={dangerButtonStyle}>
+          <button onClick={handleGetLibraryFiles} className="btn-app btn-danger">
             📋 Get Library Files
           </button>
         </div>
       </div>
       <div className="card">
-        <div style={{ display: 'flex', gap: '20px', width: '100%' }}>
-          <div style={{ flex: 1 }}>
+        <div className="row">
+          <div className="col">
             <FileSelector
               onFileSelect={handleFileSelect}
               selectedFile={selectedFile}
@@ -289,8 +260,8 @@ export default function App() {
               <p>No file selected</p>
             )}
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div className="col">
+            <div className="editor-wrap">
               <JsonEditor
                 data={configData}
                 onChange={(newData) => setConfigData(prev => ({
@@ -305,23 +276,12 @@ export default function App() {
       </div>
       {csvPreview !== null && selectedFile.endsWith('.csv') ? (
         <div>
-          <h3 style={{ marginTop: 0 }}>CSV Preview (first 800 chars)</h3>
-          <div
-            style={{
-              border: '1px solid #ccc',
-              borderRadius: 8,
-              padding: 12,
-              background: '#f9f9f9',
-              color: '#333',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-              whiteSpace: 'pre-wrap',
-            }}
-            aria-label="CSV preview"
-          >
+          <h3 className="csv-preview-title">CSV Preview (first 800 chars)</h3>
+          <div className="csv-preview" aria-label="CSV preview">
             {csvPreview}
             {csvPreview.length >= 100 && '…'}
           </div>
-          <p style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }}>Full CSV editing is not supported yet.</p>
+          <p className="csv-note">Full CSV editing is not supported yet.</p>
         </div>
       ) : <></>}
     </div>

@@ -41,3 +41,65 @@
 .read-the-docs {
   color: #888;
 }
+
+/* App layout */
+.app-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  text-align: left;
+}
+
+.section { margin-bottom: 24px; }
+.section-title {
+  margin-bottom: 16px;
+  color: #DDD;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+.col { flex: 1; }
+
+.editor-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Buttons */
+.btn-app {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn-primary { background-color: #007bff; color: #fff; }
+.btn-secondary { background-color: #6c757d; color: #fff; }
+.btn-danger { background-color: #dc3545; color: #fff; }
+
+/* CSV preview */
+.csv-preview-title { margin-top: 0; }
+.csv-preview {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f9f9f9;
+  color: #333;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  white-space: pre-wrap;
+}
+.csv-note { font-size: 12px; opacity: 0.8; margin-top: 8px; }

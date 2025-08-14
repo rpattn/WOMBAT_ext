@@ -56,6 +56,8 @@
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s;
+  /* indentation via css var set inline: --indent */
+  padding-left: var(--indent, 0px);
 }
 
 .tree-folder-header:hover {
@@ -89,6 +91,8 @@
   border-radius: 4px;
   transition: background-color 0.2s;
   margin: 2px 0;
+  /* indentation via css var set inline: --indent */
+  padding-left: var(--indent, 20px);
 }
 
 .tree-file:hover {
@@ -146,4 +150,39 @@
 
 .file-selector::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Buttons */
+.btn {
+  font-size: 12px;
+  padding: 2px 6px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn + .btn { margin-left: 6px; }
+
+.btn-outline-violet {
+  color: #6b21a8; /* violet-800 */
+  background: #f3e8ff; /* violet-100 */
+  border-color: #c084fc; /* violet-400 */
+}
+
+.btn-outline-emerald {
+  color: #065f46; /* emerald-900 */
+  background: #dcfce7; /* emerald-100 */
+  border-color: #16a34a; /* emerald-600 */
+}
+
+.btn-outline-danger {
+  color: #b00020;
+  border-color: #b00020;
+}
+
+.btn-outline-primary {
+  color: #0b5ed7;
+  border-color: #0b5ed7;
 }

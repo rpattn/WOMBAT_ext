@@ -3,6 +3,14 @@
   color: #111827; /* Gray-900 */
 }
 
+.json-editor-container {
+  background-color: #ffffff;
+  color: #222;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+
 .json-editor input[type="text"],
 .json-editor input[type="number"],
 .json-editor input[type="search"],
@@ -29,4 +37,88 @@
 
 .json-editor button {
   color: #111827;
+}
+
+/* Labels */
+.je-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151; /* Gray-700 */
+  margin-bottom: 6px;
+}
+
+.je-label-inline { margin-bottom: 0; }
+.je-min-150 { min-width: 150px; }
+
+/* Inputs */
+.je-input {
+  width: 90%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #fff;
+  color: #111827;
+}
+
+/* Sections */
+.je-section {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+/* Layout utilities */
+.je-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: justify;
+}
+
+.je-row-tight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.je-flex { display: flex; }
+.je-justify-start { justify-content: flex-start; }
+.je-mt-16 { margin-top: 16px; }
+.je-mt-8 { margin-top: 8px; }
+.je-mt-4 { margin-top: 4px; }
+.je-mb-8 { margin-bottom: 8px; }
+.je-pl-12 { padding-left: 12px; }
+.je-grow { flex: 1; }
+
+.je-summary {
+  cursor: pointer;
+  justify-self: left;
+}
+
+/* Buttons */
+.json-editor .btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.json-editor .btn-primary {
+  border: 1px solid #007bff;
+  background: #007bff;
+  color: #fff;
+}
+
+.json-editor .btn-danger-soft {
+  border: 1px solid #dc3545;
+  background: #dc3545;
+  color: #ffffff;
+}
+
+.json-editor .btn-success-soft {
+  border: 1px solid #198754;
+  background: #198754;
+  color: #ffffff;
 }

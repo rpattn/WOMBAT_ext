@@ -40,62 +40,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]);
 
-    const editorStyles: React.CSSProperties = {
-        backgroundColor: '#fff',
-        color: '#222',
-        borderRadius: 8,
-        padding: 16,
-        border: '1px solid #e5e7eb'
-    };
-
-    const labelStyles: React.CSSProperties = {
-        fontSize: 12,
-        fontWeight: 600,
-        color: '#374151',
-        marginBottom: 6
-    };
-
-    const inputStyles: React.CSSProperties = {
-        width: '90%',
-        padding: '8px 10px',
-        borderRadius: 6,
-        border: '1px solid #d1d5db',
-        backgroundColor: '#fff',
-        color: '#111827'
-    };
-
-    const smallButtonBase: React.CSSProperties = {
-        padding: '6px 10px',
-        fontSize: 12,
-        borderRadius: 6,
-        cursor: 'pointer',
-        transition: 'background 0.15s ease, border-color 0.15s ease',
-    };
-
-    const smallDangerButton: React.CSSProperties = {
-        ...smallButtonBase,
-        border: '1px solid #ef4444',
-        background: '#fee2e2',
-        color: '#991b1b'
-    };
-
-    const smallSuccessButton: React.CSSProperties = {
-        ...smallButtonBase,
-        border: '1px solid #16a34a',
-        background: '#dcfce7',
-        color: '#065f46'
-    };
-
-    const primaryButton: React.CSSProperties = {
-        padding: '8px 14px',
-        fontSize: 14,
-        borderRadius: 6,
-        border: '1px solid #2563eb',
-        background: '#3b82f6',
-        color: '#fff',
-        cursor: 'pointer',
-        transition: 'background 0.15s ease, border-color 0.15s ease',
-    };
+    // styles moved to JsonEditor.css
 
     // Utilities to update deep values immutably
     const setDeepValue = (obj: JsonObject, path: (string | number)[], value: JsonValue): JsonObject => {
@@ -127,18 +72,18 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
         // Array handling
         if (Array.isArray(value)) {
             return (
-                <div key={fieldKey} style={{ borderTop: '1px solid #e5e7eb', marginTop: 12, paddingTop: 12 }}>
+                <div key={fieldKey} className="je-section">
                     <details open>
-                        <summary style={{ ...labelStyles, cursor: 'pointer', justifySelf: 'left' }}>{String(label)}</summary>
-                        <div style={{ paddingLeft: 12, marginTop: 8 }}>
+                        <summary className="je-label je-summary">{String(label)}</summary>
+                        <div className="je-pl-12 je-mt-8">
                             {value.map((item, index) => (
-                                <div key={`${fieldKey}.${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                    <div style={{ flex: 1 }}>
+                                <div key={`${fieldKey}.${index}`} className="je-row-tight je-mb-8">
+                                    <div className="je-grow">
                                         {typeof item === 'object' && item !== null ? (
                                             renderField([...name, index], item)
                                         ) : (
                                             <input
-                                                style={inputStyles}
+                                                className="je-input"
                                                 value={String(item ?? '')}
                                                 onChange={(e) => {
                                                     const newArr = [...value];
@@ -150,7 +95,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                                     </div>
                                     <button
                                         type="button"
-                                        style={smallDangerButton}
+                                        className="btn btn-danger-soft"
                                         onClick={() => {
                                             const newArr = value.slice();
                                             newArr.splice(index, 1);
@@ -163,7 +108,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                             ))}
                             <button
                                 type="button"
-                                style={{ ...smallSuccessButton, marginTop: 4 }}
+                                className="btn btn-success-soft je-mt-4"
                                 onClick={() => {
                                     const newArr = [...value, ''];
                                     handleChangeAtPath(name, newArr);
@@ -180,12 +125,12 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
         // Object handling
         if (typeof value === 'object' && value !== null) {
             return (
-                <div key={fieldKey} style={{ borderTop: '1px solid #e5e7eb', marginTop: 12, paddingTop: 12 }}>
+                <div key={fieldKey} className="je-section">
                     <details open>
-                        <summary style={{ ...labelStyles, cursor: 'pointer', justifySelf: 'left' }}>{String(label)}</summary>
-                        <div style={{ paddingLeft: 12, marginTop: 8 }}>
+                        <summary className="je-label je-summary">{String(label)}</summary>
+                        <div className="je-pl-12 je-mt-8">
                             {Object.entries(value as JsonObject).map(([k, v]) => (
-                                <div key={`${fieldKey}.${k}`} style={{ marginBottom: 8 }}>
+                                <div key={`${fieldKey}.${k}`} className="je-mb-8">
                                     {renderField([...name, k], v)}
                                 </div>
                             ))}
@@ -197,8 +142,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
 
         // Primitive handling
         return (
-            <div key={fieldKey} style={{ display: 'flex', alignItems: 'center', gap: 12, textAlign: 'justify' }}>
-                <label style={{ ...labelStyles, marginBottom: 0, minWidth: 150 }}>{String(label)}</label>
+            <div key={fieldKey} className="je-row">
+                <label className="je-label je-label-inline je-min-150">{String(label)}</label>
                 {typeof value === 'boolean' ? (
                     <div>
                         <input
@@ -208,10 +153,10 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                         />
                     </div>
                 ) : typeof value === 'number' ? (
-                    <div style={{ flex: 1 }}>
+                    <div className="je-grow">
                         <input
                             type="number"
-                            style={inputStyles}
+                            className="je-input"
                             value={Number.isFinite(value) ? String(value) : ''}
                             onChange={(e) => {
                                 const num = e.target.value === '' ? 0 : Number(e.target.value);
@@ -220,10 +165,10 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                         />
                     </div>
                 ) : (
-                    <div style={{ flex: 1 }}>
+                    <div className="je-grow">
                         <input
                             type="text"
-                            style={inputStyles}
+                            className="je-input"
                             value={String(value ?? '')}
                             onChange={(e) => handleChangeAtPath(name, e.target.value)}
                         />
@@ -234,13 +179,13 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
     };
 
     return (
-        <div className="json-editor" style={editorStyles}>
+        <div className="json-editor json-editor-container">
             {(Object.entries(formData).length === 0) ?
                 <p>Open a .yaml file to edit it</p> :
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 16 }}>
+                <div className="je-flex je-justify-start je-mt-16">
                     <button
                         type="button"
-                        style={primaryButton}
+                        className="btn btn-primary"
                         onClick={() => onSave?.(formData)}
                     >
                         Save
@@ -248,7 +193,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                 </div>
             }
             {formData && Object.entries(formData).map(([key, value]) => (
-                <div key={key} style={{ marginBottom: 8 }}>
+                <div key={key} className="je-mb-8">
                     {renderField([key], value)}
                 </div>
             ))}

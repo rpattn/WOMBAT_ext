@@ -119,7 +119,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         <div key={currentPath} className="tree-folder">
           <div 
             className="tree-folder-header"
-            style={{ paddingLeft: `${level * 20}px` }}
+            style={{ ['--indent' as any]: `${level * 20}px` }}
             onClick={() => toggleFolder(currentPath)}
           >
             <span className={`folder-icon ${isExpanded ? 'expanded' : ''}`}>
@@ -129,31 +129,12 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
             <span className="actions folder-actions" onClick={(e) => e.stopPropagation()}>
               <button
                 title="Add YAML file here"
-                style={{
-                  fontSize: 12,
-                  padding: '2px 6px',
-                  cursor: 'pointer',
-                  color: '#6b21a8',           // violet-800 text
-                  background: '#f3e8ff',     // violet-100 bg
-                  border: '1px solid #c084fc', // violet-400 border
-                  borderRadius: 4,
-                  transition: 'background 0.15s ease, border-color 0.15s ease'
-                }}
+                className="btn btn-outline-violet"
                 onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'yaml')}
               >+ YAML</button>
               <button
                 title="Add CSV file here"
-                style={{
-                  fontSize: 12,
-                  padding: '2px 6px',
-                  cursor: 'pointer',
-                  color: '#065f46',            // emerald-900 text
-                  background: '#dcfce7',       // emerald-100 bg
-                  border: '1px solid #16a34a', // emerald-600 border
-                  borderRadius: 4,
-                  marginLeft: 6,
-                  transition: 'background 0.15s ease, border-color 0.15s ease'
-                }}
+                className="btn btn-outline-emerald"
                 onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'csv')}
               >+ CSV</button>
             </span>
@@ -173,7 +154,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         <div 
           key={currentPath}
           className={`tree-file ${isSelected ? 'selected' : ''}`}
-          style={{ paddingLeft: `${level * 20 + 20}px` }}
+          style={{ ['--indent' as any]: `${level * 20 + 20}px` }}
           onClick={() => handleFileSelect(node.fullPath!)}
         >
           <span className="file-icon">{fileIcon}</span>
@@ -181,7 +162,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
           <span className="actions file-actions">
             <button
               title="Delete file"
-              style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#b00020', background: 'transparent', border: '1px solid #b00020', borderRadius: 4 }}
+              className="btn btn-outline-danger"
               onClick={(e) => {
                 e.stopPropagation();
                 if (!node.fullPath) return;
@@ -192,7 +173,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
             >Delete</button>
             <button
               title="Replace file (upload)"
-              style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#0b5ed7', background: 'transparent', border: '1px solid #0b5ed7', borderRadius: 4, marginLeft: 6 }}
+              className="btn btn-outline-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 if (!node.fullPath) return;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import './WebSocketClient.css'
 
 type WebSocketClientProps = {
   initialUrl?: string
@@ -115,28 +116,28 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
   }, [])
 
   return (
-    <div style={{ padding: '20px', maxWidth: '80vw', margin: '0 auto', width: '100%' }}>
+    <div className="ws-container">
       <h1>WebSocket Client</h1>
-      <div className="card" style={{ display: 'grid', gap: 12, maxWidth: '700px', margin: '0 auto' }}>
-        <label style={{ display: 'grid', gap: 6 }}>
+      <div className="card ws-card">
+        <label className="ws-label">
           <span>Server WebSocket URL</span>
           <input
             type="text"
             value={wsUrl}
             onChange={(e) => setWsUrl(e.target.value)}
             placeholder="ws://127.0.0.1:8000/ws"
-            style={{ padding: '8px 10px', fontFamily: 'monospace' }}
+            className="ws-input"
           />
         </label>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="ws-row">
           <button onClick={connect} disabled={isConnected}>Connect</button>
           <button onClick={disconnect} disabled={!isConnected}>Disconnect</button>
         </div>
 
-        <div style={{ display: 'grid', gap: 6 }}>
+        <div className="ws-grid">
           <span>Send a message</span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="ws-row">
             <input
               type="text"
               value={outgoing}
@@ -147,37 +148,23 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
                 }
               }}
               placeholder="hello"
-              style={{ flex: 1, padding: '8px 10px' }}
+              className="ws-input ws-grow"
             />
             <button onClick={sendMessage} disabled={!isConnected}>Send</button>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: 6 }}>
+        <div className="ws-grid">
           <details>
-            <summary style={{ cursor: 'pointer', userSelect: 'none' }}>
+            <summary className="ws-summary">
               Messages ({messages.length})
             </summary>
-            <div
-              style={{
-                border: '1px solid #ccc',
-                borderRadius: 8,
-                padding: 12,
-                height: 200,
-                background: '#111',
-                color: '#ddd',
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                overflowY: 'auto',
-                marginTop: 8,
-                maxWidth: '700px',
-                maxHeight: '900px',
-              }}
-            >
+            <div className="ws-messages">
               {messages.length === 0 ? (
-                <div style={{ opacity: 0.7 }}>No messages yet</div>
+                <div className="ws-empty">No messages yet</div>
               ) : (
                 messages.map((m, i) => (
-                  <div key={i} style={{ whiteSpace: 'pre-wrap' }}>{m}</div>
+                  <div key={i} className="ws-message">{m}</div>
                 ))
               )}
             </div>
