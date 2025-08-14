@@ -5,6 +5,7 @@ export type CreateWebSocketMessageHandlerArgs = {
   setConfigData: (data: any) => void;
   setCsvPreview: (data: string | null) => void;
   setLibraryFiles: (files: { yaml_files: string[]; csv_files: string[]; total_files?: number } | null) => void;
+  setSavedLibraries?: (dirs: string[]) => void;
   pendingDownloadRef: MutableRefObject<string | null>;
   onToast?: (level: 'info' | 'success' | 'warning' | 'error', message: string) => void;
 };
@@ -13,6 +14,7 @@ export function createWebSocketMessageHandler({
   setConfigData,
   setCsvPreview,
   setLibraryFiles,
+  setSavedLibraries,
   pendingDownloadRef,
   onToast,
 }: CreateWebSocketMessageHandlerArgs) {
@@ -76,6 +78,12 @@ export function createWebSocketMessageHandler({
 
       if (parsedData && typeof parsedData === 'object' && 'event' in parsedData && parsedData.event === 'library_files') {
         setLibraryFiles(parsedData.files);
+      }
+
+      if (parsedData && typeof parsedData === 'object' && 'event' in parsedData && parsedData.event === 'saved_libraries') {
+        if (Array.isArray(parsedData.dirs)) {
+          setSavedLibraries?.(parsedData.dirs as string[]);
+        }
       }
 
       // Toast events from server

@@ -35,6 +35,9 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
             elif event_type == "save_library":
                 await handle_save_library(websocket, json_data, client_id)
                 return True
+            elif event_type == "list_saved_libraries":
+                await handle_list_saved_libraries(websocket)
+                return True
             else:
                 logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
@@ -332,6 +335,29 @@ async def handle_replace_file(websocket: WebSocket, data: dict, client_id: str =
         await websocket.send_text(json.dumps({'event': 'library_files', 'files': files}))
     except Exception:
         pass
+
+
+async def handle_list_saved_libraries(websocket: WebSocket) -> None:
+    """Return the list of directories under saved_library_dir."""
+    import json
+    from client_manager import client_manager
+    from pathlib import Path
+    try:
+        base = Path(client_manager.get_save_library_dir()).resolve()
+        if not base.exists():
+            base.mkdir(parents=True, exist_ok=True)
+        dirs = [p.name for p in base.iterdir() if p.is_dir()]
+        dirs.sort()
+        await websocket.send_text(json.dumps({
+            'event': 'saved_libraries',
+            'dirs': dirs
+        }))
+    except Exception as e:
+        await websocket.send_text(json.dumps({
+            'event': 'toast',
+            'level': 'error',
+            'message': f'Failed to list saved libraries: {e}'
+        }))
 
 async def handle_save_library(websocket: WebSocket, data: dict, client_id: str = None) -> None:
     """Handle save_library event from client."""

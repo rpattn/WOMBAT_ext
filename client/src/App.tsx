@@ -6,6 +6,7 @@ import FileSelector from './components/FileSelector';
 import SimulationControls from './components/SimulationControls';
 import SelectedFileInfo from './components/SelectedFileInfo';
 import CsvPreview from './components/CsvPreview';
+import SavedLibrariesDropdown from './components/SavedLibrariesDropdown';
 import { createWebSocketMessageHandler } from './utils/websocketHandlers';
 import { useToast } from './components/ToastManager';
 
@@ -27,6 +28,8 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [libraryFiles, setLibraryFiles] = useState<{ yaml_files: string[]; csv_files: string[]; total_files?: number } | null>(null);
   const [csvPreview, setCsvPreview] = useState<string | null>(null);
+  const [savedLibraries, setSavedLibraries] = useState<string[]>([]);
+  const [selectedSavedLibrary, setSelectedSavedLibrary] = useState<string | ''>('');
   const pendingDownloadRef = useRef<string | null>(null);
   const toast = useToast();
 
@@ -135,6 +138,7 @@ export default function App() {
     setConfigData,
     setCsvPreview,
     setLibraryFiles,
+    setSavedLibraries,
     pendingDownloadRef,
     onToast: (level, message) => {
       switch (level) {
@@ -233,6 +237,20 @@ export default function App() {
   return (<>
     <WebSocketClient onMessage={handleWebSocketMessage} onSendReady={handleSendReady} />
     <div className="app-container">
+      <div className="row" style={{ marginBottom: '0.75rem' }}>
+        <div className="col">
+          <SavedLibrariesDropdown
+            libraries={savedLibraries}
+            value={selectedSavedLibrary}
+            onChange={(val: string) => {
+              setSelectedSavedLibrary(val);
+              if (val) {
+                toast.info(`Selected saved library: ${val}`);
+              }
+            }}
+          />
+        </div>
+      </div>
       <SimulationControls
         onRun={handleRunSimulation}
         onGetConfig={handleGetConfig}

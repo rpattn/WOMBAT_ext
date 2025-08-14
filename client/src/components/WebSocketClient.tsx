@@ -82,6 +82,10 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
         // Automatically send "get_library_files" upon connection
         socket.send('get_library_files')
         appendMessage(`[client] get_library_files`)
+        // Also request list of saved libraries
+        const listMsg = JSON.stringify({ event: 'list_saved_libraries' })
+        socket.send(listMsg)
+        appendMessage(`[client] list_saved_libraries`)
         // Expose send function to parent component
         onSendReady?.(sendProgrammaticMessage)
       }
