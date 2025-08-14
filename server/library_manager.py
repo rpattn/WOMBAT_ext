@@ -11,41 +11,36 @@ logger = logging.getLogger("uvicorn.error")
 async def handle_settings_update(websocket: WebSocket, data: dict, client_id: str = None) -> None:
     """Handle settings_update event from client."""
     from client_manager import client_manager
-    
+
     settings_data = data.get('data', {})
     logger.info(f"Received settings update from client {client_id[:8] if client_id else 'unknown'}")
-    
+
     if not client_id or client_id not in client_manager.client_projects:
         await websocket.send_text("Error: Client project not found")
         return
-    
+
     try:
-        # Get client's project directory
+        # Resolve target file: use last selected file if available, otherwise fallback to base config
         project_dir = Path(client_manager.get_client_project_dir(client_id))
-        config_file = project_dir / "project" / "config" / "base_2yr.yaml"
-        
-        if not config_file.exists():
-            await websocket.send_text("Error: Configuration file not found")
-            return
-        
-        # Load existing config
-        with open(config_file, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        # Update config with new settings
-        for key, value in settings_data.items():
-            if key in config:
-                if config[key] == value:
-                    continue
-                config[key] = value
-                logger.info(f"Updated {key}: {value}")
-        
-        # Save updated config back to client's project
-        with open(config_file, 'w') as f:
-            yaml.safe_dump(config, f, default_flow_style=False)
-        
-        await websocket.send_text(f"Settings updated successfully for client {client_id[:8]}")
-        
+        selected_rel_path = client_manager.get_last_selected_file(client_id)
+        if selected_rel_path:
+            target_file = project_dir / selected_rel_path
+        else:
+            target_file = project_dir / "project" / "config" / "base_2yr.yaml"
+
+        # Ensure directory exists
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+
+        if not target_file.exists():
+            logger.warning(f"Target file did not exist, creating new: {target_file}")
+
+        # Persist full content as provided by the client
+        with open(target_file, 'w') as f:
+            yaml.safe_dump(settings_data, f, default_flow_style=False)
+
+        rel_display = str(target_file.relative_to(project_dir)) if project_dir in target_file.parents else str(target_file)
+        await websocket.send_text(f"Saved settings to {rel_display} for client {client_id[:8]}")
+
     except Exception as e:
         logger.error(f"Error updating settings for client {client_id[:8] if client_id else 'unknown'}: {e}")
         await websocket.send_text(f"Error updating settings: {str(e)}")

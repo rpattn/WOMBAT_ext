@@ -111,6 +111,9 @@ async def handle_file_select(websocket: WebSocket, data: dict, client_id: str = 
         if file_content is None:
             await websocket.send_text(f"Error: File not found: {file_path}")
             return
+        
+        # Persist the last selected file for this client so saves target the right path
+        client_manager.set_last_selected_file(client_id, file_path)
             
         # Send the file content back to the client
         response = {

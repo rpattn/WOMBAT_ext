@@ -18,6 +18,8 @@ class ClientManager:
         self.client_simulations: Dict[str, Dict] = {}  # Track which client is running which simulation
         self.client_projects: Dict[str, str] = {}  # Track client project directories
         self.temp_base_dir = Path("server/temp")
+        # Track the last selected file per client for saving edits to the correct file
+        self.client_last_selected_file: Dict[str, str] = {}
     
     def add_client(self, client_id: str, websocket: WebSocket) -> None:
         """Add a new client to the manager."""
@@ -52,6 +54,9 @@ class ClientManager:
             if client_id in self.client_projects:
                 self._cleanup_client_project(client_id)
                 del self.client_projects[client_id]
+            # Remove any stored state
+            if client_id in self.client_last_selected_file:
+                del self.client_last_selected_file[client_id]
             
             logger.info(f"Client {client_id} disconnected. Total clients: {len(self.clients)}")
     
@@ -71,6 +76,14 @@ class ClientManager:
     def get_client_project_dir(self, client_id: str) -> str:
         """Get the project directory path for a specific client."""
         return self.client_projects.get(client_id, "")
+
+    def set_last_selected_file(self, client_id: str, file_path: str) -> None:
+        """Store the last file selected by the client (relative to project dir)."""
+        self.client_last_selected_file[client_id] = file_path
+
+    def get_last_selected_file(self, client_id: str) -> str:
+        """Retrieve the last file selected by the client, if any."""
+        return self.client_last_selected_file.get(client_id, "")
     
     def _create_client_project(self, client_id: str) -> str:
         """Create a per-client project directory and configuration."""
