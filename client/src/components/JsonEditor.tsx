@@ -110,7 +110,11 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                                 type="button"
                                 className="btn btn-success-soft je-mt-4"
                                 onClick={() => {
-                                    const newArr = [...value, ''];
+                                    const newArr = [...value];
+                                    const newItem = value.length > 0
+                                        ? JSON.parse(JSON.stringify(value[value.length - 1]))
+                                        : '';
+                                    newArr.push(newItem as any);
                                     handleChangeAtPath(name, newArr);
                                 }}
                             >
