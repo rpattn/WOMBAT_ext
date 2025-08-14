@@ -70,7 +70,8 @@ export function createWebSocketMessageHandler({
 
         // Normal UI update path
         if (typeof parsedData.data === 'string') {
-          setCsvPreview(parsedData.data.slice(0, 800));
+          // Pass full CSV text to the UI so the CsvPreview can render a complete table
+          setCsvPreview(parsedData.data);
         } else {
           setConfigData(parsedData.data);
         }
