@@ -73,11 +73,9 @@ html.dark, html.dark body, html.dark #root {
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
 }
-html.dark button { background-color: #1a1a1a; }
 
 html.light { color-scheme: light; }
 html.light, html.light body, html.light #root {
   color: #213547;
   background-color: #ffffff;
 }
-html.light button { background-color: #f9f9f9; }

@@ -1,3 +1,11 @@
+/* Stronger selector for selects in array rows */
+.json-editor .je-row-tight select,
+.json-editor .je-row select {
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+
 /* Minimal styles for the custom JSON editor to ensure good contrast */
 .json-editor {
   color: #111827; /* Gray-900 */
@@ -16,16 +24,21 @@
 .json-editor input[type="search"],
 .json-editor input[type="email"],
 .json-editor input[type="url"],
-.json-editor input[type="password"] {
+.json-editor input[type="password"],
+.json-editor select {
   background-color: #ffffff;
   color: #111827;
   border: 1px solid #d1d5db; /* Gray-300 */
   border-radius: 6px;
   padding: 8px 10px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
 }
 
 .json-editor input[type="text"]:focus,
-.json-editor input[type="number"]:focus {
+.json-editor input[type="number"]:focus,
+.json-editor select:focus {
   outline: 2px solid #93c5fd; /* Blue-300 */
   outline-offset: 1px;
 }
@@ -148,14 +161,23 @@
   .json-editor input[type="search"],
   .json-editor input[type="email"],
   .json-editor input[type="url"],
-  .json-editor input[type="password"] {
+  .json-editor input[type="password"],
+  .json-editor select {
     background-color: #111827; /* gray-900 */
     color: #e5e7eb;
     border: 1px solid #374151; /* gray-700 */
   }
 
+  .json-editor .je-row-tight select,
+  .json-editor .je-row select {
+    background-color: #111827;
+    color: #e5e7eb;
+    border: 1px solid #374151;
+  }
+
   .json-editor input[type="text"]:focus,
-  .json-editor input[type="number"]:focus {
+  .json-editor input[type="number"]:focus,
+  .json-editor select:focus {
     outline: 2px solid #60a5fa; /* blue-400 */
     outline-offset: 1px;
   }
@@ -193,12 +215,6 @@
     color: #ffffff;
   }
 
-  /* Ensure .je-input specifically gets dark styles */
-  .json-editor .je-input {
-    background-color: #111827; /* gray-900 */
-    color: #e5e7eb;
-    border: 1px solid #374151; /* gray-700 */
-  }
   .json-editor .je-input::placeholder { color: #9ca3af; }
 }
 
@@ -218,7 +234,15 @@
 .dark .json-editor input[type="search"],
 .dark .json-editor input[type="email"],
 .dark .json-editor input[type="url"],
-.dark .json-editor input[type="password"] {
+.dark .json-editor input[type="password"],
+.dark .json-editor select {
+  background-color: #111827;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+}
+
+.dark .json-editor .je-row-tight select,
+.dark .json-editor .je-row select {
   background-color: #111827;
   color: #e5e7eb;
   border: 1px solid #374151;
@@ -233,7 +257,8 @@
 .dark .json-editor .je-input::placeholder { color: #9ca3af; }
 
 .dark .json-editor input[type="text"]:focus,
-.dark .json-editor input[type="number"]:focus {
+.dark .json-editor input[type="number"]:focus,
+.dark .json-editor select:focus {
   outline: 2px solid #60a5fa;
   outline-offset: 1px;
 }
@@ -254,9 +279,13 @@
 .light .json-editor input[type="search"],
 .light .json-editor input[type="email"],
 .light .json-editor input[type="url"],
-.light .json-editor input[type="password"] { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
+.light .json-editor input[type="password"],
+.light .json-editor select { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
+.light .json-editor .je-row-tight select,
+.light .json-editor .je-row select { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
 .light .json-editor input[type="text"]:focus,
-.light .json-editor input[type="number"]:focus { outline: 2px solid #93c5fd; outline-offset: 1px; }
+.light .json-editor input[type="number"]:focus,
+.light .json-editor select:focus { outline: 2px solid #93c5fd; outline-offset: 1px; }
 .light .json-editor summary { color: #1f2937; }
 .light .je-label { color: #374151; }
 .light .je-section { border-top: 1px solid #e5e7eb; }

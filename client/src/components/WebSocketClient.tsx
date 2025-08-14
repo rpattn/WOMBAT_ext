@@ -175,8 +175,8 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
         </label>
 
         <div className="ws-row">
-          <button onClick={connect} disabled={isConnected}>Connect</button>
-          <button onClick={disconnect} disabled={!isConnected}>Disconnect</button>
+          <button className="btn-app btn-success" onClick={connect} disabled={isConnected}>Connect</button>
+          <button className="btn-app btn-danger" onClick={disconnect} disabled={!isConnected}>Disconnect</button>
         </div>
 
         <div className="ws-grid">
@@ -194,7 +194,7 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
               placeholder="hello"
               className="ws-input ws-grow"
             />
-            <button onClick={sendMessage} disabled={!isConnected}>Send</button>
+            <button className="btn-app btn-primary" onClick={sendMessage} disabled={!isConnected}>Send</button>
           </div>
         </div>
 

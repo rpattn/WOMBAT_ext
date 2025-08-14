@@ -189,7 +189,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                 <div className="je-flex je-justify-start je-mt-16">
                     <button
                         type="button"
-                        className="btn btn-primary"
+                        className="btn btn-success-soft"
                         onClick={() => onSave?.(formData)}
                     >
                         Save

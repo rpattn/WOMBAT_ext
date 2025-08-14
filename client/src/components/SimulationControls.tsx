@@ -9,7 +9,7 @@ type Props = {
 
 export default function SimulationControls({ onRun, onGetConfig, onClearTemp, onGetLibraryFiles, onSaveLibrary }: Props) {
   return (
-    <div className="section">
+    <div className="section simulation-controls">
       <h3 className="section-title">Simulation Controls</h3>
       <div className="controls">
         <button onClick={onRun} className="btn-app btn-primary">
@@ -24,7 +24,7 @@ export default function SimulationControls({ onRun, onGetConfig, onClearTemp, on
         <button onClick={onGetLibraryFiles} className="btn-app btn-danger">
           📋 Get Library Files
         </button>
-        <button onClick={onSaveLibrary} className="btn-app btn-secondary">
+        <button onClick={onSaveLibrary} className="btn-app btn-success">
           💾 Save Library
         </button>
       </div>

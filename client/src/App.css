@@ -90,6 +90,21 @@
 .btn-primary { background-color: #007bff; color: #fff; }
 .btn-secondary { background-color: #6c757d; color: #fff; }
 .btn-danger { background-color: #dc3545; color: #fff; }
+.btn-success { background-color: #198754; color: #fff; }
+
+/* Keep base button colors in both themes (no text color overrides) */
+
+/* Light mode: translucent semantic buttons */
+@media (prefers-color-scheme: light) {
+  .btn-primary { background-color: rgba(0, 123, 255, 0.1); color: #0b5ed7; border: 1px solid #0b5ed7; }
+  .btn-success { background-color: rgba(25, 135, 84, 0.1); color: #198754; border: 1px solid #198754; }
+  .btn-danger  { background-color: rgba(220, 53, 69, 0.1); color: #b00020; border: 1px solid #dc3545; }
+}
+
+/* Manual toggle: force translucent in html.light */
+html.light .btn-primary { background-color: rgba(0, 123, 255, 0.1); color: #0b5ed7; border: 1px solid #0b5ed7; }
+html.light .btn-success { background-color: rgba(25, 135, 84, 0.1); color: #198754; border: 1px solid #198754; }
+html.light .btn-danger  { background-color: rgba(220, 53, 69, 0.1); color: #b00020; border: 1px solid #dc3545; }
 
 /* CSV preview */
 .csv-preview-title { margin-top: 0; }
