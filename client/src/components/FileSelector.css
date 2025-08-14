@@ -1,0 +1,130 @@
+.file-selector {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fff;
+  max-height: 500px;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.file-selector-header {
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+}
+
+.file-selector-header h3 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.file-count {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.file-tree {
+  user-select: none;
+}
+
+.tree-folder-header {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.tree-folder-header:hover {
+  background-color: #f5f5f5;
+}
+
+.folder-icon {
+  margin-right: 8px;
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+
+.folder-icon.expanded {
+  transform: rotate(0deg);
+}
+
+.folder-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.tree-folder-content {
+  margin-left: 8px;
+}
+
+.tree-file {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  margin: 2px 0;
+}
+
+.tree-file:hover {
+  background-color: #f0f8ff;
+}
+
+.tree-file.selected {
+  background-color: #e3f2fd;
+  border: 1px solid #2196f3;
+}
+
+.file-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.file-name {
+  color: #555;
+  font-size: 14px;
+}
+
+.tree-file.selected .file-name {
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.selected-file-info {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #2196f3;
+  font-size: 14px;
+  color: #333;
+}
+
+.selected-file-info strong {
+  color: #1976d2;
+}
+
+/* Scrollbar styling */
+.file-selector::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-selector::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.file-selector::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.file-selector::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

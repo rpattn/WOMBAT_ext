@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import './App.css'
-import Settings from './components/SettingsEditor'
-import WebSocketClient from './components/WebSocketClient'
+import { useState } from 'react';
+import './App.css';
+import Settings from './components/SettingsEditor';
+import WebSocketClient from './components/WebSocketClient';
+import FileSelector from './components/FileSelector';
 
 const exampleData = {
   name: "example",
@@ -19,9 +20,51 @@ const exampleData = {
   project_capacity: 240
 };
 
+export const example_library_structure = {
+  "yaml_files": [
+    "cables\\array.yaml",
+    "cables\\export.yaml",
+    "project\\config\\base_2yr.yaml",
+    "project\\port\\base_port.yaml",
+    "substations\\offshore_substation.yaml",
+    "turbines\\vestas_v90.yaml",
+    "vessels\\ctv1.yaml",
+    "vessels\\ctv2.yaml",
+    "vessels\\ctv3.yaml",
+    "vessels\\ctv4.yaml",
+    "vessels\\ctv5.yaml",
+    "vessels\\fsv_downtime.yaml",
+    "vessels\\fsv_requests.yaml",
+    "vessels\\fsv_scheduled.yaml",
+    "vessels\\hlv_1_scheduled.yaml",
+    "vessels\\hlv_2_scheduled.yaml",
+    "vessels\\hlv_3_scheduled.yaml",
+    "vessels\\hlv_downtime.yaml",
+    "vessels\\hlv_requests.yaml",
+    "vessels\\tugboat1.yaml",
+    "vessels\\tugboat2.yaml",
+    "vessels\\tugboat3.yaml"
+  ],
+  "csv_files": [
+    "project\\plant\\layout.csv",
+    "turbines\\vestas_v90_power_curve.csv",
+    "weather\\alpha_ventus_weather_2002_2014.csv",
+    "weather\\alpha_ventus_weather_2002_2014_zeros.csv"
+  ],
+  "total_files": 26
+} as const;
+
 export default function App() {
   const [configData, setConfigData] = useState(exampleData);
   const [sendWebSocketMessage, setSendWebSocketMessage] = useState<((message: string) => boolean) | null>(null);
+  const [selectedFile, setSelectedFile] = useState<string>('');
+  const [count, setCount] = useState(0);
+
+  const handleFileSelect = (filePath: string) => {
+    console.log('Selected file:', filePath);
+    setSelectedFile(filePath);
+    // Here you can add any additional logic when a file is selected
+  };
 
   const handleWebSocketMessage = (message: string) => {
     try {
@@ -147,6 +190,37 @@ export default function App() {
           <button onClick={handleGetLibraryFiles} style={dangerButtonStyle}>
           📋 Get Library Files
           </button>
+        </div>
+      </div>
+      <div className="card">
+        <div style={{ display: 'flex', gap: '20px', width: '100%' }}>
+          <div style={{ flex: 1 }}>
+            <FileSelector 
+              onFileSelect={handleFileSelect} 
+              selectedFile={selectedFile}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h3>File Details</h3>
+            {selectedFile ? (
+              <div>
+                <p><strong>Selected File:</strong> {selectedFile}</p>
+                <p><strong>Type:</strong> {selectedFile.endsWith('.yaml') ? 'YAML' : 'CSV'}</p>
+                <p><strong>Path:</strong> {selectedFile}</p>
+              </div>
+            ) : (
+              <p>No file selected</p>
+            )}
+          </div>
+        </div>
+        
+        <div style={{ marginTop: '20px' }}>
+          <button onClick={() => setCount((count) => count + 1)}>
+            count is {count}
+          </button>
+          <p>
+            Edit <code>src/App.tsx</code> and save to test HMR
+          </p>
         </div>
       </div>
       <Settings data={configData} onChange={handleSettingsChange} onSendSettings={handleSendSettings}/>
