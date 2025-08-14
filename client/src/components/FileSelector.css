@@ -1,3 +1,22 @@
+.actions {
+  margin-left: auto;
+  display: none; /* hidden by default */
+  gap: 8px;
+}
+
+/* Show actions on hover */
+.tree-folder-header:hover .actions {
+  display: inline-flex;
+}
+
+.tree-file:hover .actions {
+  display: inline-flex;
+}
+
+/* Keep actions visible when selected (for files) */
+.tree-file.selected .actions {
+  display: inline-flex;
+}
 .file-selector {
   border: 1px solid #ddd;
   border-radius: 8px;

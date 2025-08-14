@@ -125,7 +125,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               {isExpanded ? '📂' : '📁'}
             </span>
             <span className="folder-name">{node.name}</span>
-            <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8 }} onClick={(e) => e.stopPropagation()}>
+            <span className="actions folder-actions" onClick={(e) => e.stopPropagation()}>
               <button
                 title="Add YAML file here"
                 style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer' }}
@@ -158,7 +158,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         >
           <span className="file-icon">{fileIcon}</span>
           <span className="file-name">{node.name}</span>
-          <span style={{ marginLeft: 'auto' }}>
+          <span className="actions file-actions">
             <button
               title="Delete file"
               style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#b00020', background: 'transparent', border: '1px solid #eee', borderRadius: 4 }}
