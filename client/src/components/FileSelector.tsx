@@ -8,6 +8,7 @@ interface FileSelectorProps {
   onAddFile?: (filePath: string, content: any) => void;
   onDeleteFile?: (filePath: string) => void;
   onReplaceFile?: (filePath: string) => void;
+  onDownloadFile?: (filePath: string) => void;
 }
 
 interface TreeNode {
@@ -19,7 +20,7 @@ interface TreeNode {
   folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root']));
 
   const buildTreeStructure = useMemo(() => {
@@ -160,6 +161,15 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
           <span className="file-icon">{fileIcon}</span>
           <span className="file-name">{node.name}</span>
           <span className="actions file-actions">
+            <button
+              title="Download file"
+              className="btn btn-outline-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!node.fullPath) return;
+                onDownloadFile?.(node.fullPath);
+              }}
+            >Download</button>
             <button
               title="Delete file"
               className="btn btn-outline-danger"

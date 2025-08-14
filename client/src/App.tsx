@@ -1,30 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import './App.css';
 import JsonEditor, { type JsonObject } from './components/JsonEditor';
 import WebSocketClient from './components/WebSocketClient';
 import FileSelector from './components/FileSelector';
 
-const exampleData = {
-  name: "example",
-  library: "example",
-  weather: "example.csv",
-  service_equipment: [
-    "example.yaml"
-  ],
-  object: {
-    name: "example",
-    key: "example",
-    value: "example"
-  },
-  layout: "layout.csv",
-  inflation_rate: 0,
-  fixed_costs: "fixed_costs.yaml",
-  workday_start: 7,
-  workday_end: 19,
-  start_year: 2003,
-  end_year: 2012,
-  project_capacity: 240
-};
 
 export const example_library_structure = {
   "yaml_files": [
@@ -43,6 +22,7 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [libraryFiles, setLibraryFiles] = useState<{ yaml_files: string[]; csv_files: string[]; total_files?: number } | null>(null);
   const [csvPreview, setCsvPreview] = useState<string | null>(null);
+  const pendingDownloadRef = useRef<string | null>(null);
 
   const handleFileSelect = (filePath: string) => {
     console.log('Selected file:', filePath);
@@ -65,6 +45,20 @@ export default function App() {
       }
     } else {
       console.warn('WebSocket not ready to send file select message');
+    }
+  };
+
+  const handleDownloadFile = (filePath: string) => {
+    if (!sendWebSocketMessage) {
+      console.warn('WebSocket not ready to request download');
+      return;
+    }
+    pendingDownloadRef.current = filePath;
+    const message = JSON.stringify({ event: 'file_select', data: filePath, raw: true });
+    const ok = sendWebSocketMessage(message);
+    if (!ok) {
+      console.error('Failed to request file for download');
+      pendingDownloadRef.current = null;
     }
   };
 
@@ -145,7 +139,47 @@ export default function App() {
       if (parsedData && typeof parsedData === 'object' &&
         'event' in parsedData && parsedData.event === 'file_content') {
         console.log('Received file content from WebSocket:', parsedData);
-        // If payload is string, treat as plain text (e.g., CSV) and show preview
+        // If a download is pending, trigger download and skip UI updates
+        if (pendingDownloadRef.current) {
+          const filePath = pendingDownloadRef.current;
+          try {
+            const isCsv = filePath.toLowerCase().endsWith('.csv');
+            const isYaml = filePath.toLowerCase().endsWith('.yaml') || filePath.toLowerCase().endsWith('.yml');
+            const fileName = filePath.split('\\').pop() || 'download';
+
+            let text: string;
+            let mime: string;
+            if (typeof parsedData.data === 'string') {
+              text = parsedData.data;
+              if (isCsv) {
+                mime = 'text/csv;charset=utf-8';
+              } else if (isYaml) {
+                mime = 'application/x-yaml;charset=utf-8';
+              } else {
+                mime = 'text/plain;charset=utf-8';
+              }
+            } else {
+              // Received structured data (e.g., YAML parsed as object) -> provide JSON download
+              text = JSON.stringify(parsedData.data, null, 2);
+              mime = 'application/json;charset=utf-8';
+            }
+
+            const blob = new Blob([text], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          } finally {
+            pendingDownloadRef.current = null;
+          }
+          return;
+        }
+
+        // Normal UI update path
         if (typeof parsedData.data === 'string') {
           setCsvPreview(parsedData.data.slice(0, 800));
         } else {
@@ -249,6 +283,7 @@ export default function App() {
               onAddFile={handleAddFile}
               onDeleteFile={handleDeleteFile}
               onReplaceFile={handleReplaceFile}
+              onDownloadFile={handleDownloadFile}
             />
             {selectedFile ? (
               <div>

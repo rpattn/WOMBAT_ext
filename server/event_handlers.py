@@ -109,28 +109,47 @@ async def handle_file_select(websocket: WebSocket, data: dict, client_id: str = 
         return
     
     file_path = data.get('data', '').replace('\\', '/')  # Normalize path separators
+    raw = bool(data.get('raw'))
     if not file_path:
         await websocket.send_text("Error: No file path provided")
         return
     
     try:
-        # Get the file content from the client's project
-        file_content = get_client_library_file(client_id, file_path)
-        
-        if file_content is None:
-            await websocket.send_text(f"Error: File not found: {file_path}")
-            return
-        
-        # Persist the last selected file for this client so saves target the right path
-        client_manager.set_last_selected_file(client_id, file_path)
-            
-        # Send the file content back to the client
-        response = {
-            'event': 'file_content',
-            'file': file_path,
-            'data': file_content
-        }
-        await websocket.send_text(json.dumps(response))
+        if raw:
+            # Read the file directly as UTF-8 text (used for downloads)
+            from pathlib import Path
+            project_dir = Path(client_manager.get_client_project_dir(client_id)).resolve()
+            abs_path = (project_dir / file_path).resolve()
+            # Safety: ensure path is within the project directory
+            if not str(abs_path).startswith(str(project_dir)):
+                await websocket.send_text("Error: Invalid file path")
+                return
+            if not abs_path.exists() or not abs_path.is_file():
+                await websocket.send_text(f"Error: File not found: {file_path}")
+                return
+            content = abs_path.read_text(encoding='utf-8')
+            client_manager.set_last_selected_file(client_id, file_path)
+            response = {
+                'event': 'file_content',
+                'file': file_path,
+                'data': content,
+                'raw': True
+            }
+            await websocket.send_text(json.dumps(response))
+        else:
+            # Get the file content via library manager (may parse YAML -> dict)
+            file_content = get_client_library_file(client_id, file_path)
+            if file_content is None:
+                await websocket.send_text(f"Error: File not found: {file_path}")
+                return
+            # Persist the last selected file for this client so saves target the right path
+            client_manager.set_last_selected_file(client_id, file_path)
+            response = {
+                'event': 'file_content',
+                'file': file_path,
+                'data': file_content
+            }
+            await websocket.send_text(json.dumps(response))
         
     except Exception as e:
         logger.error(f"Error reading file {file_path} for client {client_id[:8] if client_id else 'unknown'}: {e}")
