@@ -230,12 +230,18 @@ def delete_client_library_file(client_id: str, file_path: str) -> bool:
     
 
 
-def get_client_library_file(client_id: str, file_path: str) -> dict:
-    """Get the content of a specific file from the client's library."""
+def get_client_library_file(client_id: str, file_path: str):
+    """Get the content of a specific file from the client's library.
+
+    Returns:
+        - dict for YAML files
+        - str for CSV/text files
+        - {} or '' on error
+    """
     from client_manager import client_manager
     
     if not client_id or client_id not in client_manager.client_projects:
-        return {}
+        return {} if str(file_path).lower().endswith(('.yaml', '.yml')) else ''
     
     try:
         project_dir = Path(client_manager.get_client_project_dir(client_id))
@@ -244,8 +250,14 @@ def get_client_library_file(client_id: str, file_path: str) -> dict:
         if not target_file.exists():
             return {}
         
-        with open(target_file, 'r') as f:
-            return yaml.safe_load(f) or {}
+        suffix = (target_file.suffix or '').lower()
+        if suffix in ['.yaml', '.yml']:
+            with open(target_file, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f) or {}
+        else:
+            # Treat CSV and any other non-YAML files as plain UTF-8 text
+            with open(target_file, 'r', encoding='utf-8', errors='replace') as f:
+                return f.read()
             
     except Exception as e:
         logger.error(f"Error reading library file for client {client_id[:8]}: {e}")
