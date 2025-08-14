@@ -455,8 +455,8 @@ async def handle_save_library(websocket: WebSocket, data: dict, client_id: str =
     
     # Refresh library list
     try:
-        files = scan_client_library_files(client_id)
-        await websocket.send_text(json.dumps({'event': 'library_files', 'files': files}))
+        await handle_list_saved_libraries(websocket)
+        # print("Refreshed library list after save_library")
     except Exception:
         print("Failed to refresh library list after save_library")
         pass

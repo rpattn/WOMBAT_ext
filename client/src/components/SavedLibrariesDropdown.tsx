@@ -3,13 +3,14 @@ type Props = {
   value: string | '';
   onChange: (value: string) => void;
   label?: string;
+  children?: React.ReactNode;
 };
 
-export default function SavedLibrariesDropdown({ libraries, value, onChange, label = 'Saved Libraries' }: Props) {
+export default function SavedLibrariesDropdown({ libraries, value, onChange, label = 'Saved Libraries', children }: Props) {
   const hasItems = Array.isArray(libraries) && libraries.length > 0;
   return (
-    <div className="saved-libs">
-      <label style={{ display: 'block', marginBottom: 4 }}>
+    <div className="saved-libs" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      <label style={{ display: 'inline-flex', alignItems: 'center', marginBottom: 0 }}>
         <span style={{ marginRight: 8 }}>{label}</span>
         <select
           value={value}
@@ -22,6 +23,7 @@ export default function SavedLibrariesDropdown({ libraries, value, onChange, lab
           ))}
         </select>
       </label>
+      {children}
     </div>
   );
 }

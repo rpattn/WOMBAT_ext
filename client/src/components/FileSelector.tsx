@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import './FileSelector.css';
 
 interface FileSelectorProps {
@@ -22,10 +22,11 @@ interface TreeNode {
 }
 
 const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile, projectName }) => {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root']));
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  const rootLabel = useMemo(() => (projectName && projectName.trim().length > 0 ? projectName : 'Library Files'), [projectName]);
 
   const buildTreeStructure = useMemo(() => {
-    const rootLabel = projectName && projectName.trim().length > 0 ? projectName : 'Library Files';
     const root: TreeNode = { name: rootLabel, type: 'folder', children: [], folderFullPath: '' };
     const yaml = libraryFiles?.yaml_files ?? [];
     const csv = libraryFiles?.csv_files ?? [];
@@ -84,7 +85,26 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
 
     sortChildren(root);
     return root;
-  }, [libraryFiles, projectName]);
+  }, [libraryFiles, rootLabel]);
+
+  // Expand root and "project" and "project/config" by default when present
+  useEffect(() => {
+    const next = new Set<string>();
+    next.add(rootLabel);
+    const yaml = libraryFiles?.yaml_files ?? [];
+    const csv = libraryFiles?.csv_files ?? [];
+    const allFiles = [...yaml, ...csv];
+    const parts = allFiles.map(p => (p || '').split('\\'));
+    const hasProject = parts.some(seg => seg[0] === 'project');
+    const hasProjectConfig = parts.some(seg => seg[0] === 'project' && seg[1] === 'config');
+    if (hasProject) {
+      next.add(`${rootLabel}/project`);
+    }
+    if (hasProjectConfig) {
+      next.add(`${rootLabel}/project/config`);
+    }
+    setExpandedFolders(next);
+  }, [rootLabel, libraryFiles]);
 
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders(prev => {

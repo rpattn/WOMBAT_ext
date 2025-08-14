@@ -277,30 +277,31 @@ export default function App() {
                 }
               }
             }}
-          />
-          <button
-            className="btn btn-outline-danger"
-            style={{ marginLeft: '0.5rem' }}
-            disabled={!selectedSavedLibrary}
-            onClick={() => {
-              if (!selectedSavedLibrary) return;
-              const confirmDel = window.confirm(`Delete saved library: ${selectedSavedLibrary}? This cannot be undone.`);
-              if (!confirmDel) return;
-              if (!sendWebSocketMessage) {
-                toast.warning('WebSocket not ready to delete saved library');
-                return;
-              }
-              const msg = JSON.stringify({ event: 'delete_saved_library', data: { name: selectedSavedLibrary } });
-              const ok = sendWebSocketMessage(msg);
-              if (!ok) {
-                toast.error('Failed to request delete_saved_library');
-                return;
-              }
-              // Optimistically clear selection
-              setSelectedSavedLibrary('');
-              try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }
-            }}
-          >Delete</button>
+          >
+            {selectedSavedLibrary && (
+              <button
+                className="btn btn-outline-danger"
+                onClick={() => {
+                  if (!selectedSavedLibrary) return;
+                  const confirmDel = window.confirm(`Delete saved library: ${selectedSavedLibrary}? This cannot be undone.`);
+                  if (!confirmDel) return;
+                  if (!sendWebSocketMessage) {
+                    toast.warning('WebSocket not ready to delete saved library');
+                    return;
+                  }
+                  const msg = JSON.stringify({ event: 'delete_saved_library', data: { name: selectedSavedLibrary } });
+                  const ok = sendWebSocketMessage(msg);
+                  if (!ok) {
+                    toast.error('Failed to request delete_saved_library');
+                    return;
+                  }
+                  // Optimistically clear selection
+                  setSelectedSavedLibrary('');
+                  try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }
+                }}
+              >Delete</button>
+            )}
+          </SavedLibrariesDropdown>
         </div>
       </div>
       <SimulationControls
