@@ -10,7 +10,7 @@ async def handle_message(websocket: WebSocket, data: str, client_id: str) -> boo
     text = (data or "").strip().lower()
     
     # Try JSON event handling first
-    if await handle_json_event(websocket, data):
+    if await handle_json_event(websocket, data, client_id):
         return True
     
     # Handle text commands

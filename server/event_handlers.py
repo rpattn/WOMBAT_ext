@@ -5,14 +5,7 @@ from fastapi import WebSocket
 from simulations import get_simulation
 
 
-async def handle_settings_update(websocket: WebSocket, data: dict) -> None:
-    """Handle settings_update event from client."""
-    settings_data = data.get('data', {})
-    print(f"Received settings update: {settings_data}")
-    await websocket.send_text("Settings received successfully")
-
-
-async def handle_json_event(websocket: WebSocket, data: str) -> bool:
+async def handle_json_event(websocket: WebSocket, data: str, client_id: str = None) -> bool:
     """Parse and handle JSON events. Returns True if handled, False otherwise."""
     try:
         json_data = json.loads(data)
@@ -21,7 +14,8 @@ async def handle_json_event(websocket: WebSocket, data: str) -> bool:
             
             # Event routing
             if event_type == "settings_update":
-                await handle_settings_update(websocket, json_data)
+                from library_manager import handle_settings_update
+                await handle_settings_update(websocket, json_data, client_id)
                 return True
             else:
                 print(f"Unknown event type: {event_type}")
@@ -38,11 +32,24 @@ async def handle_json_event(websocket: WebSocket, data: str) -> bool:
 async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None:
     """Handle get_config command."""
     from client_manager import client_manager
+    from library_manager import get_client_library_file
+    import json
     
     if client_id and client_id in client_manager.client_projects:
-        # Get client-specific project directory
+        # Get client-specific configuration from their project
         project_dir = client_manager.get_client_project_dir(client_id)
-        config = get_simulation(library=project_dir)
+        print(f"Getting config for client {client_id[:8]} from: {project_dir}")
+        
+        # Read the client's configuration file directly
+        config_data = get_client_library_file(client_id, "project/config/base_2yr.yaml")
+        
+        if config_data:
+            # Convert to JSON string for sending
+            config = json.dumps(config_data, indent=2)
+        else:
+            # Fallback to simulation API if file not found
+            print("Config file not found, using simulation API")
+            config = get_simulation(library=project_dir)
     else:
         # Fallback to default configuration
         config = get_simulation()
