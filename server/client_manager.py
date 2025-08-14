@@ -110,7 +110,7 @@ class ClientManager:
     def _cleanup_client_project(self, client_id: str) -> None:
         """Clean up the project directory for a client."""
         if client_id in self.client_projects:
-            project_path = Path(self.client_projects[client_id])
+            project_path = Path(self.client_projects[client_id]).parent
             if project_path.exists():
                 try:
                     shutil.rmtree(project_path)
