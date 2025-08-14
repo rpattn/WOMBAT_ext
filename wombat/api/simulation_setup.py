@@ -6,7 +6,7 @@ import uuid
 
 from wombat.core.library import create_library_structure, load_yaml
 
-def create_temp_library(base_dir: Path) -> Path:
+def create_temp_library(base_dir: Path, copy_from_dir: Path | str = Path("library/code_comparison/dinwoodie")) -> Path:
     """Create a temporary library structure and copy necessary files from DINWOODIE."""
     # Create temp directory
     temp_dir = base_dir / Path(f"sim_{uuid.uuid4().hex[:8]}")
@@ -16,7 +16,8 @@ def create_temp_library(base_dir: Path) -> Path:
     create_library_structure(temp_dir, create_init=True)
 
     # Copy files from DINWOODIE library
-    source_lib = Path("library/code_comparison/dinwoodie")
+    source_lib = Path(copy_from_dir)
+    #print("Source library: ", source_lib)
     
     # Copy weather data
     shutil.copytree(source_lib / "weather", temp_dir / "weather", dirs_exist_ok=True)
