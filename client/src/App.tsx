@@ -3,6 +3,10 @@ import './App.css';
 import JsonEditor, { type JsonObject } from './components/JsonEditor';
 import WebSocketClient from './components/WebSocketClient';
 import FileSelector from './components/FileSelector';
+import SimulationControls from './components/SimulationControls';
+import SelectedFileInfo from './components/SelectedFileInfo';
+import CsvPreview from './components/CsvPreview';
+import { createWebSocketMessageHandler } from './utils/websocketHandlers';
 
 
 export const example_library_structure = {
@@ -125,77 +129,12 @@ export default function App() {
     setSelectedFile(filePath);
   };
 
-  const handleWebSocketMessage = (message: string) => {
-    try {
-      // Try to parse the message as JSON
-      const parsedData = JSON.parse(message);
-
-      // Check if the parsed data has the expected structure for config
-      if (parsedData && typeof parsedData === 'object' &&
-        'name' in parsedData && 'library' in parsedData) {
-        console.log('Received config from WebSocket:', parsedData);
-        setConfigData(parsedData);
-      }
-      if (parsedData && typeof parsedData === 'object' &&
-        'event' in parsedData && parsedData.event === 'file_content') {
-        console.log('Received file content from WebSocket:', parsedData);
-        // If a download is pending, trigger download and skip UI updates
-        if (pendingDownloadRef.current) {
-          const filePath = pendingDownloadRef.current;
-          try {
-            const isCsv = filePath.toLowerCase().endsWith('.csv');
-            const isYaml = filePath.toLowerCase().endsWith('.yaml') || filePath.toLowerCase().endsWith('.yml');
-            const fileName = filePath.split('\\').pop() || 'download';
-
-            let text: string;
-            let mime: string;
-            if (typeof parsedData.data === 'string') {
-              text = parsedData.data;
-              if (isCsv) {
-                mime = 'text/csv;charset=utf-8';
-              } else if (isYaml) {
-                mime = 'application/x-yaml;charset=utf-8';
-              } else {
-                mime = 'text/plain;charset=utf-8';
-              }
-            } else {
-              // Received structured data (e.g., YAML parsed as object) -> provide JSON download
-              text = JSON.stringify(parsedData.data, null, 2);
-              mime = 'application/json;charset=utf-8';
-            }
-
-            const blob = new Blob([text], { type: mime });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-          } finally {
-            pendingDownloadRef.current = null;
-          }
-          return;
-        }
-
-        // Normal UI update path
-        if (typeof parsedData.data === 'string') {
-          setCsvPreview(parsedData.data.slice(0, 800));
-        } else {
-          setConfigData(parsedData.data);
-        }
-      }
-      if (parsedData && typeof parsedData === 'object' &&
-        'event' in parsedData && parsedData.event === 'library_files') {
-        console.log('Received library files from WebSocket:', parsedData.files);
-        setLibraryFiles(parsedData.files);
-      }
-    } catch (error) {
-      // If parsing fails, it's not a JSON config message - ignore it
-      console.log('Non-JSON message received:', message);
-    }
-  };
+  const handleWebSocketMessage = createWebSocketMessageHandler({
+    setConfigData,
+    setCsvPreview,
+    setLibraryFiles,
+    pendingDownloadRef,
+  });
 
   const handleSendReady = (sendFunction: (message: string) => boolean) => {
     setSendWebSocketMessage(() => sendFunction);
@@ -256,23 +195,12 @@ export default function App() {
   return (<>
     <WebSocketClient onMessage={handleWebSocketMessage} onSendReady={handleSendReady} />
     <div className="app-container">
-      <div className="section">
-        <h3 className="section-title">Simulation Controls</h3>
-        <div className="controls">
-          <button onClick={handleRunSimulation} className="btn-app btn-primary">
-            🚀 Run Simulation
-          </button>
-          <button onClick={handleGetConfig} className="btn-app btn-secondary">
-            📋 Get Config
-          </button>
-          <button onClick={handleClearTemp} className="btn-app btn-danger">
-            🗑️ Clear Temp
-          </button>
-          <button onClick={handleGetLibraryFiles} className="btn-app btn-danger">
-            📋 Get Library Files
-          </button>
-        </div>
-      </div>
+      <SimulationControls
+        onRun={handleRunSimulation}
+        onGetConfig={handleGetConfig}
+        onClearTemp={handleClearTemp}
+        onGetLibraryFiles={handleGetLibraryFiles}
+      />
       <div className="card">
         <div className="row">
           <div className="col">
@@ -285,15 +213,7 @@ export default function App() {
               onReplaceFile={handleReplaceFile}
               onDownloadFile={handleDownloadFile}
             />
-            {selectedFile ? (
-              <div>
-                <p><strong>Selected File:</strong> {selectedFile}</p>
-                <p><strong>Type:</strong> {selectedFile.endsWith('.yaml') ? 'YAML' : 'CSV'}</p>
-                <p><strong>Path:</strong> {selectedFile}</p>
-              </div>
-            ) : (
-              <p>No file selected</p>
-            )}
+            <SelectedFileInfo selectedFile={selectedFile} />
           </div>
           <div className="col">
             <div className="editor-wrap">
@@ -309,16 +229,7 @@ export default function App() {
           </div>
         </div>
       </div>
-      {csvPreview !== null && selectedFile.endsWith('.csv') ? (
-        <div>
-          <h3 className="csv-preview-title">CSV Preview (first 800 chars)</h3>
-          <div className="csv-preview" aria-label="CSV preview">
-            {csvPreview}
-            {csvPreview.length >= 100 && '…'}
-          </div>
-          <p className="csv-note">Full CSV editing is not supported yet.</p>
-        </div>
-      ) : <></>}
+      <CsvPreview preview={csvPreview} filePath={selectedFile} />
     </div>
   </>)
 }
