@@ -80,16 +80,62 @@ export default function App() {
     }
   };
 
+  const handleRunSimulation = () => {
+    if (sendWebSocketMessage) {
+      const success = sendWebSocketMessage('run');
+      if (success) {
+        console.log('Started simulation run');
+      }
+    }
+  };
+
+  const buttonStyle = {
+    padding: '10px 20px',
+    marginRight: '12px',
+    marginBottom: '8px',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  };
+
+  const primaryButtonStyle = {
+    ...buttonStyle,
+    backgroundColor: '#007bff',
+    color: 'white'
+  };
+
+  const secondaryButtonStyle = {
+    ...buttonStyle,
+    backgroundColor: '#6c757d',
+    color: 'white'
+  };
+
+  const dangerButtonStyle = {
+    ...buttonStyle,
+    backgroundColor: '#dc3545',
+    color: 'white'
+  };
+
   return (<>
     <WebSocketClient onMessage={handleWebSocketMessage} onSendReady={handleSendReady} />
     <div style={{ padding: '20px' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <button onClick={handleGetConfig} style={{ marginRight: '10px', padding: '8px 16px' }}>
-          Get Config
-        </button>
-        <button onClick={handleClearTemp} style={{ marginRight: '10px', padding: '8px 16px' }}>
-          Clear Temp
-        </button>
+      <div style={{ marginBottom: '24px' }}>
+        <h3 style={{ marginBottom: '16px', color: '#333' }}>Simulation Controls</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+          <button onClick={handleRunSimulation} style={primaryButtonStyle}>
+            🚀 Run Simulation
+          </button>
+          <button onClick={handleGetConfig} style={secondaryButtonStyle}>
+            📋 Get Config
+          </button>
+          <button onClick={handleClearTemp} style={dangerButtonStyle}>
+            🗑️ Clear Temp
+          </button>
+        </div>
       </div>
       <Settings data={configData} onChange={handleSettingsChange} onSendSettings={handleSendSettings}/>
     </div>

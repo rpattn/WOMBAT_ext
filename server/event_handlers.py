@@ -50,9 +50,34 @@ async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None
             # Convert to JSON string for sending
             config = json.dumps(config_data, indent=2)
         else:
-            # Fallback to simulation API if file not found
-            print("Config file not found, using simulation API")
-            config = get_simulation(library=project_dir)
+            # Config file not found, regenerate full library for this client
+            logger.warning(f"Config file not found for client {client_id[:8]}, regenerating full library")
+            
+            try:
+                # Regenerate the full client project with library and config
+                from client_manager import client_manager
+                new_project_dir = client_manager._create_client_project(client_id)
+                
+                # Update the client's project directory reference
+                client_manager.client_projects[client_id] = new_project_dir
+                
+                logger.info(f"Regenerated full library for client {client_id[:8]}: {new_project_dir}")
+                
+                # Now try to get the config again from the newly created library
+                config_data = get_client_library_file(client_id, "project/config/base_2yr.yaml")
+                
+                if config_data:
+                    config = json.dumps(config_data, indent=2)
+                    logger.info(f"Successfully loaded config from regenerated library for client {client_id[:8]}")
+                else:
+                    # Final fallback to simulation API
+                    logger.error(f"Failed to load config even after library regeneration for client {client_id[:8]}")
+                    config = get_simulation()
+                    
+            except Exception as e:
+                logger.error(f"Failed to regenerate library for client {client_id[:8]}: {e}")
+                # Fallback to simulation API
+                config = get_simulation()
     else:
         # Fallback to default configuration
         config = get_simulation()
@@ -67,9 +92,9 @@ async def handle_clear_temp(websocket: WebSocket) -> None:
     from pathlib import Path
     
     temp_dir = Path("server/temp")
-    print("Found ", os.listdir(temp_dir))
+    logger.info(f"Found temp directories: {os.listdir(temp_dir)}")
     for folder_name in os.listdir(temp_dir):
         path = os.path.join(temp_dir, folder_name)
         if os.path.isdir(path):
             shutil.rmtree(path)
-            print("Cleaned ", path)
+            logger.info(f"Cleaned temp directory: {path}")
