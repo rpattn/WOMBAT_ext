@@ -186,3 +186,93 @@
   color: #0b5ed7;
   border-color: #0b5ed7;
 }
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .file-selector {
+    border: 1px solid #3a3a3a;
+    background-color: #1e1f22;
+    color: #e5e7eb;
+  }
+
+  .file-selector-header {
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  .file-selector-header h3 {
+    color: #e5e7eb;
+  }
+
+  .file-count {
+    color: #9ca3af;
+  }
+
+  .tree-folder-header:hover {
+    background-color: #2a2d31;
+  }
+
+  .folder-name {
+    color: #e5e7eb;
+  }
+
+  .tree-file:hover {
+    background-color: #25303a;
+  }
+
+  .tree-file.selected {
+    background-color: #0b2e4a;
+    border: 1px solid #3b82f6; /* blue-500 */
+  }
+
+  .file-name {
+    color: #cbd5e1; /* slate-300 */
+  }
+
+  .tree-file.selected .file-name {
+    color: #93c5fd; /* blue-300 */
+  }
+
+  .selected-file-info {
+    background-color: #111827; /* gray-900 */
+    border-left-color: #3b82f6; /* blue-500 */
+    color: #e5e7eb;
+  }
+
+  /* Scrollbar styling - dark */
+  .file-selector::-webkit-scrollbar-track {
+    background: #121212;
+  }
+
+  .file-selector::-webkit-scrollbar-thumb {
+    background: #303030;
+  }
+
+  .file-selector::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+  }
+
+  /* Buttons - dark */
+  .btn { color: inherit; }
+
+  .btn-outline-violet {
+    color: #d8b4fe; /* violet-300 */
+    background: rgba(124, 58, 237, 0.15);
+    border-color: #8b5cf6; /* violet-500 */
+  }
+
+  .btn-outline-emerald {
+    color: #a7f3d0; /* emerald-200 */
+    background: rgba(5, 150, 105, 0.15);
+    border-color: #10b981; /* emerald-500 */
+  }
+
+  .btn-outline-danger {
+    color: #fca5a5; /* red-300 */
+    border-color: #ef4444; /* red-500 */
+  }
+
+  .btn-outline-primary {
+    color: #93c5fd; /* blue-300 */
+    border-color: #3b82f6; /* blue-500 */
+  }
+}

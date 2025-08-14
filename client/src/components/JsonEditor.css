@@ -122,3 +122,66 @@
   background: #198754;
   color: #ffffff;
 }
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .json-editor {
+    color: #e5e7eb; /* slate-200 */
+  }
+
+  .json-editor-container {
+    background-color: #1f2937; /* gray-800 */
+    color: #e5e7eb;
+    border: 1px solid #374151; /* gray-700 */
+  }
+
+  .json-editor input[type="text"],
+  .json-editor input[type="number"],
+  .json-editor input[type="search"],
+  .json-editor input[type="email"],
+  .json-editor input[type="url"],
+  .json-editor input[type="password"] {
+    background-color: #111827; /* gray-900 */
+    color: #e5e7eb;
+    border: 1px solid #374151; /* gray-700 */
+  }
+
+  .json-editor input[type="text"]:focus,
+  .json-editor input[type="number"]:focus {
+    outline: 2px solid #60a5fa; /* blue-400 */
+    outline-offset: 1px;
+  }
+
+  .json-editor summary {
+    color: #e5e7eb; /* slate-200 */
+  }
+
+  /* Labels */
+  .je-label {
+    color: #cbd5e1; /* slate-300 */
+  }
+
+  /* Sections */
+  .je-section {
+    border-top: 1px solid #374151; /* gray-700 */
+  }
+
+  /* Buttons */
+  .json-editor .btn-primary {
+    border: 1px solid #3b82f6; /* blue-500 */
+    background: #2563eb; /* blue-600 */
+    color: #ffffff;
+  }
+
+  .json-editor .btn-danger-soft {
+    border: 1px solid #ef4444; /* red-500 */
+    background: #b91c1c; /* red-700 */
+    color: #ffffff;
+  }
+
+  .json-editor .btn-success-soft {
+    border: 1px solid #10b981; /* emerald-500 */
+    background: #047857; /* emerald-700 */
+    color: #ffffff;
+  }
+}
