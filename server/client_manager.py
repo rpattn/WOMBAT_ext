@@ -2,9 +2,12 @@
 
 import uuid
 import shutil
+import logging
 from pathlib import Path
 from typing import Dict
 from fastapi import WebSocket
+
+logger = logging.getLogger("uvicorn.error")
 
 
 class ClientManager:
@@ -29,8 +32,8 @@ class ClientManager:
         project_dir = self._create_client_project(client_id)
         self.client_projects[client_id] = project_dir
         
-        print(f"Client {client_id} connected. Total clients: {len(self.clients)}")
-        print(f"Created project directory: {project_dir}")
+        logger.info(f"Client {client_id} connected. Total clients: {len(self.clients)}")
+        logger.info(f"Created project directory: {project_dir}")
     
     def remove_client(self, client_id: str) -> None:
         """Remove a client and clean up any running simulations."""
@@ -50,7 +53,7 @@ class ClientManager:
                 self._cleanup_client_project(client_id)
                 del self.client_projects[client_id]
             
-            print(f"Client {client_id} disconnected. Total clients: {len(self.clients)}")
+            logger.info(f"Client {client_id} disconnected. Total clients: {len(self.clients)}")
     
     def get_client_simulation_state(self, client_id: str) -> Dict:
         """Get the simulation state for a specific client."""
@@ -84,10 +87,10 @@ class ClientManager:
             temp_library = create_temp_library(client_dir)
             temp_config = create_temp_config(temp_library, "base_2yr.yaml")
             
-            print(f"Created temp library for client {client_id[:8]}: {temp_library}")
+            logger.info(f"Created temp library for client {client_id[:8]}: {temp_library}")
             return str(temp_library)
         except Exception as e:
-            print(f"Error creating client project for {client_id[:8]}: {e}")
+            logger.error(f"Error creating client project for {client_id[:8]}: {e}")
             # Fallback to just the client directory
             return str(client_dir)
     
@@ -98,9 +101,9 @@ class ClientManager:
             if project_path.exists():
                 try:
                     shutil.rmtree(project_path)
-                    print(f"Cleaned up project directory for client {client_id[:8]}")
+                    logger.info(f"Cleaned up project directory for client {client_id[:8]}")
                 except Exception as e:
-                    print(f"Error cleaning up project for client {client_id[:8]}: {e}")
+                    logger.error(f"Error cleaning up project for client {client_id[:8]}: {e}")
 
 
 # Global client manager instance

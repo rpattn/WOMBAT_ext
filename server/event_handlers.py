@@ -1,8 +1,11 @@
 """WebSocket event handlers for WOMBAT server."""
 
 import json
+import logging
 from fastapi import WebSocket
 from simulations import get_simulation
+
+logger = logging.getLogger("uvicorn.error")
 
 
 async def handle_json_event(websocket: WebSocket, data: str, client_id: str = None) -> bool:
@@ -18,7 +21,7 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
                 await handle_settings_update(websocket, json_data, client_id)
                 return True
             else:
-                print(f"Unknown event type: {event_type}")
+                logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
                 return True
                 
@@ -38,7 +41,7 @@ async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None
     if client_id and client_id in client_manager.client_projects:
         # Get client-specific configuration from their project
         project_dir = client_manager.get_client_project_dir(client_id)
-        print(f"Getting config for client {client_id[:8]} from: {project_dir}")
+        logger.info(f"Getting config for client {client_id[:8]} from: {project_dir}")
         
         # Read the client's configuration file directly
         config_data = get_client_library_file(client_id, "project/config/base_2yr.yaml")

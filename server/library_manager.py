@@ -1,8 +1,11 @@
 """Library management for WOMBAT server - handles client-specific library modifications."""
 
 import yaml
+import logging
 from pathlib import Path
 from fastapi import WebSocket
+
+logger = logging.getLogger("uvicorn.error")
 
 
 async def handle_settings_update(websocket: WebSocket, data: dict, client_id: str = None) -> None:
@@ -10,7 +13,7 @@ async def handle_settings_update(websocket: WebSocket, data: dict, client_id: st
     from client_manager import client_manager
     
     settings_data = data.get('data', {})
-    print(f"Received settings update from client {client_id[:8] if client_id else 'unknown'}: {settings_data}")
+    logger.info(f"Received settings update from client {client_id[:8] if client_id else 'unknown'}")
     
     if not client_id or client_id not in client_manager.client_projects:
         await websocket.send_text("Error: Client project not found")
@@ -35,7 +38,7 @@ async def handle_settings_update(websocket: WebSocket, data: dict, client_id: st
                 if config[key] == value:
                     continue
                 config[key] = value
-                print(f"Updated {key}: {value}")
+                logger.info(f"Updated {key}: {value}")
         
         # Save updated config back to client's project
         with open(config_file, 'w') as f:
@@ -44,7 +47,7 @@ async def handle_settings_update(websocket: WebSocket, data: dict, client_id: st
         await websocket.send_text(f"Settings updated successfully for client {client_id[:8]}")
         
     except Exception as e:
-        print(f"Error updating settings for client {client_id[:8] if client_id else 'unknown'}: {e}")
+        logger.error(f"Error updating settings for client {client_id[:8] if client_id else 'unknown'}: {e}")
         await websocket.send_text(f"Error updating settings: {str(e)}")
 
 
@@ -66,11 +69,11 @@ async def update_client_library_file(client_id: str, file_path: str, content: di
         with open(target_file, 'w') as f:
             yaml.safe_dump(content, f, default_flow_style=False)
         
-        print(f"Updated library file for client {client_id[:8]}: {file_path}")
+        logger.info(f"Updated library file for client {client_id[:8]}: {file_path}")
         return True
         
     except Exception as e:
-        print(f"Error updating library file for client {client_id[:8]}: {e}")
+        logger.error(f"Error updating library file for client {client_id[:8]}: {e}")
         return False
 
 
@@ -92,7 +95,7 @@ def get_client_library_file(client_id: str, file_path: str) -> dict:
             return yaml.safe_load(f) or {}
             
     except Exception as e:
-        print(f"Error reading library file for client {client_id[:8]}: {e}")
+        logger.error(f"Error reading library file for client {client_id[:8]}: {e}")
         return {}
 
 
@@ -124,5 +127,5 @@ def list_client_library_files(client_id: str, directory: str = "") -> list:
         return sorted(files)
         
     except Exception as e:
-        print(f"Error listing library files for client {client_id[:8]}: {e}")
+        logger.error(f"Error listing library files for client {client_id[:8]}: {e}")
         return []
