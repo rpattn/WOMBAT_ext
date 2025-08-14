@@ -117,6 +117,40 @@ def save_client_library(client_id: str, project_name: str) -> Tuple[bool, str]:
         return False, str(e)
 
 
+def load_saved_library(client_id: str, saved_name: str) -> Tuple[bool, str]:
+    """Load a saved library into the client's temp project directory.
+
+    This will REPLACE the client's current temp project directory with the
+    contents of server/client_library/<saved_name>.
+
+    Returns (ok, message_or_dest_path)
+    """
+    from client_manager import client_manager
+    try:
+        if not client_id or client_id not in client_manager.client_projects:
+            return False, "Client not found"
+
+        dest_dir = Path(client_manager.get_client_project_dir(client_id)).resolve()
+        base_saved = Path(client_manager.get_save_library_dir()).resolve()
+        src_dir = (base_saved / saved_name).resolve()
+
+        # Ensure src_dir is inside base_saved to avoid path traversal
+        if not str(src_dir).startswith(str(base_saved)):
+            return False, "Invalid saved library path"
+        if not src_dir.exists() or not src_dir.is_dir():
+            return False, "Saved library does not exist"
+
+        # Remove current dest_dir and replace with copy of src_dir
+        if dest_dir.exists():
+            shutil.rmtree(dest_dir, ignore_errors=False)
+        shutil.copytree(src_dir, dest_dir, dirs_exist_ok=False)
+        logger.info(f"Loaded saved library '{saved_name}' into client {client_id[:8]} project at {dest_dir}")
+        return True, str(dest_dir)
+    except Exception as e:
+        logger.error(f"Error loading saved library for client {client_id[:8] if client_id else 'unknown'}: {e}")
+        return False, str(e)
+
+
 def delete_client_library_file(client_id: str, file_path: str) -> bool:
     """Delete a file from a client's library.
 

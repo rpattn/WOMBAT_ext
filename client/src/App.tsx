@@ -33,6 +33,31 @@ export default function App() {
   const pendingDownloadRef = useRef<string | null>(null);
   const toast = useToast();
 
+  // Initialize selected saved library from localStorage on mount
+  // and keep it consistent with the list as it arrives/updates.
+  const LS_KEY_LAST_SAVED = 'lastSavedLibraryName';
+  
+  // Load from localStorage on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(LS_KEY_LAST_SAVED) || '';
+      if (stored) {
+        setSelectedSavedLibrary(stored);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  // When savedLibraries list updates, ensure the selected value exists.
+  React.useEffect(() => {
+    if (selectedSavedLibrary && !savedLibraries.includes(selectedSavedLibrary)) {
+      // Previously selected no longer exists; clear it
+      setSelectedSavedLibrary('');
+    }
+  }, [savedLibraries]);
+
   const handleFileSelect = (filePath: string) => {
     console.log('Selected file:', filePath);
     setSelectedFile(filePath);
@@ -199,7 +224,7 @@ export default function App() {
 
   const handleSaveLibrary = () => {
     // Ask user for a project name
-    const defaultName = `project-${new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16)}`;
+    const defaultName = selectedSavedLibrary || `project-${new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16)}`;
     const name = window.prompt('Enter a project name to save the current library:', defaultName)?.trim();
     if (!name) {
       console.log('Save library cancelled or empty name');
@@ -244,8 +269,20 @@ export default function App() {
             value={selectedSavedLibrary}
             onChange={(val: string) => {
               setSelectedSavedLibrary(val);
+              try {
+                window.localStorage.setItem(LS_KEY_LAST_SAVED, val || '');
+              } catch { /* ignore */ }
               if (val) {
-                toast.info(`Selected saved library: ${val}`);
+                toast.info(`Loading saved library: ${val}`);
+                if (sendWebSocketMessage) {
+                  const msg = JSON.stringify({ event: 'load_saved_library', data: { name: val } });
+                  const ok = sendWebSocketMessage(msg);
+                  if (!ok) {
+                    toast.error('Failed to request load_saved_library');
+                  }
+                } else {
+                  toast.warning('WebSocket not ready to load saved library');
+                }
               }
             }}
           />

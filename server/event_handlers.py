@@ -38,6 +38,9 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
             elif event_type == "list_saved_libraries":
                 await handle_list_saved_libraries(websocket)
                 return True
+            elif event_type == "load_saved_library":
+                await handle_load_saved_library(websocket, json_data, client_id)
+                return True
             else:
                 logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
@@ -357,6 +360,42 @@ async def handle_list_saved_libraries(websocket: WebSocket) -> None:
             'event': 'toast',
             'level': 'error',
             'message': f'Failed to list saved libraries: {e}'
+        }))
+
+
+async def handle_load_saved_library(websocket: WebSocket, data: dict, client_id: str = None) -> None:
+    """Load a saved library for the given client and refresh library files."""
+    import json
+    from library_manager import load_saved_library, scan_client_library_files
+    from client_manager import client_manager
+    try:
+        saved_name = (data.get('data') or {}).get('name')
+        if not saved_name:
+            await websocket.send_text(json.dumps({
+                'event': 'toast', 'level': 'error', 'message': 'Missing saved library name'
+            }))
+            return
+        if not client_id or client_id not in client_manager.client_projects:
+            await websocket.send_text(json.dumps({
+                'event': 'toast', 'level': 'error', 'message': 'Client not found'
+            }))
+            return
+
+        ok, msg = load_saved_library(client_id, saved_name)
+        if ok:
+            await websocket.send_text(json.dumps({
+                'event': 'toast', 'level': 'success', 'message': f"Loaded saved library '{saved_name}'"
+            }))
+            # Refresh library files
+            files = scan_client_library_files(client_id)
+            await websocket.send_text(json.dumps({'event': 'library_files', 'files': files}))
+        else:
+            await websocket.send_text(json.dumps({
+                'event': 'toast', 'level': 'error', 'message': f"Failed to load '{saved_name}': {msg}"
+            }))
+    except Exception as e:
+        await websocket.send_text(json.dumps({
+            'event': 'toast', 'level': 'error', 'message': f'Error loading saved library: {e}'
         }))
 
 async def handle_save_library(websocket: WebSocket, data: dict, client_id: str = None) -> None:
