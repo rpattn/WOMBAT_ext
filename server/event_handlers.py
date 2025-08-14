@@ -150,7 +150,10 @@ async def handle_get_library_files(websocket: WebSocket, client_id: str = None) 
     
     if client_id and client_id in client_manager.client_projects:
         files = scan_client_library_files(client_id)
-        json_files = json.dumps(files, indent=2)
-        await websocket.send_text(json_files)
+        message = {
+            'event': 'library_files',
+            'files': files
+        }
+        await websocket.send_text(json.dumps(message))
     else:
         await websocket.send_text("Client not found")

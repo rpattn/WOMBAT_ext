@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './App.css';
-import JsonEditor from './components/JsonEditor';
+import JsonEditor, { type JsonObject } from './components/JsonEditor';
 import WebSocketClient from './components/WebSocketClient';
 import FileSelector from './components/FileSelector';
 
@@ -28,42 +28,20 @@ const exampleData = {
 
 export const example_library_structure = {
   "yaml_files": [
-    "cables\\array.yaml",
-    "cables\\export.yaml",
     "project\\config\\base_2yr.yaml",
     "project\\port\\base_port.yaml",
-    "substations\\offshore_substation.yaml",
-    "turbines\\vestas_v90.yaml",
-    "vessels\\ctv1.yaml",
-    "vessels\\ctv2.yaml",
-    "vessels\\ctv3.yaml",
-    "vessels\\ctv4.yaml",
-    "vessels\\ctv5.yaml",
-    "vessels\\fsv_downtime.yaml",
-    "vessels\\fsv_requests.yaml",
-    "vessels\\fsv_scheduled.yaml",
-    "vessels\\hlv_1_scheduled.yaml",
-    "vessels\\hlv_2_scheduled.yaml",
-    "vessels\\hlv_3_scheduled.yaml",
-    "vessels\\hlv_downtime.yaml",
-    "vessels\\hlv_requests.yaml",
-    "vessels\\tugboat1.yaml",
-    "vessels\\tugboat2.yaml",
-    "vessels\\tugboat3.yaml"
   ],
   "csv_files": [
     "project\\plant\\layout.csv",
-    "turbines\\vestas_v90_power_curve.csv",
-    "weather\\alpha_ventus_weather_2002_2014.csv",
-    "weather\\alpha_ventus_weather_2002_2014_zeros.csv"
   ],
-  "total_files": 26
+  "total_files": 2
 } as const;
 
 export default function App() {
-  const [configData, setConfigData] = useState<typeof exampleData>(exampleData);
+  const [configData, setConfigData] = useState<JsonObject>({});
   const [sendWebSocketMessage, setSendWebSocketMessage] = useState<((message: string) => boolean) | null>(null);
   const [selectedFile, setSelectedFile] = useState<string>('');
+  const [libraryFiles, setLibraryFiles] = useState<{ yaml_files: string[]; csv_files: string[]; total_files?: number } | null>(null);
 
   const handleFileSelect = (filePath: string) => {
     console.log('Selected file:', filePath);
@@ -101,6 +79,11 @@ export default function App() {
           'event' in parsedData && parsedData.event === 'file_content') {
         console.log('Received file content from WebSocket:', parsedData);
         setConfigData(parsedData.data);
+      }
+      if (parsedData && typeof parsedData === 'object' &&
+          'event' in parsedData && parsedData.event === 'library_files') {
+        console.log('Received library files from WebSocket:', parsedData.files);
+        setLibraryFiles(parsedData.files);
       }
     } catch (error) {
       // If parsing fails, it's not a JSON config message - ignore it
@@ -148,7 +131,7 @@ export default function App() {
     }
   };
 
-  const handleSave = (data: typeof exampleData) => {
+  const handleSave = (data: JsonObject) => {
     if (sendWebSocketMessage) {
       const message = JSON.stringify({ event: 'settings_update', data });
       const success = sendWebSocketMessage(message);
@@ -219,6 +202,7 @@ export default function App() {
             <FileSelector 
               onFileSelect={handleFileSelect} 
               selectedFile={selectedFile}
+              libraryFiles={libraryFiles ?? undefined}
             />
             {selectedFile ? (
               <div>
@@ -231,15 +215,14 @@ export default function App() {
             )}
           </div>
           <div style={{ flex: 1 }}>
-            <h3>File Details</h3>
             <div style={{ padding: '16px', maxWidth: '800px', margin: '0 auto' }}>
               <JsonEditor 
               data={configData} 
               onChange={(newData) => setConfigData(prev => ({
                 ...prev,
-                ...newData as typeof exampleData
+                ...newData as JsonObject
               }))}
-              onSave={(newData) => handleSave(newData as typeof exampleData)} 
+              onSave={(newData) => handleSave(newData as JsonObject)} 
             />
             </div>
           </div>

@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import './FileSelector.css';
-import { example_library_structure } from '../App';
 
 interface FileSelectorProps {
   onFileSelect: (fileName: string) => void;
   selectedFile?: string;
+  libraryFiles?: { yaml_files: string[]; csv_files: string[]; total_files?: number };
 }
 
 interface TreeNode {
@@ -15,12 +15,14 @@ interface TreeNode {
   isExpanded?: boolean;
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root']));
 
   const buildTreeStructure = useMemo(() => {
     const root: TreeNode = { name: 'Library Files', type: 'folder', children: [] };
-    const allFiles = [...example_library_structure.yaml_files, ...example_library_structure.csv_files];
+    const yaml = libraryFiles?.yaml_files ?? [];
+    const csv = libraryFiles?.csv_files ?? [];
+    const allFiles = [...yaml, ...csv];
 
     allFiles.forEach(filePath => {
       const parts = filePath.split('\\');
@@ -72,7 +74,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile 
 
     sortChildren(root);
     return root;
-  }, []);
+  }, [libraryFiles]);
 
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders(prev => {
@@ -138,7 +140,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile 
       <div className="file-selector-header">
         <h3>Select a Configuration File</h3>
         <p className="file-count">
-          {example_library_structure.yaml_files.length} YAML files, {example_library_structure.csv_files.length} CSV files
+          {(libraryFiles?.yaml_files?.length ?? 0)} YAML files, {(libraryFiles?.csv_files?.length ?? 0)} CSV files
         </p>
       </div>
       <div className="file-tree">

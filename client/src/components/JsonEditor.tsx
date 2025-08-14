@@ -3,7 +3,7 @@ import './JsonEditor.css';
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonArray = JsonValue[];
-type JsonObject = { [key: string]: JsonValue };
+export type JsonObject = { [key: string]: JsonValue };
 type JsonValue = JsonPrimitive | JsonArray | JsonObject;
 
 // Lightweight JSON editor without external UI libraries
@@ -211,11 +211,14 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
 
   return (
     <div className="json-editor" style={editorStyles}>
-      {Object.entries(formData).map(([key, value]) => (
+      {formData && Object.entries(formData).map(([key, value]) => (
         <div key={key} style={{ marginBottom: 8 }}>
           {renderField([key], value)}
         </div>
       ))}
+      {(Object.entries(formData).length === 0) &&
+        <p>No data to display</p>
+      }
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
         <button
           type="button"

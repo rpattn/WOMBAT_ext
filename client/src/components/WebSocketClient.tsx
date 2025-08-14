@@ -38,9 +38,9 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
       socket.onopen = () => {
         setIsConnected(true)
         appendMessage(`[client] connected -> ${wsUrl}`)
-        // Automatically send "get_config" upon connection
-        //socket.send('get_config')
-        //appendMessage(`[client] get_config`)
+        // Automatically send "get_library_files" upon connection
+        socket.send('get_library_files')
+        appendMessage(`[client] get_library_files`)
         // Expose send function to parent component
         onSendReady?.(sendProgrammaticMessage)
       }
