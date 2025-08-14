@@ -35,9 +35,18 @@ async def handle_json_event(websocket: WebSocket, data: str) -> bool:
     return False
 
 
-async def handle_get_config(websocket: WebSocket) -> None:
+async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None:
     """Handle get_config command."""
-    config = get_simulation()
+    from client_manager import client_manager
+    
+    if client_id and client_id in client_manager.client_projects:
+        # Get client-specific project directory
+        project_dir = client_manager.get_client_project_dir(client_id)
+        config = get_simulation(library=project_dir)
+    else:
+        # Fallback to default configuration
+        config = get_simulation()
+    
     await websocket.send_text(config)
 
 

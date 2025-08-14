@@ -22,7 +22,7 @@ async def handle_message(websocket: WebSocket, data: str, client_id: str) -> boo
         return True
         
     elif text == "get_config":
-        await handle_get_config(websocket)
+        await handle_get_config(websocket, client_id)
         return True
     
     # Not handled

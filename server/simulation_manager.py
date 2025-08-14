@@ -39,7 +39,16 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
     def worker() -> None:
         """Run the simulation in a separate thread."""
         try:
-            result = run_wombat_simulation()
+            # Get client-specific project directory
+            from client_manager import client_manager
+            project_dir = client_manager.get_client_project_dir(client_id)
+            
+            if project_dir:
+                result = run_wombat_simulation(library=project_dir)
+            else:
+                # Fallback to default
+                result = run_wombat_simulation()
+            
             # Send results only to the client that initiated the simulation
             asyncio.run_coroutine_threadsafe(
                 websocket.send_text(f"simulation finished: {result}"),

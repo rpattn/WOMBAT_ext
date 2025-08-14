@@ -6,10 +6,10 @@ import uuid
 
 from wombat.core.library import create_library_structure, load_yaml
 
-def create_temp_library() -> Path:
+def create_temp_library(base_dir: Path) -> Path:
     """Create a temporary library structure and copy necessary files from DINWOODIE."""
     # Create temp directory
-    temp_dir = Path("server/temp") / f"sim_{uuid.uuid4().hex[:8]}"
+    temp_dir = base_dir / Path(f"sim_{uuid.uuid4().hex[:8]}")
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     # Create library structure
@@ -28,6 +28,29 @@ def create_temp_library() -> Path:
     for subdir in ["cables", "substations", "turbines", "vessels"]:
         if (source_lib / subdir).exists():
             shutil.copytree(source_lib / subdir, temp_dir / subdir, dirs_exist_ok=True)
+
+    return temp_dir
+
+
+def create_library(base_dir: Path, copy_from_dir: Path) -> Path:
+    """Create a library structure and copy necessary files from copy_from_dir."""
+    # Create temp directory
+    temp_dir = base_dir / Path(f"sim_{uuid.uuid4().hex[:8]}")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create library structure
+    create_library_structure(temp_dir, create_init=True)
+    
+    # Copy weather data
+    shutil.copytree(copy_from_dir / "weather", temp_dir / "weather", dirs_exist_ok=True)
+    
+    # Copy project files
+    shutil.copytree(copy_from_dir / "project", temp_dir / "project", dirs_exist_ok=True)
+    
+    # Copy other directories
+    for subdir in ["cables", "substations", "turbines", "vessels"]:
+        if (copy_from_dir / subdir).exists():
+            shutil.copytree(copy_from_dir / subdir, temp_dir / subdir, dirs_exist_ok=True)
 
     return temp_dir
 
