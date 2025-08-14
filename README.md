@@ -1,5 +1,6 @@
 # Extended WOMBAT (Windfarm Operations & Maintenance cost-Benefit Analysis Tool)
 Extended version of the NREL WOMBAT Project!
+- And experimenting with Vibe Coding (scary!!)
 
 ## Installation
 Reccommended installation vs. WOMBAT guide
