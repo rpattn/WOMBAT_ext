@@ -6,17 +6,18 @@ import uuid
 
 from wombat.core.library import create_library_structure, load_yaml
 
-def create_temp_library() -> Path:
+def create_temp_library(base_dir: Path, copy_from_dir: Path | str = Path("library/code_comparison/dinwoodie")) -> Path:
     """Create a temporary library structure and copy necessary files from DINWOODIE."""
     # Create temp directory
-    temp_dir = Path("server/temp") / f"sim_{uuid.uuid4().hex[:8]}"
+    temp_dir = base_dir / Path(f"sim_{uuid.uuid4().hex[:8]}")
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     # Create library structure
     create_library_structure(temp_dir, create_init=True)
 
     # Copy files from DINWOODIE library
-    source_lib = Path("library/code_comparison/dinwoodie")
+    source_lib = Path(copy_from_dir)
+    #print("Source library: ", source_lib)
     
     # Copy weather data
     shutil.copytree(source_lib / "weather", temp_dir / "weather", dirs_exist_ok=True)
@@ -32,7 +33,30 @@ def create_temp_library() -> Path:
     return temp_dir
 
 
-def create_temp_config(library_path: Path, config_name: str = "base_2yr.yaml") -> Path:
+def create_library(base_dir: Path, copy_from_dir: Path) -> Path:
+    """Create a library structure and copy necessary files from copy_from_dir."""
+    # Create temp directory
+    temp_dir = base_dir / Path(f"sim_{uuid.uuid4().hex[:8]}")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create library structure
+    create_library_structure(temp_dir, create_init=True)
+    
+    # Copy weather data
+    shutil.copytree(copy_from_dir / "weather", temp_dir / "weather", dirs_exist_ok=True)
+    
+    # Copy project files
+    shutil.copytree(copy_from_dir / "project", temp_dir / "project", dirs_exist_ok=True)
+    
+    # Copy other directories
+    for subdir in ["cables", "substations", "turbines", "vessels"]:
+        if (copy_from_dir / subdir).exists():
+            shutil.copytree(copy_from_dir / subdir, temp_dir / subdir, dirs_exist_ok=True)
+
+    return temp_dir
+
+
+def create_temp_config(library_path: Path, config_name: str = "base.yaml") -> Path:
     """Create a temporary config file with the correct library path."""
     # Load the original config
     original_config = load_yaml(Path("library/code_comparison/dinwoodie/project/config"), config_name)

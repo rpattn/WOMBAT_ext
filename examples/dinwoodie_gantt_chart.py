@@ -329,7 +329,7 @@ def main():
     
     # Run the simulation
     try:
-        sim = run_dinwoodie_simulation("base", sim_years=1) #"base" "base_2yr"
+        sim = run_dinwoodie_simulation("base", sim_years=1) #"base" "base"
     except Exception as e:
         print(f"Error running simulation: {e}")
         raise Exception

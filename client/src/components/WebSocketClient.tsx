@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import './WebSocketClient.css'
 
 type WebSocketClientProps = {
   initialUrl?: string
+  onMessage?: (message: string) => void
+  onSendReady?: (sendFunction: (message: string) => boolean) => void
 }
 
 const fallbackUrl = (import.meta as any).env?.VITE_WS_URL ?? 'ws://127.0.0.1:8000/ws'
 
-export default function WebSocketClient({ initialUrl }: WebSocketClientProps) {
+export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: WebSocketClientProps) {
   const [wsUrl, setWsUrl] = useState<string>(initialUrl ?? fallbackUrl)
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const [messages, setMessages] = useState<string[]>([])
@@ -15,6 +18,15 @@ export default function WebSocketClient({ initialUrl }: WebSocketClientProps) {
 
   const appendMessage = (msg: string) =>
     setMessages((prev) => [...prev, msg])
+
+  const isJsonPayload = (str: string): boolean => {
+    try {
+      const parsed = JSON.parse(str)
+      return typeof parsed === 'object' && parsed !== null
+    } catch {
+      return false
+    }
+  }
 
   const connect = () => {
     if (isConnected || websocketRef.current) {
@@ -27,10 +39,25 @@ export default function WebSocketClient({ initialUrl }: WebSocketClientProps) {
       socket.onopen = () => {
         setIsConnected(true)
         appendMessage(`[client] connected -> ${wsUrl}`)
+        // Automatically send "get_library_files" upon connection
+        socket.send('get_library_files')
+        appendMessage(`[client] get_library_files`)
+        // Expose send function to parent component
+        onSendReady?.(sendProgrammaticMessage)
       }
 
       socket.onmessage = (event: MessageEvent) => {
-        appendMessage(`[server] ${event.data}`)
+        // Check if the message is a JSON payload
+        if (isJsonPayload(event.data)) {
+          // Log JSON payloads to console instead of showing in messages
+          console.log('[server JSON]', event.data)
+          appendMessage('[server] JSON config received (check console)')
+        } else {
+          // Show non-JSON messages in the messages box
+          appendMessage(`[server] ${event.data}`)
+        }
+        // Call the callback if provided
+        onMessage?.(event.data)
       }
 
       socket.onerror = (event) => {
@@ -72,37 +99,45 @@ export default function WebSocketClient({ initialUrl }: WebSocketClientProps) {
     setOutgoing('')
   }
 
-  useEffect(() => {
-    return () => {
-      try {
-        websocketRef.current?.close()
-      } catch {}
+  const sendProgrammaticMessage = (message: string) => {
+    const socket = websocketRef.current
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      appendMessage('[client] cannot send: socket not open')
+      return false
     }
+    socket.send(message)
+    appendMessage(`[client] ${message}`)
+    return true
+  }
+
+  useEffect(() => {
+    // Auto-connect when component mounts
+    connect()
   }, [])
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
+    <div className="ws-container">
       <h1>WebSocket Client</h1>
-      <div className="card" style={{ display: 'grid', gap: 12 }}>
-        <label style={{ display: 'grid', gap: 6 }}>
+      <div className="card ws-card">
+        <label className="ws-label">
           <span>Server WebSocket URL</span>
           <input
             type="text"
             value={wsUrl}
             onChange={(e) => setWsUrl(e.target.value)}
             placeholder="ws://127.0.0.1:8000/ws"
-            style={{ padding: '8px 10px', fontFamily: 'monospace' }}
+            className="ws-input"
           />
         </label>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="ws-row">
           <button onClick={connect} disabled={isConnected}>Connect</button>
           <button onClick={disconnect} disabled={!isConnected}>Disconnect</button>
         </div>
 
-        <div style={{ display: 'grid', gap: 6 }}>
+        <div className="ws-grid">
           <span>Send a message</span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="ws-row">
             <input
               type="text"
               value={outgoing}
@@ -113,40 +148,29 @@ export default function WebSocketClient({ initialUrl }: WebSocketClientProps) {
                 }
               }}
               placeholder="hello"
-              style={{ flex: 1, padding: '8px 10px' }}
+              className="ws-input ws-grow"
             />
             <button onClick={sendMessage} disabled={!isConnected}>Send</button>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: 6 }}>
-          <span>Messages</span>
-          <div
-            style={{
-              border: '1px solid #ccc',
-              borderRadius: 8,
-              padding: 12,
-              minHeight: 160,
-              background: '#111',
-              color: '#ddd',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-              overflowY: 'auto',
-            }}
-          >
-            {messages.length === 0 ? (
-              <div style={{ opacity: 0.7 }}>No messages yet</div>
-            ) : (
-              messages.map((m, i) => (
-                <div key={i} style={{ whiteSpace: 'pre-wrap' }}>{m}</div>
-              ))
-            )}
-          </div>
+        <div className="ws-grid">
+          <details>
+            <summary className="ws-summary">
+              Messages ({messages.length})
+            </summary>
+            <div className="ws-messages">
+              {messages.length === 0 ? (
+                <div className="ws-empty">No messages yet</div>
+              ) : (
+                messages.map((m, i) => (
+                  <div key={i} className="ws-message">{m}</div>
+                ))
+              )}
+            </div>
+          </details>
         </div>
       </div>
-
-      <p className="read-the-docs" style={{ marginTop: 16 }}>
-        Tip: Start the FastAPI server with "fastapi dev examples/api/websocket_fastapi_demo.py" and then connect.
-      </p>
     </div>
   )
 }

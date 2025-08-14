@@ -1,5 +1,6 @@
 # Extended WOMBAT (Windfarm Operations & Maintenance cost-Benefit Analysis Tool)
 Extended version of the NREL WOMBAT Project!
+- And experimenting with Vibe Coding (scary!!)
 
 ## Installation
 Reccommended installation vs. WOMBAT guide
@@ -20,6 +21,74 @@ Standard: `uv pip install .`
 
 5. Set python interpreter:\
 Set python interpreter to `.$name/bin/python` in VS code or as kernel in ipynb notebook
+
+6. Install client dependencies:\
+`cd client`\
+`npm install`
+
+## Running
+
+Server:\
+`./.venv/Scripts/python.exe ./server/main.py`
+
+Client:\
+`cd client`\
+`npm run dev`
+
+## Deployment
+
+Server: \
+`./.venv/Scripts/python.exe ./server/main.py`
+
+Client: \
+`cd client` \
+`npm run build` \
+`npm run preview`
+
+## Description 
+Extended WOMBAT adds a lightweight web UI and realtime server layer around the core WOMBAT simulation library. It lets you run simulations, stream progress/events, and visualize results from a browser while keeping the original Python modeling capabilities.
+
+Key goals:
+- Rapid local iteration on scenarios and libraries
+- Realtime feedback via WebSockets
+- Minimal friction to deploy and share demos
+
+## Project Structure
+- `server/` — FastAPI app exposing a health endpoint and a WebSocket at `ws://<host>/ws`.
+  - `main.py` — app setup, CORS, `/healthz`, `/ws`.
+  - `client_manager.py` — tracks connected clients and IDs.
+  - `message_handler.py` — routes incoming WS messages to actions.
+  - `simulation_manager.py` — orchestration for running simulations.
+  - `library_manager.py` — manages temp and user-provided WOMBAT libraries.
+  - `event_handlers.py` — emits server-side events/messages.
+- `client/` — React + Vite + TypeScript UI.
+  - `src/components/` — UI widgets like `WebSocketClient.tsx`, `SimulationControls.tsx`, `SelectedFileInfo.tsx`.
+  - `vite.config.ts`, `index.html` — frontend tooling and entry.
+- `library/` — extended or example simulation assets used by the server.
+- `wombat/` — upstream WOMBAT Python package (vendored for local development/testing).
+- `examples/`, `docs/`, `tests/` — examples, documentation, and test suites from WOMBAT.
+
+## Architecture 
+- Frontend connects to the server WebSocket (`/ws`) to send control messages (e.g., run, stop, load library) and receive stream updates (status, logs, results).
+- Server is a FastAPI app that:
+  - Accepts WS connections, assigns a `client_id`, and registers them in `client_manager`.
+  - Uses `message_handler` to parse messages and invoke `simulation_manager` and `library_manager` actions.
+  - Streams progress/events back to the originating client.
+- Simulation logic and data models rely on the WOMBAT library for discrete-event simulation (SimPy-based) while the server layer focuses on orchestration and messaging.
+
+## Technologies
+- Backend: Python, FastAPI, Uvicorn, WebSockets, CORS
+- Simulation: WOMBAT (SimPy-based), NumPy/Pandas (per upstream), attrs, etc.
+- Frontend: React 19, TypeScript 5, Vite 7
+- Realtime: Native WebSocket in server; client includes `socket.io-client` for potential future use
+- Tooling: ESLint, TypeScript ESLint, Black, isort, Ruff, pytest
+
+## Code philosophy
+- Separation of concerns: server orchestration vs. simulation engine vs. UI.
+- Explicit typing and linting: mypy/ruff on Python; TypeScript/ESLint on frontend.
+- Simple, observable flows: messages routed centrally in `message_handler.py` and emitted via WS.
+- Extensibility: modular managers (`client_manager`, `simulation_manager`, `library_manager`) to add new actions/features with minimal coupling.
+- Developer ergonomics: hot-reload Vite UI, simple `uvicorn` server, minimal configuration to get started.
 
 ## Additions
 

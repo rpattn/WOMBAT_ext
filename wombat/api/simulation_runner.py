@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 from typing import Any
+from wombat.core.library import load_yaml
+from pathlib import Path
+import json
 
+def get_simulation_dict(library: str = "DINWOODIE"):
+    source_lib = Path("library/code_comparison/dinwoodie")
 
-def run_simulation(library: str = "DINWOODIE", config: str = "base_2yr.yaml") -> dict[str, Any]:
+    yaml = load_yaml(source_lib / "project/config", "base.yaml")
+    return json.dumps(yaml)
+
+def run_simulation(library: str = "DINWOODIE", config: str = "base.yaml") -> dict[str, Any]:
     """Run a WOMBAT simulation and return result info, including output file paths.
 
     Parameters
