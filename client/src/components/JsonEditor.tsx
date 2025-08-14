@@ -198,7 +198,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
         // Primitive handling
         return (
             <div key={fieldKey} style={{ display: 'flex', alignItems: 'center', gap: 12, textAlign: 'justify' }}>
-                <label style={{ ...labelStyles, marginBottom: 0, minWidth: 100 }}>{String(label)}</label>
+                <label style={{ ...labelStyles, marginBottom: 0, minWidth: 150 }}>{String(label)}</label>
                 {typeof value === 'boolean' ? (
                     <div>
                         <input

@@ -115,9 +115,9 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
   }, [])
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
+    <div style={{ padding: '20px', maxWidth: '80vw', margin: '0 auto', width: '100%' }}>
       <h1>WebSocket Client</h1>
-      <div className="card" style={{ display: 'grid', gap: 12 }}>
+      <div className="card" style={{ display: 'grid', gap: 12, maxWidth: '700px', margin: '0 auto' }}>
         <label style={{ display: 'grid', gap: 6 }}>
           <span>Server WebSocket URL</span>
           <input
@@ -163,7 +163,7 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
                 border: '1px solid #ccc',
                 borderRadius: 8,
                 padding: 12,
-                minHeight: 160,
+                height: 200,
                 background: '#111',
                 color: '#ddd',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
