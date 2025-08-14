@@ -18,6 +18,7 @@ class ClientManager:
         self.client_simulations: Dict[str, Dict] = {}  # Track which client is running which simulation
         self.client_projects: Dict[str, str] = {}  # Track client project directories
         self.temp_base_dir = Path("server/temp")
+        self.saved_library_dir = Path("server/client_library")
         # Track the last selected file per client for saving edits to the correct file
         self.client_last_selected_file: Dict[str, str] = {}
     
@@ -76,6 +77,10 @@ class ClientManager:
     def get_client_project_dir(self, client_id: str) -> str:
         """Get the project directory path for a specific client."""
         return self.client_projects.get(client_id, "")
+
+    def get_save_library_dir(self) -> str:
+        """Get the directory path for saving libraries."""
+        return str(self.saved_library_dir)
 
     def set_last_selected_file(self, client_id: str, file_path: str) -> None:
         """Store the last file selected by the client (relative to project dir)."""

@@ -4,9 +4,10 @@ type Props = {
   onGetConfig: () => void;
   onClearTemp: () => void;
   onGetLibraryFiles: () => void;
+  onSaveLibrary: () => void;
 };
 
-export default function SimulationControls({ onRun, onGetConfig, onClearTemp, onGetLibraryFiles }: Props) {
+export default function SimulationControls({ onRun, onGetConfig, onClearTemp, onGetLibraryFiles, onSaveLibrary }: Props) {
   return (
     <div className="section">
       <h3 className="section-title">Simulation Controls</h3>
@@ -22,6 +23,9 @@ export default function SimulationControls({ onRun, onGetConfig, onClearTemp, on
         </button>
         <button onClick={onGetLibraryFiles} className="btn-app btn-danger">
           📋 Get Library Files
+        </button>
+        <button onClick={onSaveLibrary} className="btn-app btn-secondary">
+          💾 Save Library
         </button>
       </div>
     </div>

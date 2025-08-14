@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './WebSocketClient.css'
+import { useToast } from './ToastManager'
 
 type WebSocketClientProps = {
   initialUrl?: string
@@ -15,9 +16,48 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
   const [messages, setMessages] = useState<string[]>([])
   const [outgoing, setOutgoing] = useState<string>('')
   const websocketRef = useRef<WebSocket | null>(null)
+  const toast = useToast()
 
-  const appendMessage = (msg: string) =>
+  const appendMessage = (msg: string) => {
     setMessages((prev) => [...prev, msg])
+    // Toast selectively based on message content
+    const trimmed = msg.trim()
+    const lower = trimmed.toLowerCase()
+    const stripPrefix = (m: string) => m.replace(/^\[[^\]]+\]\s*/, '')
+
+    // Error messages
+    if (lower.startsWith('[error]')) {
+      toast.error(stripPrefix(trimmed) || 'An error occurred')
+      return
+    }
+
+    // Connection status
+    if (lower.includes('connected ->')) {
+      toast.success('Connected to server')
+      return
+    }
+    if (lower.includes('disconnected')) {
+      toast.warning('Disconnected from server')
+      return
+    }
+
+    // Cannot send warnings
+    if (lower.includes('cannot send')) {
+      toast.warning(stripPrefix(trimmed))
+      return
+    }
+
+    // Non-JSON server messages surfaced as info
+    if (lower.startsWith('[server]')) {
+      const text = stripPrefix(trimmed)
+      if (text && !/json config received/i.test(text)) {
+        toast.info(text)
+      }
+      return
+    }
+
+    // For routine client logs (e.g. sent messages), do not toast
+  }
 
   const isJsonPayload = (str: string): boolean => {
     try {

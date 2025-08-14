@@ -44,6 +44,9 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
         try:
             # Get client-specific project directory
             from client_manager import client_manager
+            from library_manager import scan_client_library_files
+            import json
+            
             project_dir = client_manager.get_client_project_dir(client_id)
             
             if project_dir:
@@ -53,8 +56,22 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
                 result = run_wombat_simulation()
             
             # Send results only to the client that initiated the simulation
-            asyncio.run_coroutine_threadsafe(
+            """asyncio.run_coroutine_threadsafe(
                 websocket.send_text(f"simulation finished: {result}"),
+                loop,
+            )"""
+            # Send results only to the client that initiated the simulation
+            asyncio.run_coroutine_threadsafe(
+                websocket.send_text(f"simulation finished"),
+                loop,
+            )
+            files = scan_client_library_files(client_id)
+            message = {
+                'event': 'library_files',
+                'files': files
+            }
+            asyncio.run_coroutine_threadsafe(
+                websocket.send_text(json.dumps(message)),
                 loop,
             )
             asyncio.run_coroutine_threadsafe(

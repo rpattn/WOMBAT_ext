@@ -6,6 +6,7 @@ export type CreateWebSocketMessageHandlerArgs = {
   setCsvPreview: (data: string | null) => void;
   setLibraryFiles: (files: { yaml_files: string[]; csv_files: string[]; total_files?: number } | null) => void;
   pendingDownloadRef: MutableRefObject<string | null>;
+  onToast?: (level: 'info' | 'success' | 'warning' | 'error', message: string) => void;
 };
 
 export function createWebSocketMessageHandler({
@@ -13,6 +14,7 @@ export function createWebSocketMessageHandler({
   setCsvPreview,
   setLibraryFiles,
   pendingDownloadRef,
+  onToast,
 }: CreateWebSocketMessageHandlerArgs) {
   return function handleWebSocketMessage(message: string) {
     try {
@@ -74,6 +76,19 @@ export function createWebSocketMessageHandler({
 
       if (parsedData && typeof parsedData === 'object' && 'event' in parsedData && parsedData.event === 'library_files') {
         setLibraryFiles(parsedData.files);
+      }
+
+      // Toast events from server
+      if (parsedData && typeof parsedData === 'object' && 'event' in parsedData) {
+        // Standard toast envelope: { event: 'toast', level: 'info'|'success'|'warning'|'error', message: string }
+        if (parsedData.event === 'toast' && typeof parsedData.message === 'string') {
+          const lvl = (parsedData.level ?? 'info') as 'info' | 'success' | 'warning' | 'error';
+          onToast?.(lvl, parsedData.message);
+        }
+        // Common shortcuts: { event: 'error'|'warning'|'info'|'success', message }
+        if ((parsedData.event === 'error' || parsedData.event === 'warning' || parsedData.event === 'info' || parsedData.event === 'success') && typeof parsedData.message === 'string') {
+          onToast?.(parsedData.event, parsedData.message);
+        }
       }
     } catch {
       // Not JSON, ignore

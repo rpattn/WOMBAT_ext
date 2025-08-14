@@ -7,6 +7,7 @@ import SimulationControls from './components/SimulationControls';
 import SelectedFileInfo from './components/SelectedFileInfo';
 import CsvPreview from './components/CsvPreview';
 import { createWebSocketMessageHandler } from './utils/websocketHandlers';
+import { useToast } from './components/ToastManager';
 
 
 export const example_library_structure = {
@@ -27,6 +28,7 @@ export default function App() {
   const [libraryFiles, setLibraryFiles] = useState<{ yaml_files: string[]; csv_files: string[]; total_files?: number } | null>(null);
   const [csvPreview, setCsvPreview] = useState<string | null>(null);
   const pendingDownloadRef = useRef<string | null>(null);
+  const toast = useToast();
 
   const handleFileSelect = (filePath: string) => {
     console.log('Selected file:', filePath);
@@ -134,6 +136,21 @@ export default function App() {
     setCsvPreview,
     setLibraryFiles,
     pendingDownloadRef,
+    onToast: (level, message) => {
+      switch (level) {
+        case 'success':
+          toast.success(message);
+          break;
+        case 'warning':
+          toast.warning(message);
+          break;
+        case 'error':
+          toast.error(message);
+          break;
+        default:
+          toast.info(message);
+      }
+    },
   });
 
   const handleSendReady = (sendFunction: (message: string) => boolean) => {
@@ -176,6 +193,27 @@ export default function App() {
     }
   };
 
+  const handleSaveLibrary = () => {
+    // Ask user for a project name
+    const defaultName = `project-${new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16)}`;
+    const name = window.prompt('Enter a project name to save the current library:', defaultName)?.trim();
+    if (!name) {
+      console.log('Save library cancelled or empty name');
+      return;
+    }
+    if (!sendWebSocketMessage) {
+      console.warn('WebSocket not ready to send save_library');
+      return;
+    }
+    const payload = JSON.stringify({ event: 'save_library', data: { project_name: name } });
+    const ok = sendWebSocketMessage(payload);
+    if (ok) {
+      console.log('Requested save_library for', name);
+    } else {
+      console.error('Failed to send save_library');
+    }
+  };
+
   const handleSave = (data: JsonObject) => {
     if (sendWebSocketMessage) {
       const message = JSON.stringify({ event: 'settings_update', data });
@@ -200,6 +238,7 @@ export default function App() {
         onGetConfig={handleGetConfig}
         onClearTemp={handleClearTemp}
         onGetLibraryFiles={handleGetLibraryFiles}
+        onSaveLibrary={handleSaveLibrary}
       />
       <div className="card">
         <div className="row">

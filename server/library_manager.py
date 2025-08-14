@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from fastapi import WebSocket
 import os
+import shutil
+from typing import Tuple
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -71,6 +73,48 @@ async def update_client_library_file(client_id: str, file_path: str, content: di
     except Exception as e:
         logger.error(f"Error updating library file for client {client_id[:8]}: {e}")
         return False
+
+
+def _unique_destination(base_dir: Path, desired_name: str) -> Path:
+    """Return a unique destination directory under base_dir for desired_name."""
+    safe = desired_name.strip().replace('\r', '').replace('\n', '').strip('/\\') or 'project'
+    dest = base_dir / safe
+    if not dest.exists():
+        return dest
+    i = 1
+    while True:
+        candidate = base_dir / f"{safe}-{i}"
+        if not candidate.exists():
+            return candidate
+        i += 1
+
+
+def save_client_library(client_id: str, project_name: str) -> Tuple[bool, str]:
+    """
+    Copy the current client's temp library to the saved_library_dir under project_name.
+
+    Returns (ok, destination_path_str)
+    """
+    from client_manager import client_manager
+    
+    try:
+        if not client_id or client_id not in client_manager.client_projects:
+            return False, "Client not found"
+
+        src = Path(client_manager.get_client_project_dir(client_id)).resolve()
+        if not src.exists():
+            return False, "Source library does not exist"
+
+        base_dest = client_manager.saved_library_dir
+        base_dest.mkdir(parents=True, exist_ok=True)
+        dest = _unique_destination(base_dest, project_name)
+
+        shutil.copytree(src, dest, dirs_exist_ok=False)
+        logger.info(f"Saved client {client_id[:8]} library from {src} to {dest}")
+        return True, str(dest)
+    except Exception as e:
+        logger.error(f"Error saving library for client {client_id[:8] if client_id else 'unknown'}: {e}")
+        return False, str(e)
 
 
 def delete_client_library_file(client_id: str, file_path: str) -> bool:

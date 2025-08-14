@@ -32,6 +32,9 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
             elif event_type == "replace_file":
                 await handle_replace_file(websocket, json_data, client_id)
                 return True
+            elif event_type == "save_library":
+                await handle_save_library(websocket, json_data, client_id)
+                return True
             else:
                 logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
@@ -186,6 +189,7 @@ async def handle_get_library_files(websocket: WebSocket, client_id: str = None) 
     else:
         await websocket.send_text("Client not found")
 
+
 async def handle_add_file(websocket: WebSocket, data: dict, client_id: str = None) -> None:
     """Handle add_file event from client.
 
@@ -322,6 +326,43 @@ async def handle_replace_file(websocket: WebSocket, data: dict, client_id: str =
         'file_path': file_path
     }))
 
+    # Refresh library list
+    try:
+        files = scan_client_library_files(client_id)
+        await websocket.send_text(json.dumps({'event': 'library_files', 'files': files}))
+    except Exception:
+        pass
+
+async def handle_save_library(websocket: WebSocket, data: dict, client_id: str = None) -> None:
+    """Handle save_library event from client."""
+    from library_manager import save_client_library
+    from client_manager import client_manager
+    import json
+
+    if not data['data']['project_name']:
+        await websocket.send_text("Error: Missing project_name in save_library payload")
+        return
+    project_name = data['data']['project_name']
+    
+    if not (client_id and client_id in client_manager.client_projects):
+        await websocket.send_text("Error: Client not found")
+        return
+    
+    # Get client-specific project directory
+    project_dir = client_manager.get_save_library_dir()
+    
+    if project_dir:
+        result = save_client_library(client_id, project_name)
+    else:
+        # Fallback to default
+        result = save_client_library(project_name)
+    
+    await websocket.send_text(json.dumps({
+        'event': 'save_library_result',
+        'ok': bool(result),
+        'project_dir': project_dir
+    }))
+    
     # Refresh library list
     try:
         files = scan_client_library_files(client_id)
