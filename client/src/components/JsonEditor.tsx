@@ -56,7 +56,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
   };
 
   const inputStyles: React.CSSProperties = {
-    width: '100%',
+    width: '90%',
     padding: '8px 10px',
     borderRadius: 6,
     border: '1px solid #d1d5db',
@@ -179,31 +179,37 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
 
     // Primitive handling
     return (
-      <div key={fieldKey} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <label style={labelStyles}>{String(label)}</label>
+      <div key={fieldKey} style={{ display: 'flex', alignItems: 'center', gap: 12, textAlign: 'justify' }}>
+        <label style={{ ...labelStyles, marginBottom: 0, minWidth: 100 }}>{String(label)}</label>
         {typeof value === 'boolean' ? (
-          <input
-            type="checkbox"
-            checked={Boolean(value)}
-            onChange={(e) => handleChangeAtPath(name, e.target.checked)}
-          />
+          <div>
+            <input
+              type="checkbox"
+              checked={Boolean(value)}
+              onChange={(e) => handleChangeAtPath(name, e.target.checked)}
+            />
+          </div>
         ) : typeof value === 'number' ? (
-          <input
-            type="number"
-            style={inputStyles}
-            value={Number.isFinite(value) ? String(value) : ''}
-            onChange={(e) => {
-              const num = e.target.value === '' ? 0 : Number(e.target.value);
-              handleChangeAtPath(name, isNaN(num) ? 0 : num);
-            }}
-          />
+          <div style={{ flex: 1 }}>
+            <input
+              type="number"
+              style={inputStyles}
+              value={Number.isFinite(value) ? String(value) : ''}
+              onChange={(e) => {
+                const num = e.target.value === '' ? 0 : Number(e.target.value);
+                handleChangeAtPath(name, isNaN(num) ? 0 : num);
+              }}
+            />
+          </div>
         ) : (
-          <input
-            type="text"
-            style={inputStyles}
-            value={String(value ?? '')}
-            onChange={(e) => handleChangeAtPath(name, e.target.value)}
-          />
+          <div style={{ flex: 1 }}>
+            <input
+              type="text"
+              style={inputStyles}
+              value={String(value ?? '')}
+              onChange={(e) => handleChangeAtPath(name, e.target.value)}
+            />
+          </div>
         )}
       </div>
     );
@@ -219,7 +225,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
       {(Object.entries(formData).length === 0) &&
         <p>No data to display</p>
       }
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 16 }}>
         <button
           type="button"
           style={primaryButton}

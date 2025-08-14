@@ -190,7 +190,7 @@ export default function App() {
     <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
       <div style={{ marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px', color: '#333' }}>Simulation Controls</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-start' }}>
           <button onClick={handleRunSimulation} style={primaryButtonStyle}>
             🚀 Run Simulation
           </button>
