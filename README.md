@@ -21,6 +21,35 @@ Standard: `uv pip install .`
 5. Set python interpreter:\
 Set python interpreter to `.$name/bin/python` in VS code or as kernel in ipynb notebook
 
+## Running
+
+Server:\
+`./.venv/Scripts/python.exe ./server/main.py`
+
+Client:\
+`cd client`\
+`npm run dev`
+
+## Deployment
+
+Server: \
+`./.venv/Scripts/python.exe ./server/main.py`
+
+Client: \
+`cd client` \
+`npm run build` \
+`npm run preview`
+
+## Description 
+
+## Project Structure
+
+## Architecture 
+
+## Technologies
+
+## Code philosophy
+
 ## Additions
 
 ### Gantt Chart
