@@ -30,7 +30,7 @@ class TestMessageHandler:
         result = await handle_message(self.mock_websocket, '{"event": "test"}', self.client_id)
         
         assert result is True
-        mock_handle_json.assert_called_once_with(self.mock_websocket, '{"event": "test"}')
+        mock_handle_json.assert_called_once_with(self.mock_websocket, '{"event": "test"}', self.client_id)
     
     @pytest.mark.asyncio
     @patch('message_handler.handle_json_event')
@@ -70,7 +70,20 @@ class TestMessageHandler:
         
         assert result is True
         mock_handle_json.assert_called_once()
-        mock_handle_get_config.assert_called_once_with(self.mock_websocket)
+        mock_handle_get_config.assert_called_once_with(self.mock_websocket, self.client_id)
+
+    @pytest.mark.asyncio
+    @patch('message_handler.handle_json_event')
+    @patch('message_handler.handle_get_library_files')
+    async def test_handle_message_get_library_files_command(self, mock_handle_get_lib, mock_handle_json):
+        """Test message handler with get_library_files command."""
+        mock_handle_json.return_value = False
+
+        result = await handle_message(self.mock_websocket, "get_library_files", self.client_id)
+
+        assert result is True
+        mock_handle_json.assert_called_once()
+        mock_handle_get_lib.assert_called_once_with(self.mock_websocket, self.client_id)
     
     @pytest.mark.asyncio
     @patch('message_handler.handle_json_event')
@@ -120,7 +133,7 @@ class TestMessageHandler:
         result = await handle_message(self.mock_websocket, "", self.client_id)
         
         assert result is False
-        mock_handle_json.assert_called_once_with(self.mock_websocket, "")
+        mock_handle_json.assert_called_once_with(self.mock_websocket, "", self.client_id)
     
     @pytest.mark.asyncio
     @patch('message_handler.handle_json_event')
@@ -131,7 +144,7 @@ class TestMessageHandler:
         result = await handle_message(self.mock_websocket, None, self.client_id)
         
         assert result is False
-        mock_handle_json.assert_called_once_with(self.mock_websocket, None)
+        mock_handle_json.assert_called_once_with(self.mock_websocket, None, self.client_id)
 
 
 if __name__ == "__main__":

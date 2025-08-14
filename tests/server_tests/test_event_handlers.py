@@ -11,11 +11,11 @@ server_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.pat
 sys.path.insert(0, server_dir)
 
 from event_handlers import (
-    handle_settings_update,
     handle_json_event,
     handle_get_config,
     handle_clear_temp
 )
+from library_manager import handle_settings_update
 
 
 class TestEventHandlers:
@@ -38,10 +38,12 @@ class TestEventHandlers:
             }
         }
         
+        # Without a valid client_id, the handler should report client not found
         await handle_settings_update(self.mock_websocket, test_data)
         
-        # Check that confirmation was sent
-        self.mock_websocket.send_text.assert_called_once_with("Settings received successfully")
+        self.mock_websocket.send_text.assert_called_once()
+        sent_msg = self.mock_websocket.send_text.call_args[0][0]
+        assert "Error: Client project not found" in sent_msg
     
     @pytest.mark.asyncio
     async def test_handle_json_event_settings_update(self):
@@ -55,7 +57,10 @@ class TestEventHandlers:
         result = await handle_json_event(self.mock_websocket, json_string)
         
         assert result is True
-        self.mock_websocket.send_text.assert_called_once_with("Settings received successfully")
+        # With no client context, expect client-not-found error
+        self.mock_websocket.send_text.assert_called_once()
+        sent_msg = self.mock_websocket.send_text.call_args[0][0]
+        assert "Error: Client project not found" in sent_msg
     
     @pytest.mark.asyncio
     async def test_handle_json_event_unknown_event(self):
