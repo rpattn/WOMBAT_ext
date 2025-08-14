@@ -52,12 +52,13 @@
 
 /* Inputs */
 .je-input {
-  width: 90%;
+  width: 100%;
   padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
   background-color: #fff;
   color: #111827;
+  box-sizing: border-box;
 }
 
 /* Sections */
@@ -81,6 +82,13 @@
   gap: 8px;
   margin-bottom: 8px;
 }
+
+/* Ensure inputs inside array rows use full available space */
+.je-row-tight .je-grow { display: flex; }
+.je-row-tight .je-grow .je-input { width: 100%; box-sizing: border-box; }
+
+/* Keep action buttons from shrinking and keep them aligned */
+.je-row-tight .btn { flex: 0 0 auto; white-space: nowrap; }
 
 .je-flex { display: flex; }
 .je-justify-start { justify-content: flex-start; }
@@ -184,6 +192,14 @@
     background: #047857; /* emerald-700 */
     color: #ffffff;
   }
+
+  /* Ensure .je-input specifically gets dark styles */
+  .json-editor .je-input {
+    background-color: #111827; /* gray-900 */
+    color: #e5e7eb;
+    border: 1px solid #374151; /* gray-700 */
+  }
+  .json-editor .je-input::placeholder { color: #9ca3af; }
 }
 
 /* Class-based theme overrides */
@@ -207,6 +223,14 @@
   color: #e5e7eb;
   border: 1px solid #374151;
 }
+
+/* Explicit .je-input override under .dark to beat base .je-input rule */
+.dark .json-editor .je-input {
+  background-color: #111827;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+}
+.dark .json-editor .je-input::placeholder { color: #9ca3af; }
 
 .dark .json-editor input[type="text"]:focus,
 .dark .json-editor input[type="number"]:focus {
