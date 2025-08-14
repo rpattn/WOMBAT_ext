@@ -68,6 +68,22 @@ export default function App() {
     }
   };
 
+  const handleAddFile = (filePath: string, content: any) => {
+    if (!sendWebSocketMessage) {
+      console.warn('WebSocket not ready to send add_file');
+      return;
+    }
+    const message = JSON.stringify({ event: 'add_file', data: { file_path: filePath, content } });
+    const ok = sendWebSocketMessage(message);
+    if (!ok) {
+      console.error('Failed to send add_file message');
+      return;
+    }
+    console.log('Sent add_file for', filePath);
+    // Optionally pre-select the file immediately; content will arrive after server stores it
+    setSelectedFile(filePath);
+  };
+
   const handleWebSocketMessage = (message: string) => {
     try {
       // Try to parse the message as JSON
@@ -212,6 +228,7 @@ export default function App() {
               onFileSelect={handleFileSelect}
               selectedFile={selectedFile}
               libraryFiles={libraryFiles ?? undefined}
+              onAddFile={handleAddFile}
             />
             {selectedFile ? (
               <div>

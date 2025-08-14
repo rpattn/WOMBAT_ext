@@ -198,3 +198,52 @@ def scan_client_library_files(client_id: str) -> dict:
     except Exception as e:
         logger.error(f"Error scanning client library for {client_id[:8]}: {e}")
         return {"yaml_files": [], "csv_files": [], "total_files": 0}
+
+
+def add_client_library_file(client_id: str, file_path: str, content=None) -> bool:
+    """Add or overwrite a file in a client's library.
+
+    Args:
+        client_id: The client identifier
+        file_path: Relative path within the client's project (e.g. "project/config/new.yaml")
+        content: For YAML, can be a dict/object to dump or a YAML string. For CSV or text, pass a string.
+
+    Returns:
+        True on success, False on failure.
+    """
+    from client_manager import client_manager
+    
+    if not client_id or client_id not in client_manager.client_projects:
+        logger.warning(f"Client {client_id[:8] if client_id else 'unknown'} not found in client projects")
+        return False
+    
+    try:
+        project_dir = Path(client_manager.get_client_project_dir(client_id))
+        target_file = project_dir / file_path
+        
+        # Ensure directory exists
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Determine how to write based on extension
+        suffix = (target_file.suffix or '').lower()
+        if suffix in ['.yaml', '.yml']:
+            with open(target_file, 'w', encoding='utf-8') as f:
+                if isinstance(content, str):
+                    # If provided as YAML string, write directly
+                    f.write(content)
+                else:
+                    # Dump dict/object as YAML
+                    yaml.safe_dump(content if content is not None else {}, f, default_flow_style=False)
+        else:
+            # Treat everything else as plain text (e.g., CSV)
+            with open(target_file, 'w', encoding='utf-8') as f:
+                f.write('' if content is None else str(content))
+        
+        rel_display = str(target_file.relative_to(project_dir)) if project_dir in target_file.parents else str(target_file)
+        logger.info(f"Wrote file {rel_display} for client {client_id[:8]}")
+    
+    except Exception as e:
+        logger.error(f"Error writing file for client {client_id[:8] if client_id else 'unknown'}: {e}")
+        return False
+    
+    return True

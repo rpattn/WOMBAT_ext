@@ -5,6 +5,7 @@ interface FileSelectorProps {
   onFileSelect: (fileName: string) => void;
   selectedFile?: string;
   libraryFiles?: { yaml_files: string[]; csv_files: string[]; total_files?: number };
+  onAddFile?: (filePath: string, content: any) => void;
 }
 
 interface TreeNode {
@@ -13,13 +14,14 @@ interface TreeNode {
   children?: TreeNode[];
   fullPath?: string;
   isExpanded?: boolean;
+  folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root']));
 
   const buildTreeStructure = useMemo(() => {
-    const root: TreeNode = { name: 'Library Files', type: 'folder', children: [] };
+    const root: TreeNode = { name: 'Library Files', type: 'folder', children: [], folderFullPath: '' };
     const yaml = libraryFiles?.yaml_files ?? [];
     const csv = libraryFiles?.csv_files ?? [];
     const allFiles = [...yaml, ...csv];
@@ -29,8 +31,10 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
       let currentNode = root;
 
       // Navigate through the path, creating folders as needed
+      let accFolderPath = '';
       for (let i = 0; i < parts.length - 1; i++) {
         const folderName = parts[i];
+        accFolderPath = accFolderPath ? `${accFolderPath}\\${folderName}` : folderName;
         let folderNode = currentNode.children?.find(child => 
           child.name === folderName && child.type === 'folder'
         );
@@ -40,7 +44,8 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
             name: folderName,
             type: 'folder',
             children: [],
-            isExpanded: true
+            isExpanded: true,
+            folderFullPath: accFolderPath
           };
           currentNode.children = currentNode.children || [];
           currentNode.children.push(folderNode);
@@ -92,6 +97,16 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     onFileSelect(filePath);
   };
 
+  const promptAndAddFile = (folderPath: string, kind: 'yaml' | 'csv') => {
+    const suggested = kind === 'yaml' ? 'new_file.yaml' : 'new_file.csv';
+    const name = window.prompt(`Enter ${kind.toUpperCase()} file name`, suggested);
+    if (!name) return;
+    const sanitized = name.endsWith(`.${kind}`) ? name : `${name}.${kind}`;
+    const relPath = folderPath ? `${folderPath}\\${sanitized}` : sanitized;
+    const defaultContent = kind === 'yaml' ? {} : 'col1,col2\n';
+    onAddFile?.(relPath, defaultContent);
+  };
+
   const renderTreeNode = (node: TreeNode, path: string = '', level: number = 0): React.ReactNode => {
     const currentPath = path ? `${path}/${node.name}` : node.name;
     const isExpanded = expandedFolders.has(currentPath);
@@ -109,6 +124,18 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               {isExpanded ? '📂' : '📁'}
             </span>
             <span className="folder-name">{node.name}</span>
+            <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8 }} onClick={(e) => e.stopPropagation()}>
+              <button
+                title="Add YAML file here"
+                style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer' }}
+                onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'yaml')}
+              >+ YAML</button>
+              <button
+                title="Add CSV file here"
+                style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer' }}
+                onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'csv')}
+              >+ CSV</button>
+            </span>
           </div>
           {isExpanded && node.children && (
             <div className="tree-folder-content">

@@ -23,6 +23,9 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
             elif event_type == "file_select":
                 await handle_file_select(websocket, json_data, client_id)
                 return True
+            elif event_type == "add_file":
+                await handle_add_file(websocket, json_data, client_id)
+                return True
             else:
                 logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
@@ -157,3 +160,47 @@ async def handle_get_library_files(websocket: WebSocket, client_id: str = None) 
         await websocket.send_text(json.dumps(message))
     else:
         await websocket.send_text("Client not found")
+
+async def handle_add_file(websocket: WebSocket, data: dict, client_id: str = None) -> None:
+    """Handle add_file event from client.
+
+    Expected payloads:
+    - { "event": "add_file", "data": { "file_path": "path/to/file.yaml", "content": {..}|"..." } }
+    - { "event": "add_file", "file_path": "path/to/file.yaml", "content": {..}|"..." }
+    """
+    from library_manager import add_client_library_file, scan_client_library_files
+    from client_manager import client_manager
+    import json
+
+    if not (client_id and client_id in client_manager.client_projects):
+        await websocket.send_text("Error: Client not found")
+        return
+
+    payload = data.get('data') if isinstance(data, dict) and 'data' in data else data
+    file_path = payload.get('file_path') if isinstance(payload, dict) else None
+    content = payload.get('content') if isinstance(payload, dict) else None
+
+    if not file_path:
+        await websocket.send_text("Error: Missing file_path in add_file payload")
+        return
+
+    ok = add_client_library_file(client_id, file_path, content)
+
+    # Send immediate result
+    await websocket.send_text(json.dumps({
+        'event': 'add_file_result',
+        'ok': bool(ok),
+        'file_path': file_path
+    }))
+
+    # Also refresh the library list for the client
+    try:
+        files = scan_client_library_files(client_id)
+        await websocket.send_text(json.dumps({
+            'event': 'library_files',
+            'files': files
+        }))
+    except Exception as _:
+        # Best-effort refresh; ignore errors here
+        pass
+    

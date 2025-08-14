@@ -113,67 +113,71 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
     // Array handling
     if (Array.isArray(value)) {
       return (
-        <details key={fieldKey} open>
-          <summary style={{ ...labelStyles, cursor: 'pointer' }}>{String(label)}</summary>
-          <div style={{ paddingLeft: 12, marginTop: 8 }}>
-            {value.map((item, index) => (
-              <div key={`${fieldKey}.${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <div style={{ flex: 1 }}>
-                  {typeof item === 'object' && item !== null ? (
-                    renderField([...name, index], item)
-                  ) : (
-                    <input
-                      style={inputStyles}
-                      value={String(item ?? '')}
-                      onChange={(e) => {
-                        const newArr = [...value];
-                        newArr[index] = e.target.value;
-                        handleChangeAtPath(name, newArr);
-                      }}
-                    />
-                  )}
+        <div key={fieldKey} style={{ borderTop: '1px solid #e5e7eb', marginTop: 12, paddingTop: 12 }}>
+          <details open>
+            <summary style={{ ...labelStyles, cursor: 'pointer' }}>{String(label)}</summary>
+            <div style={{ paddingLeft: 12, marginTop: 8 }}>
+              {value.map((item, index) => (
+                <div key={`${fieldKey}.${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    {typeof item === 'object' && item !== null ? (
+                      renderField([...name, index], item)
+                    ) : (
+                      <input
+                        style={inputStyles}
+                        value={String(item ?? '')}
+                        onChange={(e) => {
+                          const newArr = [...value];
+                          newArr[index] = e.target.value;
+                          handleChangeAtPath(name, newArr);
+                        }}
+                      />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    style={smallButton}
+                    onClick={() => {
+                      const newArr = value.slice();
+                      newArr.splice(index, 1);
+                      handleChangeAtPath(name, newArr);
+                    }}
+                  >
+                    Delete
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  style={smallButton}
-                  onClick={() => {
-                    const newArr = value.slice();
-                    newArr.splice(index, 1);
-                    handleChangeAtPath(name, newArr);
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              style={{ ...smallButton, marginTop: 4 }}
-              onClick={() => {
-                const newArr = [...value, ''];
-                handleChangeAtPath(name, newArr);
-              }}
-            >
-              Add Item
-            </button>
-          </div>
-        </details>
+              ))}
+              <button
+                type="button"
+                style={{ ...smallButton, marginTop: 4 }}
+                onClick={() => {
+                  const newArr = [...value, ''];
+                  handleChangeAtPath(name, newArr);
+                }}
+              >
+                Add Item
+              </button>
+            </div>
+          </details>
+        </div>
       );
     }
 
     // Object handling
     if (typeof value === 'object' && value !== null) {
       return (
-        <details key={fieldKey} open>
-          <summary style={{ ...labelStyles, cursor: 'pointer' }}>{String(label)}</summary>
-          <div style={{ paddingLeft: 12, marginTop: 8 }}>
-            {Object.entries(value as JsonObject).map(([k, v]) => (
-              <div key={`${fieldKey}.${k}`} style={{ marginBottom: 8 }}>
-                {renderField([...name, k], v)}
-              </div>
-            ))}
-          </div>
-        </details>
+        <div key={fieldKey} style={{ borderTop: '1px solid #e5e7eb', marginTop: 12, paddingTop: 12 }}>
+          <details open>
+            <summary style={{ ...labelStyles, cursor: 'pointer' }}>{String(label)}</summary>
+            <div style={{ paddingLeft: 12, marginTop: 8 }}>
+              {Object.entries(value as JsonObject).map(([k, v]) => (
+                <div key={`${fieldKey}.${k}`} style={{ marginBottom: 8 }}>
+                  {renderField([...name, k], v)}
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
       );
     }
 
