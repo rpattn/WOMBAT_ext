@@ -30,12 +30,54 @@ export default function App() {
   const [csvPreview, setCsvPreview] = useState<string | null>(null);
   const [savedLibraries, setSavedLibraries] = useState<string[]>([]);
   const [selectedSavedLibrary, setSelectedSavedLibrary] = useState<string | ''>('');
+  type ThemeMode = 'system' | 'light' | 'dark';
+  const [theme, setTheme] = useState<ThemeMode>('system');
   const pendingDownloadRef = useRef<string | null>(null);
   const toast = useToast();
 
   // Initialize selected saved library from localStorage on mount
   // and keep it consistent with the list as it arrives/updates.
   const LS_KEY_LAST_SAVED = 'lastSavedLibraryName';
+  const LS_KEY_THEME = 'themePreference';
+
+  // Theme handling
+  useEffect(() => {
+    // Initialize from localStorage or default to 'system'
+    try {
+      const stored = (window.localStorage.getItem(LS_KEY_THEME) as ThemeMode | null);
+      if (stored === 'light' || stored === 'dark' || stored === 'system') {
+        setTheme(stored);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement; // <html>
+    const mm = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      // clear classes first
+      root.classList.remove('dark');
+      root.classList.remove('light');
+      if (theme === 'dark') {
+        root.classList.add('dark');
+      } else if (theme === 'light') {
+        root.classList.add('light');
+      } else {
+        // system: follow media query (add class to reflect current)
+        if (mm.matches) root.classList.add('dark');
+        else root.classList.add('light');
+      }
+    };
+    apply();
+    const handler = () => { if (theme === 'system') apply(); };
+    mm.addEventListener?.('change', handler);
+    return () => { mm.removeEventListener?.('change', handler); };
+  }, [theme]);
+
+  // Persist theme choice
+  useEffect(() => {
+    try { window.localStorage.setItem(LS_KEY_THEME, theme); } catch { /* ignore */ }
+  }, [theme]);
 
   // When savedLibraries list updates, ensure the selected value exists.
   useEffect(() => {
@@ -254,7 +296,20 @@ export default function App() {
   return (<>
     <WebSocketClient onMessage={handleWebSocketMessage} onSendReady={handleSendReady} />
     <div className="app-container">
-      <div className="row" style={{ marginBottom: '0.75rem' }}>
+      <div className="row" style={{ marginBottom: '0.75rem', alignItems: 'center' }}>
+        <div className="col" style={{ flex: '0 0 auto' }}>
+          <label style={{ fontSize: 12, marginRight: 8 }}>Theme</label>
+          <select
+            aria-label="Theme"
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as ThemeMode)}
+            style={{ padding: '6px 8px', borderRadius: 6 }}
+          >
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
         <div className="col">
           <SavedLibrariesDropdown
             libraries={savedLibraries}

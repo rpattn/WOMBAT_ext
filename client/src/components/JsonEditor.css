@@ -185,3 +185,57 @@
     color: #ffffff;
   }
 }
+
+/* Class-based theme overrides */
+.dark .json-editor {
+  color: #e5e7eb;
+}
+
+.dark .json-editor-container {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+}
+
+.dark .json-editor input[type="text"],
+.dark .json-editor input[type="number"],
+.dark .json-editor input[type="search"],
+.dark .json-editor input[type="email"],
+.dark .json-editor input[type="url"],
+.dark .json-editor input[type="password"] {
+  background-color: #111827;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+}
+
+.dark .json-editor input[type="text"]:focus,
+.dark .json-editor input[type="number"]:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 1px;
+}
+
+.dark .json-editor summary { color: #e5e7eb; }
+.dark .je-label { color: #cbd5e1; }
+.dark .je-section { border-top: 1px solid #374151; }
+
+.dark .json-editor .btn-primary { border: 1px solid #3b82f6; background: #2563eb; color: #fff; }
+.dark .json-editor .btn-danger-soft { border: 1px solid #ef4444; background: #b91c1c; color: #fff; }
+.dark .json-editor .btn-success-soft { border: 1px solid #10b981; background: #047857; color: #fff; }
+
+/* Force light when .light is present */
+.light .json-editor { color: #111827; }
+.light .json-editor-container { background-color: #ffffff; color: #222; border: 1px solid #e5e7eb; }
+.light .json-editor input[type="text"],
+.light .json-editor input[type="number"],
+.light .json-editor input[type="search"],
+.light .json-editor input[type="email"],
+.light .json-editor input[type="url"],
+.light .json-editor input[type="password"] { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
+.light .json-editor input[type="text"]:focus,
+.light .json-editor input[type="number"]:focus { outline: 2px solid #93c5fd; outline-offset: 1px; }
+.light .json-editor summary { color: #1f2937; }
+.light .je-label { color: #374151; }
+.light .je-section { border-top: 1px solid #e5e7eb; }
+.light .json-editor .btn-primary { border: 1px solid #007bff; background: #007bff; color: #fff; }
+.light .json-editor .btn-danger-soft { border: 1px solid #dc3545; background: #dc3545; color: #fff; }
+.light .json-editor .btn-success-soft { border: 1px solid #198754; background: #198754; color: #fff; }
