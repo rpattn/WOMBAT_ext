@@ -211,7 +211,11 @@ export default function App() {
 
   const handleSaveLibrary = () => {
     // Ask user for a project name
-    const defaultName = selectedSavedLibrary || `project-${new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16)}`;
+    let storedName = '';
+    try {
+      storedName = window.localStorage.getItem(LS_KEY_LAST_SAVED) || '';
+    } catch { /* ignore */ }
+    const defaultName = storedName || selectedSavedLibrary || `project-${new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16)}`;
     const name = window.prompt('Enter a project name to save the current library:', defaultName)?.trim();
     if (!name) {
       console.log('Save library cancelled or empty name');
@@ -225,6 +229,7 @@ export default function App() {
     const ok = sendWebSocketMessage(payload);
     if (ok) {
       console.log('Requested save_library for', name);
+      try { window.localStorage.setItem(LS_KEY_LAST_SAVED, name); } catch { /* ignore */ }
     } else {
       console.error('Failed to send save_library');
     }
@@ -273,6 +278,29 @@ export default function App() {
               }
             }}
           />
+          <button
+            className="btn btn-outline-danger"
+            style={{ marginLeft: '0.5rem' }}
+            disabled={!selectedSavedLibrary}
+            onClick={() => {
+              if (!selectedSavedLibrary) return;
+              const confirmDel = window.confirm(`Delete saved library: ${selectedSavedLibrary}? This cannot be undone.`);
+              if (!confirmDel) return;
+              if (!sendWebSocketMessage) {
+                toast.warning('WebSocket not ready to delete saved library');
+                return;
+              }
+              const msg = JSON.stringify({ event: 'delete_saved_library', data: { name: selectedSavedLibrary } });
+              const ok = sendWebSocketMessage(msg);
+              if (!ok) {
+                toast.error('Failed to request delete_saved_library');
+                return;
+              }
+              // Optimistically clear selection
+              setSelectedSavedLibrary('');
+              try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }
+            }}
+          >Delete</button>
         </div>
       </div>
       <SimulationControls
@@ -289,6 +317,7 @@ export default function App() {
               onFileSelect={handleFileSelect}
               selectedFile={selectedFile}
               libraryFiles={libraryFiles ?? undefined}
+              projectName={selectedSavedLibrary || undefined}
               onAddFile={handleAddFile}
               onDeleteFile={handleDeleteFile}
               onReplaceFile={handleReplaceFile}

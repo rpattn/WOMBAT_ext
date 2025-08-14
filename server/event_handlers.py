@@ -41,6 +41,9 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
             elif event_type == "load_saved_library":
                 await handle_load_saved_library(websocket, json_data, client_id)
                 return True
+            elif event_type == "delete_saved_library":
+                await handle_delete_saved_library(websocket, json_data)
+                return True
             else:
                 logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
@@ -240,6 +243,28 @@ async def handle_add_file(websocket: WebSocket, data: dict, client_id: str = Non
             'files': files
         }))
     except Exception as _:
+        pass
+
+
+async def handle_delete_saved_library(websocket: WebSocket, data: dict) -> None:
+    """Delete a saved library by name and refresh the saved libraries list."""
+    import json
+    from library_manager import delete_saved_library
+    try:
+        name = (data.get('data') or {}).get('name')
+        if not name:
+            await websocket.send_text(json.dumps({'event': 'toast', 'level': 'error', 'message': 'Missing saved library name'}))
+            return
+        ok, msg = delete_saved_library(name)
+        if ok:
+            await websocket.send_text(json.dumps({'event': 'toast', 'level': 'success', 'message': msg}))
+        else:
+            await websocket.send_text(json.dumps({'event': 'toast', 'level': 'error', 'message': f"Failed to delete '{name}': {msg}"}))
+        # Refresh saved libraries list regardless
+        await handle_list_saved_libraries(websocket)
+    except Exception as e:
+        await websocket.send_text(json.dumps({'event': 'toast', 'level': 'error', 'message': f'Error deleting saved library: {e}'}))
+    except Exception as _:
         # Best-effort refresh; ignore errors here
         pass
 
@@ -400,7 +425,7 @@ async def handle_load_saved_library(websocket: WebSocket, data: dict, client_id:
 
 async def handle_save_library(websocket: WebSocket, data: dict, client_id: str = None) -> None:
     """Handle save_library event from client."""
-    from library_manager import save_client_library
+    from library_manager import save_client_library, scan_client_library_files
     from client_manager import client_manager
     import json
 
@@ -433,4 +458,5 @@ async def handle_save_library(websocket: WebSocket, data: dict, client_id: str =
         files = scan_client_library_files(client_id)
         await websocket.send_text(json.dumps({'event': 'library_files', 'files': files}))
     except Exception:
+        print("Failed to refresh library list after save_library")
         pass
