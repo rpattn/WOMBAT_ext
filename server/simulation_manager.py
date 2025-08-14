@@ -4,6 +4,7 @@ import asyncio
 import threading
 import logging
 from fastapi import WebSocket
+from client_manager import client_manager
 from simulations import run_wombat_simulation
 
 logger = logging.getLogger("uvicorn.error")
