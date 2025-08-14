@@ -129,3 +129,77 @@ def list_client_library_files(client_id: str, directory: str = "") -> list:
     except Exception as e:
         logger.error(f"Error listing library files for client {client_id[:8]}: {e}")
         return []
+
+
+def scan_library_files(library_path: str) -> dict:
+    """
+    Scan a WOMBAT library and return all .yaml and .csv files with their relative paths.
+    
+    Args:
+        library_path: Path to the WOMBAT library directory
+        
+    Returns:
+        Dictionary with 'yaml_files' and 'csv_files' lists containing relative paths
+    """
+    try:
+        library_dir = Path(library_path)
+        
+        if not library_dir.exists():
+            logger.warning(f"Library directory does not exist: {library_path}")
+            return {"yaml_files": [], "csv_files": []}
+        
+        yaml_files = []
+        csv_files = []
+        
+        # Recursively find all .yaml and .csv files
+        for file_path in library_dir.rglob('*'):
+            if file_path.is_file():
+                relative_path = str(file_path.relative_to(library_dir))
+                
+                if file_path.suffix.lower() == '.yaml':
+                    yaml_files.append(relative_path)
+                elif file_path.suffix.lower() == '.csv':
+                    csv_files.append(relative_path)
+        
+        # Sort the lists for consistent output
+        yaml_files.sort()
+        csv_files.sort()
+        
+        logger.info(f"Scanned library {library_path}: {len(yaml_files)} YAML files, {len(csv_files)} CSV files")
+        
+        return {
+            "yaml_files": yaml_files,
+            "csv_files": csv_files,
+            "total_files": len(yaml_files) + len(csv_files)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error scanning library files in {library_path}: {e}")
+        return {"yaml_files": [], "csv_files": [], "total_files": 0}
+
+
+def scan_client_library_files(client_id: str) -> dict:
+    """
+    Scan a client's WOMBAT library and return all .yaml and .csv files with their relative paths.
+    
+    Args:
+        client_id: Client ID to scan library for
+        
+    Returns:
+        Dictionary with 'yaml_files' and 'csv_files' lists containing relative paths
+    """
+    from client_manager import client_manager
+    
+    if not client_id or client_id not in client_manager.client_projects:
+        logger.warning(f"Client {client_id[:8] if client_id else 'unknown'} not found in client projects")
+        return {"yaml_files": [], "csv_files": [], "total_files": 0}
+    
+    try:
+        project_dir = client_manager.get_client_project_dir(client_id)
+        logger.info(f"Scanning library files for client {client_id[:8]} in: {project_dir}")
+        
+        return scan_library_files(project_dir)
+        
+    except Exception as e:
+        logger.error(f"Error scanning client library for {client_id[:8]}: {e}")
+        return {"yaml_files": [], "csv_files": [], "total_files": 0}

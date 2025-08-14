@@ -98,3 +98,16 @@ async def handle_clear_temp(websocket: WebSocket) -> None:
         if os.path.isdir(path):
             shutil.rmtree(path)
             logger.info(f"Cleaned temp directory: {path}")
+
+
+async def handle_get_library_files(websocket: WebSocket, client_id: str = None) -> None:
+    """Handle get_library_files command."""
+    from library_manager import scan_client_library_files
+    from client_manager import client_manager
+    
+    if client_id and client_id in client_manager.client_projects:
+        files = scan_client_library_files(client_id)
+        json_files = json.dumps(files, indent=2)
+        await websocket.send_text(json_files)
+    else:
+        await websocket.send_text("Client not found")

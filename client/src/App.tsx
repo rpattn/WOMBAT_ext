@@ -89,6 +89,15 @@ export default function App() {
     }
   };
 
+  const handleGetLibraryFiles = () => {
+    if (sendWebSocketMessage) {
+      const success = sendWebSocketMessage('get_library_files');
+      if (success) {
+        console.log('Requested library files from server');
+      }
+    }
+  };
+
   const buttonStyle = {
     padding: '10px 20px',
     marginRight: '12px',
@@ -134,6 +143,9 @@ export default function App() {
           </button>
           <button onClick={handleClearTemp} style={dangerButtonStyle}>
             🗑️ Clear Temp
+          </button>
+          <button onClick={handleGetLibraryFiles} style={dangerButtonStyle}>
+          📋 Get Library Files
           </button>
         </div>
       </div>

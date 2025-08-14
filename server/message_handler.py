@@ -1,9 +1,8 @@
 """Message handling for WebSocket connections."""
 
 from fastapi import WebSocket
-from event_handlers import handle_json_event, handle_get_config, handle_clear_temp
+from event_handlers import handle_json_event, handle_get_config, handle_clear_temp, handle_get_library_files
 from simulation_manager import handle_run_simulation
-
 
 async def handle_message(websocket: WebSocket, data: str, client_id: str) -> bool:
     """Handle incoming WebSocket messages for a specific client. Returns True if handled."""
@@ -23,6 +22,10 @@ async def handle_message(websocket: WebSocket, data: str, client_id: str) -> boo
         
     elif text == "get_config":
         await handle_get_config(websocket, client_id)
+        return True
+    
+    elif text == "get_library_files":
+        await handle_get_library_files(websocket, client_id)
         return True
     
     # Not handled
