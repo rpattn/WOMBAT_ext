@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './App.css';
-import Settings from './components/SettingsEditor';
+import JsonEditor from './components/JsonEditor';
 import WebSocketClient from './components/WebSocketClient';
 import FileSelector from './components/FileSelector';
 
@@ -9,7 +9,13 @@ const exampleData = {
   library: "example",
   weather: "example.csv",
   service_equipment: [
+    "example.yaml"
   ],
+  object: {
+    name: "example",
+    key: "example",
+    value: "example"
+  },
   layout: "layout.csv",
   inflation_rate: 0,
   fixed_costs: "fixed_costs.yaml",
@@ -55,15 +61,29 @@ export const example_library_structure = {
 } as const;
 
 export default function App() {
-  const [configData, setConfigData] = useState(exampleData);
+  const [configData, setConfigData] = useState<typeof exampleData>(exampleData);
   const [sendWebSocketMessage, setSendWebSocketMessage] = useState<((message: string) => boolean) | null>(null);
   const [selectedFile, setSelectedFile] = useState<string>('');
-  const [count, setCount] = useState(0);
 
   const handleFileSelect = (filePath: string) => {
     console.log('Selected file:', filePath);
     setSelectedFile(filePath);
-    // Here you can add any additional logic when a file is selected
+    
+    // Send WebSocket message when a file is selected
+    if (sendWebSocketMessage) {
+      const message = JSON.stringify({
+        event: 'file_select',
+        data: filePath
+      });
+      const success = sendWebSocketMessage(message);
+      if (!success) {
+        console.error('Failed to send file select message');
+      } else {
+        console.log('Sent file select message for:', filePath);
+      }
+    } else {
+      console.warn('WebSocket not ready to send file select message');
+    }
   };
 
   const handleWebSocketMessage = (message: string) => {
@@ -77,32 +97,19 @@ export default function App() {
         console.log('Received config from WebSocket:', parsedData);
         setConfigData(parsedData);
       }
+      if (parsedData && typeof parsedData === 'object' && 
+          'event' in parsedData && parsedData.event === 'file_content') {
+        console.log('Received file content from WebSocket:', parsedData);
+        setConfigData(parsedData.data);
+      }
     } catch (error) {
       // If parsing fails, it's not a JSON config message - ignore it
       console.log('Non-JSON message received:', message);
     }
   };
 
-  const handleSettingsChange = (updatedData: any) => {
-    console.log('Settings changed:', updatedData);
-    setConfigData(updatedData);
-  };
-
   const handleSendReady = (sendFunction: (message: string) => boolean) => {
     setSendWebSocketMessage(() => sendFunction);
-  };
-
-  const handleSendSettings = () => {
-    if (sendWebSocketMessage) {
-      const settingsMessage = JSON.stringify({
-        event: 'settings_update',
-        data: configData
-      });
-      const success = sendWebSocketMessage(settingsMessage);
-      if (success) {
-        console.log('Settings sent to server:', configData);
-      }
-    }
   };
 
   const handleGetConfig = () => {
@@ -138,6 +145,20 @@ export default function App() {
       if (success) {
         console.log('Requested library files from server');
       }
+    }
+  };
+
+  const handleSave = (data: typeof exampleData) => {
+    if (sendWebSocketMessage) {
+      const message = JSON.stringify({ event: 'settings_update', data });
+      const success = sendWebSocketMessage(message);
+      if (!success) {
+        console.error('Failed to send settings update');
+      } else {
+        console.log('Sent settings update');
+      }
+    } else {
+      console.warn('WebSocket not ready to send settings update');
     }
   };
 
@@ -199,9 +220,6 @@ export default function App() {
               onFileSelect={handleFileSelect} 
               selectedFile={selectedFile}
             />
-          </div>
-          <div style={{ flex: 1 }}>
-            <h3>File Details</h3>
             {selectedFile ? (
               <div>
                 <p><strong>Selected File:</strong> {selectedFile}</p>
@@ -212,18 +230,21 @@ export default function App() {
               <p>No file selected</p>
             )}
           </div>
-        </div>
-        
-        <div style={{ marginTop: '20px' }}>
-          <button onClick={() => setCount((count) => count + 1)}>
-            count is {count}
-          </button>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test HMR
-          </p>
+          <div style={{ flex: 1 }}>
+            <h3>File Details</h3>
+            <div style={{ padding: '16px', maxWidth: '800px', margin: '0 auto' }}>
+              <JsonEditor 
+              data={configData} 
+              onChange={(newData) => setConfigData(prev => ({
+                ...prev,
+                ...newData as typeof exampleData
+              }))}
+              onSave={(newData) => handleSave(newData as typeof exampleData)} 
+            />
+            </div>
+          </div>
         </div>
       </div>
-      <Settings data={configData} onChange={handleSettingsChange} onSendSettings={handleSendSettings}/>
     </div>
   </>)
 }

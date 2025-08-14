@@ -38,7 +38,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile 
             name: folderName,
             type: 'folder',
             children: [],
-            isExpanded: false
+            isExpanded: true
           };
           currentNode.children = currentNode.children || [];
           currentNode.children.push(folderNode);

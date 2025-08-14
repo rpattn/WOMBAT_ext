@@ -20,6 +20,9 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
                 from library_manager import handle_settings_update
                 await handle_settings_update(websocket, json_data, client_id)
                 return True
+            elif event_type == "file_select":
+                await handle_file_select(websocket, json_data, client_id)
+                return True
             else:
                 logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
@@ -83,6 +86,43 @@ async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None
         config = get_simulation()
     
     await websocket.send_text(config)
+
+
+async def handle_file_select(websocket: WebSocket, data: dict, client_id: str = None) -> None:
+    """Handle file_select event from client."""
+    from client_manager import client_manager
+    from library_manager import get_client_library_file
+    import json
+    import os
+    
+    if not client_id or client_id not in client_manager.client_projects:
+        await websocket.send_text("Error: Client project not found")
+        return
+    
+    file_path = data.get('data', '').replace('\\', '/')  # Normalize path separators
+    if not file_path:
+        await websocket.send_text("Error: No file path provided")
+        return
+    
+    try:
+        # Get the file content from the client's project
+        file_content = get_client_library_file(client_id, file_path)
+        
+        if file_content is None:
+            await websocket.send_text(f"Error: File not found: {file_path}")
+            return
+            
+        # Send the file content back to the client
+        response = {
+            'event': 'file_content',
+            'file': file_path,
+            'data': file_content
+        }
+        await websocket.send_text(json.dumps(response))
+        
+    except Exception as e:
+        logger.error(f"Error reading file {file_path} for client {client_id[:8] if client_id else 'unknown'}: {e}")
+        await websocket.send_text(f"Error reading file: {str(e)}")
 
 
 async def handle_clear_temp(websocket: WebSocket) -> None:

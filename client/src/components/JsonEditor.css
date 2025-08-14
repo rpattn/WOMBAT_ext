@@ -1,0 +1,32 @@
+/* Minimal styles for the custom JSON editor to ensure good contrast */
+.json-editor {
+  color: #111827; /* Gray-900 */
+}
+
+.json-editor input[type="text"],
+.json-editor input[type="number"],
+.json-editor input[type="search"],
+.json-editor input[type="email"],
+.json-editor input[type="url"],
+.json-editor input[type="password"] {
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db; /* Gray-300 */
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.json-editor input[type="text"]:focus,
+.json-editor input[type="number"]:focus {
+  outline: 2px solid #93c5fd; /* Blue-300 */
+  outline-offset: 1px;
+}
+
+.json-editor summary {
+  color: #1f2937; /* Gray-800 */
+  font-weight: 600;
+}
+
+.json-editor button {
+  color: #111827;
+}
