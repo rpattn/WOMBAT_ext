@@ -26,15 +26,16 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
     
     async def ticker() -> None:
         """Send periodic updates to the client during simulation."""
-        seconds = 1
+        seconds = 0
         while new_done_event is not None and not new_done_event.is_set():
             try:
                 # Send only to this specific client
-                await websocket.send_text(f"running... {seconds}s")
+                update_text = f"running... {seconds}s" if seconds > 0 else "running..."
+                await websocket.send_text(update_text)
             except Exception:
                 break
-            seconds += 10
-            await asyncio.sleep(10)
+            seconds += 5
+            await asyncio.sleep(5)
 
     new_ticker_task = loop.create_task(ticker())
 
