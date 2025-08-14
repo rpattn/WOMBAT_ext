@@ -182,10 +182,6 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
           </details>
         </div>
       </div>
-
-      <p className="read-the-docs" style={{ marginTop: 16 }}>
-        Tip: Start the FastAPI server with "fastapi dev examples/api/websocket_fastapi_demo.py" and then connect.
-      </p>
     </div>
   )
 }
