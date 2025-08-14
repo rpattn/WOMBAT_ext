@@ -18,6 +18,15 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
   const appendMessage = (msg: string) =>
     setMessages((prev) => [...prev, msg])
 
+  const isJsonPayload = (str: string): boolean => {
+    try {
+      const parsed = JSON.parse(str)
+      return typeof parsed === 'object' && parsed !== null
+    } catch {
+      return false
+    }
+  }
+
   const connect = () => {
     if (isConnected || websocketRef.current) {
       return
@@ -37,7 +46,15 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
       }
 
       socket.onmessage = (event: MessageEvent) => {
-        appendMessage(`[server] ${event.data}`)
+        // Check if the message is a JSON payload
+        if (isJsonPayload(event.data)) {
+          // Log JSON payloads to console instead of showing in messages
+          console.log('[server JSON]', event.data)
+          appendMessage('[server] JSON config received (check console)')
+        } else {
+          // Show non-JSON messages in the messages box
+          appendMessage(`[server] ${event.data}`)
+        }
         // Call the callback if provided
         onMessage?.(event.data)
       }

@@ -62,8 +62,36 @@ export default function App() {
     }
   };
 
+  const handleGetConfig = () => {
+    if (sendWebSocketMessage) {
+      const success = sendWebSocketMessage('get_config');
+      if (success) {
+        console.log('Requested config from server');
+      }
+    }
+  };
+
+  const handleClearTemp = () => {
+    if (sendWebSocketMessage) {
+      const success = sendWebSocketMessage('clear_temp');
+      if (success) {
+        console.log('Requested temp cleanup from server');
+      }
+    }
+  };
+
   return (<>
     <WebSocketClient onMessage={handleWebSocketMessage} onSendReady={handleSendReady} />
-    <Settings data={configData} onChange={handleSettingsChange} onSendSettings={handleSendSettings}/>
+    <div style={{ padding: '20px' }}>
+      <div style={{ marginBottom: '20px' }}>
+        <button onClick={handleGetConfig} style={{ marginRight: '10px', padding: '8px 16px' }}>
+          Get Config
+        </button>
+        <button onClick={handleClearTemp} style={{ marginRight: '10px', padding: '8px 16px' }}>
+          Clear Temp
+        </button>
+      </div>
+      <Settings data={configData} onChange={handleSettingsChange} onSendSettings={handleSendSettings}/>
+    </div>
   </>)
 }
