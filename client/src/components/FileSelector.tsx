@@ -9,6 +9,7 @@ interface FileSelectorProps {
   onDeleteFile?: (filePath: string) => void;
   onReplaceFile?: (filePath: string) => void;
   onDownloadFile?: (filePath: string) => void;
+  projectName?: string;
 }
 
 interface TreeNode {
@@ -20,11 +21,12 @@ interface TreeNode {
   folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile, projectName }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root']));
 
   const buildTreeStructure = useMemo(() => {
-    const root: TreeNode = { name: 'Library Files', type: 'folder', children: [], folderFullPath: '' };
+    const rootLabel = projectName && projectName.trim().length > 0 ? projectName : 'Library Files';
+    const root: TreeNode = { name: rootLabel, type: 'folder', children: [], folderFullPath: '' };
     const yaml = libraryFiles?.yaml_files ?? [];
     const csv = libraryFiles?.csv_files ?? [];
     const allFiles = [...yaml, ...csv];
@@ -82,7 +84,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
 
     sortChildren(root);
     return root;
-  }, [libraryFiles]);
+  }, [libraryFiles, projectName]);
 
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders(prev => {

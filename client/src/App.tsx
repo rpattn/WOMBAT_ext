@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import './App.css';
 import JsonEditor, { type JsonObject } from './components/JsonEditor';
 import WebSocketClient from './components/WebSocketClient';
@@ -36,22 +36,9 @@ export default function App() {
   // Initialize selected saved library from localStorage on mount
   // and keep it consistent with the list as it arrives/updates.
   const LS_KEY_LAST_SAVED = 'lastSavedLibraryName';
-  
-  // Load from localStorage on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(LS_KEY_LAST_SAVED) || '';
-      if (stored) {
-        setSelectedSavedLibrary(stored);
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
 
   // When savedLibraries list updates, ensure the selected value exists.
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedSavedLibrary && !savedLibraries.includes(selectedSavedLibrary)) {
       // Previously selected no longer exists; clear it
       setSelectedSavedLibrary('');
