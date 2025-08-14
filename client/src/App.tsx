@@ -42,11 +42,15 @@ export default function App() {
   const [sendWebSocketMessage, setSendWebSocketMessage] = useState<((message: string) => boolean) | null>(null);
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [libraryFiles, setLibraryFiles] = useState<{ yaml_files: string[]; csv_files: string[]; total_files?: number } | null>(null);
+  const [csvPreview, setCsvPreview] = useState<string | null>(null);
 
   const handleFileSelect = (filePath: string) => {
     console.log('Selected file:', filePath);
     setSelectedFile(filePath);
-    
+    // Reset preview/editor content before loading new file
+    setCsvPreview(null);
+    setConfigData({});
+
     // Send WebSocket message when a file is selected
     if (sendWebSocketMessage) {
       const message = JSON.stringify({
@@ -68,20 +72,25 @@ export default function App() {
     try {
       // Try to parse the message as JSON
       const parsedData = JSON.parse(message);
-      
+
       // Check if the parsed data has the expected structure for config
-      if (parsedData && typeof parsedData === 'object' && 
-          'name' in parsedData && 'library' in parsedData) {
+      if (parsedData && typeof parsedData === 'object' &&
+        'name' in parsedData && 'library' in parsedData) {
         console.log('Received config from WebSocket:', parsedData);
         setConfigData(parsedData);
       }
-      if (parsedData && typeof parsedData === 'object' && 
-          'event' in parsedData && parsedData.event === 'file_content') {
+      if (parsedData && typeof parsedData === 'object' &&
+        'event' in parsedData && parsedData.event === 'file_content') {
         console.log('Received file content from WebSocket:', parsedData);
-        setConfigData(parsedData.data);
+        // If payload is string, treat as plain text (e.g., CSV) and show preview
+        if (typeof parsedData.data === 'string') {
+          setCsvPreview(parsedData.data.slice(0, 800));
+        } else {
+          setConfigData(parsedData.data);
+        }
       }
       if (parsedData && typeof parsedData === 'object' &&
-          'event' in parsedData && parsedData.event === 'library_files') {
+        'event' in parsedData && parsedData.event === 'library_files') {
         console.log('Received library files from WebSocket:', parsedData.files);
         setLibraryFiles(parsedData.files);
       }
@@ -178,7 +187,7 @@ export default function App() {
 
   return (<>
     <WebSocketClient onMessage={handleWebSocketMessage} onSendReady={handleSendReady} />
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
       <div style={{ marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px', color: '#333' }}>Simulation Controls</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
@@ -192,15 +201,15 @@ export default function App() {
             🗑️ Clear Temp
           </button>
           <button onClick={handleGetLibraryFiles} style={dangerButtonStyle}>
-          📋 Get Library Files
+            📋 Get Library Files
           </button>
         </div>
       </div>
       <div className="card">
         <div style={{ display: 'flex', gap: '20px', width: '100%' }}>
           <div style={{ flex: 1 }}>
-            <FileSelector 
-              onFileSelect={handleFileSelect} 
+            <FileSelector
+              onFileSelect={handleFileSelect}
               selectedFile={selectedFile}
               libraryFiles={libraryFiles ?? undefined}
             />
@@ -215,19 +224,40 @@ export default function App() {
             )}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ padding: '16px', maxWidth: '800px', margin: '0 auto' }}>
-              <JsonEditor 
-              data={configData} 
-              onChange={(newData) => setConfigData(prev => ({
-                ...prev,
-                ...newData as JsonObject
-              }))}
-              onSave={(newData) => handleSave(newData as JsonObject)} 
-            />
+            <div style={{ padding: '16px', maxWidth: '1200px', margin: '0 auto' }}>
+              <JsonEditor
+                data={configData}
+                onChange={(newData) => setConfigData(prev => ({
+                  ...prev,
+                  ...newData as JsonObject
+                }))}
+                onSave={(newData) => handleSave(newData as JsonObject)}
+              />
             </div>
           </div>
         </div>
       </div>
+      {csvPreview !== null && selectedFile.endsWith('.csv') ? (
+        <div>
+          <h3 style={{ marginTop: 0 }}>CSV Preview (first 800 chars)</h3>
+          <div
+            style={{
+              border: '1px solid #ccc',
+              borderRadius: 8,
+              padding: 12,
+              background: '#f9f9f9',
+              color: '#333',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+              whiteSpace: 'pre-wrap',
+            }}
+            aria-label="CSV preview"
+          >
+            {csvPreview}
+            {csvPreview.length >= 100 && '…'}
+          </div>
+          <p style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }}>Full CSV editing is not supported yet.</p>
+        </div>
+      ) : <></>}
     </div>
   </>)
 }
