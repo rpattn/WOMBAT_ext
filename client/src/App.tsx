@@ -297,19 +297,6 @@ export default function App() {
     <WebSocketClient onMessage={handleWebSocketMessage} onSendReady={handleSendReady} />
     <div className="app-container">
       <div className="row" style={{ marginBottom: '0.75rem', alignItems: 'center' }}>
-        <div className="col" style={{ flex: '0 0 auto' }}>
-          <label style={{ fontSize: 12, marginRight: 8 }}>Theme</label>
-          <select
-            aria-label="Theme"
-            value={theme}
-            onChange={(e) => setTheme(e.target.value as ThemeMode)}
-            style={{ padding: '6px 8px', borderRadius: 6 }}
-          >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </div>
         <div className="col">
           <SavedLibrariesDropdown
             libraries={savedLibraries}
@@ -396,6 +383,19 @@ export default function App() {
         </div>
       </div>
       <CsvPreview preview={csvPreview} filePath={selectedFile} />
+      <div className="col" style={{ flex: '0 0 auto' }}>
+          <label style={{ fontSize: 12, marginRight: 8 }}>Theme</label>
+          <select
+            aria-label="Theme"
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as ThemeMode)}
+            style={{ padding: '6px 8px', borderRadius: 6 }}
+          >
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
     </div>
   </>)
 }
