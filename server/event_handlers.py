@@ -29,6 +29,9 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
             elif event_type == "delete_file":
                 await handle_delete_file(websocket, json_data, client_id)
                 return True
+            elif event_type == "replace_file":
+                await handle_replace_file(websocket, json_data, client_id)
+                return True
             else:
                 logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
@@ -53,7 +56,7 @@ async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None
         logger.info(f"Getting config for client {client_id[:8]} from: {project_dir}")
         
         # Read the client's configuration file directly
-        config_data = get_client_library_file(client_id, "project/config/base_2yr.yaml")
+        config_data = get_client_library_file(client_id, "project/config/base.yaml")
         
         if config_data:
             # Convert to JSON string for sending
@@ -73,7 +76,7 @@ async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None
                 logger.info(f"Regenerated full library for client {client_id[:8]}: {new_project_dir}")
                 
                 # Now try to get the config again from the newly created library
-                config_data = get_client_library_file(client_id, "project/config/base_2yr.yaml")
+                config_data = get_client_library_file(client_id, "project/config/base.yaml")
                 
                 if config_data:
                     config = json.dumps(config_data, indent=2)
@@ -265,5 +268,44 @@ async def handle_delete_file(websocket: WebSocket, data: dict, client_id: str = 
             'event': 'library_files',
             'files': files
         }))
+    except Exception:
+        pass
+
+
+async def handle_replace_file(websocket: WebSocket, data: dict, client_id: str = None) -> None:
+    """Handle replace_file event from client by overwriting the file content.
+
+    Accepts payload:
+    { "event": "replace_file", "data": { "file_path": "...", "content": "..." } }
+    """
+    from library_manager import add_client_library_file, scan_client_library_files
+    from client_manager import client_manager
+    import json
+
+    if not (client_id and client_id in client_manager.client_projects):
+        await websocket.send_text("Error: Client not found")
+        return
+
+    payload = data.get('data') if isinstance(data, dict) and 'data' in data else data
+    file_path = payload.get('file_path') if isinstance(payload, dict) else None
+    content = payload.get('content') if isinstance(payload, dict) else None
+    if isinstance(file_path, str):
+        file_path = file_path.strip().replace('\\', '/')
+    if not file_path:
+        await websocket.send_text("Error: Missing file_path in replace_file payload")
+        return
+
+    # Use add_client_library_file to overwrite existing file safely
+    ok = add_client_library_file(client_id, file_path, content)
+    await websocket.send_text(json.dumps({
+        'event': 'replace_file_result',
+        'ok': bool(ok),
+        'file_path': file_path
+    }))
+
+    # Refresh library list
+    try:
+        files = scan_client_library_files(client_id)
+        await websocket.send_text(json.dumps({'event': 'library_files', 'files': files}))
     except Exception:
         pass

@@ -27,7 +27,7 @@ async def handle_settings_update(websocket: WebSocket, data: dict, client_id: st
         if selected_rel_path:
             target_file = project_dir / selected_rel_path
         else:
-            target_file = project_dir / "project" / "config" / "base_2yr.yaml"
+            target_file = project_dir / "project" / "config" / "base.yaml"
 
         # Ensure directory exists
         target_file.parent.mkdir(parents=True, exist_ok=True)

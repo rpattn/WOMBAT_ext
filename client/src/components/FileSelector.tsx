@@ -7,6 +7,7 @@ interface FileSelectorProps {
   libraryFiles?: { yaml_files: string[]; csv_files: string[]; total_files?: number };
   onAddFile?: (filePath: string, content: any) => void;
   onDeleteFile?: (filePath: string) => void;
+  onReplaceFile?: (filePath: string) => void;
 }
 
 interface TreeNode {
@@ -18,7 +19,7 @@ interface TreeNode {
   folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root']));
 
   const buildTreeStructure = useMemo(() => {
@@ -128,12 +129,31 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
             <span className="actions folder-actions" onClick={(e) => e.stopPropagation()}>
               <button
                 title="Add YAML file here"
-                style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer' }}
+                style={{
+                  fontSize: 12,
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                  color: '#6b21a8',           // violet-800 text
+                  background: '#f3e8ff',     // violet-100 bg
+                  border: '1px solid #c084fc', // violet-400 border
+                  borderRadius: 4,
+                  transition: 'background 0.15s ease, border-color 0.15s ease'
+                }}
                 onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'yaml')}
               >+ YAML</button>
               <button
                 title="Add CSV file here"
-                style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer' }}
+                style={{
+                  fontSize: 12,
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                  color: '#065f46',            // emerald-900 text
+                  background: '#dcfce7',       // emerald-100 bg
+                  border: '1px solid #16a34a', // emerald-600 border
+                  borderRadius: 4,
+                  marginLeft: 6,
+                  transition: 'background 0.15s ease, border-color 0.15s ease'
+                }}
                 onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'csv')}
               >+ CSV</button>
             </span>
@@ -170,6 +190,15 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
                 onDeleteFile?.(node.fullPath);
               }}
             >Delete</button>
+            <button
+              title="Replace file (upload)"
+              style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#0b5ed7', background: 'transparent', border: '1px solid #eee', borderRadius: 4, marginLeft: 6 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!node.fullPath) return;
+                onReplaceFile?.(node.fullPath);
+              }}
+            >Replace</button>
           </span>
         </div>
       );

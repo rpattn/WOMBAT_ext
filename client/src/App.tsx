@@ -28,7 +28,7 @@ const exampleData = {
 
 export const example_library_structure = {
   "yaml_files": [
-    "project\\config\\base_2yr.yaml",
+    "project\\config\\base.yaml",
     "project\\port\\base_port.yaml",
   ],
   "csv_files": [
@@ -66,6 +66,34 @@ export default function App() {
     } else {
       console.warn('WebSocket not ready to send file select message');
     }
+  };
+
+  const handleReplaceFile = (filePath: string) => {
+    // Create a hidden file input to pick replacement
+    const input = document.createElement('input');
+    input.type = 'file';
+    const accept = filePath.toLowerCase().endsWith('.csv') ? '.csv' : '.yaml,.yml';
+    input.accept = accept;
+    input.onchange = async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const text = await file.text();
+      if (!sendWebSocketMessage) {
+        console.warn('WebSocket not ready to send replace_file');
+        return;
+      }
+      const message = JSON.stringify({ event: 'replace_file', data: { file_path: filePath, content: text } });
+      const ok = sendWebSocketMessage(message);
+      if (!ok) {
+        console.error('Failed to send replace_file message');
+        return;
+      }
+      console.log('Sent replace_file for', filePath, 'with local file', file.name);
+      // Optionally re-select to fetch updated content
+      const selectMsg = JSON.stringify({ event: 'file_select', data: filePath });
+      sendWebSocketMessage(selectMsg);
+    };
+    input.click();
   };
 
   const handleDeleteFile = (filePath: string) => {
@@ -249,6 +277,7 @@ export default function App() {
               libraryFiles={libraryFiles ?? undefined}
               onAddFile={handleAddFile}
               onDeleteFile={handleDeleteFile}
+              onReplaceFile={handleReplaceFile}
             />
             {selectedFile ? (
               <div>

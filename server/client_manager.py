@@ -98,7 +98,7 @@ class ClientManager:
         try:
             # Create temp library in the client directory
             temp_library = create_temp_library(client_dir, "library/code_comparison/dinwoodie_slim")
-            #temp_config = create_temp_config(temp_library, "base_2yr.yaml")
+            #temp_config = create_temp_config(temp_library, "base.yaml")
             
             logger.info(f"Created temp library for client {client_id[:8]}: {temp_library}")
             return str(temp_library)

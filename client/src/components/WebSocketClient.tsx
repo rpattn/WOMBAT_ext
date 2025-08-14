@@ -169,6 +169,8 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                 overflowY: 'auto',
                 marginTop: 8,
+                maxWidth: '700px',
+                maxHeight: '900px',
               }}
             >
               {messages.length === 0 ? (

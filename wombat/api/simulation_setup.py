@@ -56,7 +56,7 @@ def create_library(base_dir: Path, copy_from_dir: Path) -> Path:
     return temp_dir
 
 
-def create_temp_config(library_path: Path, config_name: str = "base_2yr.yaml") -> Path:
+def create_temp_config(library_path: Path, config_name: str = "base.yaml") -> Path:
     """Create a temporary config file with the correct library path."""
     # Load the original config
     original_config = load_yaml(Path("library/code_comparison/dinwoodie/project/config"), config_name)

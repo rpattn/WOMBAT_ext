@@ -8,10 +8,10 @@ import json
 def get_simulation_dict(library: str = "DINWOODIE"):
     source_lib = Path("library/code_comparison/dinwoodie")
 
-    yaml = load_yaml(source_lib / "project/config", "base_2yr.yaml")
+    yaml = load_yaml(source_lib / "project/config", "base.yaml")
     return json.dumps(yaml)
 
-def run_simulation(library: str = "DINWOODIE", config: str = "base_2yr.yaml") -> dict[str, Any]:
+def run_simulation(library: str = "DINWOODIE", config: str = "base.yaml") -> dict[str, Any]:
     """Run a WOMBAT simulation and return result info, including output file paths.
 
     Parameters

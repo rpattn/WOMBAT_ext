@@ -34,7 +34,7 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-def _run_wombat_simulation(library: str = "DINWOODIE", config: str = "base_2yr.yaml") -> dict[str, Any]:
+def _run_wombat_simulation(library: str = "DINWOODIE", config: str = "base.yaml") -> dict[str, Any]:
     # Local import to keep example self-contained and to avoid import cycles.
     from wombat.api.simulation_runner import run_simulation
 
