@@ -154,27 +154,32 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
         </div>
 
         <div style={{ display: 'grid', gap: 6 }}>
-          <span>Messages</span>
-          <div
-            style={{
-              border: '1px solid #ccc',
-              borderRadius: 8,
-              padding: 12,
-              minHeight: 160,
-              background: '#111',
-              color: '#ddd',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-              overflowY: 'auto',
-            }}
-          >
-            {messages.length === 0 ? (
-              <div style={{ opacity: 0.7 }}>No messages yet</div>
-            ) : (
-              messages.map((m, i) => (
-                <div key={i} style={{ whiteSpace: 'pre-wrap' }}>{m}</div>
-              ))
-            )}
-          </div>
+          <details>
+            <summary style={{ cursor: 'pointer', userSelect: 'none' }}>
+              Messages ({messages.length})
+            </summary>
+            <div
+              style={{
+                border: '1px solid #ccc',
+                borderRadius: 8,
+                padding: 12,
+                minHeight: 160,
+                background: '#111',
+                color: '#ddd',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                overflowY: 'auto',
+                marginTop: 8,
+              }}
+            >
+              {messages.length === 0 ? (
+                <div style={{ opacity: 0.7 }}>No messages yet</div>
+              ) : (
+                messages.map((m, i) => (
+                  <div key={i} style={{ whiteSpace: 'pre-wrap' }}>{m}</div>
+                ))
+              )}
+            </div>
+          </details>
         </div>
       </div>
 

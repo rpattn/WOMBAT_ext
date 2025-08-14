@@ -6,6 +6,7 @@ interface FileSelectorProps {
   selectedFile?: string;
   libraryFiles?: { yaml_files: string[]; csv_files: string[]; total_files?: number };
   onAddFile?: (filePath: string, content: any) => void;
+  onDeleteFile?: (filePath: string) => void;
 }
 
 interface TreeNode {
@@ -17,7 +18,7 @@ interface TreeNode {
   folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root']));
 
   const buildTreeStructure = useMemo(() => {
@@ -157,6 +158,19 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         >
           <span className="file-icon">{fileIcon}</span>
           <span className="file-name">{node.name}</span>
+          <span style={{ marginLeft: 'auto' }}>
+            <button
+              title="Delete file"
+              style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#b00020', background: 'transparent', border: '1px solid #eee', borderRadius: 4 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!node.fullPath) return;
+                const confirmDel = window.confirm(`Delete file: ${node.fullPath}?`);
+                if (!confirmDel) return;
+                onDeleteFile?.(node.fullPath);
+              }}
+            >Delete</button>
+          </span>
         </div>
       );
     }

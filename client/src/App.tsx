@@ -68,6 +68,25 @@ export default function App() {
     }
   };
 
+  const handleDeleteFile = (filePath: string) => {
+    if (!sendWebSocketMessage) {
+      console.warn('WebSocket not ready to send delete_file');
+      return;
+    }
+    const message = JSON.stringify({ event: 'delete_file', data: { file_path: filePath } });
+    const ok = sendWebSocketMessage(message);
+    if (!ok) {
+      console.error('Failed to send delete_file message');
+      return;
+    }
+    console.log('Sent delete_file for', filePath);
+    if (selectedFile === filePath) {
+      setSelectedFile('');
+      setCsvPreview(null);
+      setConfigData({});
+    }
+  };
+
   const handleAddFile = (filePath: string, content: any) => {
     if (!sendWebSocketMessage) {
       console.warn('WebSocket not ready to send add_file');
@@ -229,6 +248,7 @@ export default function App() {
               selectedFile={selectedFile}
               libraryFiles={libraryFiles ?? undefined}
               onAddFile={handleAddFile}
+              onDeleteFile={handleDeleteFile}
             />
             {selectedFile ? (
               <div>

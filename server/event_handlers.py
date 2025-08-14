@@ -26,6 +26,9 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
             elif event_type == "add_file":
                 await handle_add_file(websocket, json_data, client_id)
                 return True
+            elif event_type == "delete_file":
+                await handle_delete_file(websocket, json_data, client_id)
+                return True
             else:
                 logger.warning(f"Unknown event type: {event_type}")
                 await websocket.send_text(f"Unknown event: {event_type}")
@@ -178,6 +181,10 @@ async def handle_add_file(websocket: WebSocket, data: dict, client_id: str = Non
 
     payload = data.get('data') if isinstance(data, dict) and 'data' in data else data
     file_path = payload.get('file_path') if isinstance(payload, dict) else None
+    if isinstance(file_path, str):
+        file_path = file_path.strip()
+        # Normalize to forward slashes; server-side delete handles both
+        file_path = file_path.replace('\\', '/')
     content = payload.get('content') if isinstance(payload, dict) else None
 
     if not file_path:
@@ -203,4 +210,60 @@ async def handle_add_file(websocket: WebSocket, data: dict, client_id: str = Non
     except Exception as _:
         # Best-effort refresh; ignore errors here
         pass
+
+
+async def handle_delete_file(websocket: WebSocket, data: dict, client_id: str = None) -> None:
+    """Handle delete_file event from client.
+
+    Expected payloads:
+    - { "event": "delete_file", "data": { "file_path": "path/to/file.yaml" } }
+    - { "event": "delete_file", "file_path": "path/to/file.yaml" }
+    """
+    from library_manager import delete_client_library_file, scan_client_library_files
+    from client_manager import client_manager
+    from pathlib import Path
+    import json
+
+    if not (client_id and client_id in client_manager.client_projects):
+        await websocket.send_text("Error: Client not found")
+        return
+
+    payload = data.get('data') if isinstance(data, dict) and 'data' in data else data
+    file_path = payload.get('file_path') if isinstance(payload, dict) else None
     
+    if not file_path:
+        await websocket.send_text("Error: Missing file_path in delete_file payload")
+        return
+
+    # Normalize for logging/diagnostics
+    norm_rel = file_path.replace('\\', '/').strip()
+    try:
+        project_dir = Path(client_manager.get_client_project_dir(client_id)).resolve()
+        abs_candidate = (project_dir / norm_rel).resolve()
+    except Exception:
+        project_dir = None
+        abs_candidate = None
+
+    ok = delete_client_library_file(client_id, norm_rel)
+
+    result = {
+        'event': 'delete_file_result',
+        'ok': bool(ok),
+        'file_path': file_path
+    }
+    if abs_candidate is not None and project_dir is not None:
+        # Provide optional reason/context for debugging client issues
+        result['abs'] = str(abs_candidate)
+        result['base'] = str(project_dir)
+
+    await websocket.send_text(json.dumps(result))
+
+    # Refresh library list
+    try:
+        files = scan_client_library_files(client_id)
+        await websocket.send_text(json.dumps({
+            'event': 'library_files',
+            'files': files
+        }))
+    except Exception:
+        pass

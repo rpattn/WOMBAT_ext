@@ -4,6 +4,7 @@ import yaml
 import logging
 from pathlib import Path
 from fastapi import WebSocket
+import os
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -54,8 +55,9 @@ async def update_client_library_file(client_id: str, file_path: str, content: di
         return False
     
     try:
-        project_dir = Path(client_manager.get_client_project_dir(client_id))
-        target_file = project_dir / file_path
+        project_dir = Path(client_manager.get_client_project_dir(client_id)).resolve()
+        safe_rel = file_path.replace('\\', '/') if isinstance(file_path, str) else str(file_path)
+        target_file = (project_dir / safe_rel)
         
         # Ensure directory exists
         target_file.parent.mkdir(parents=True, exist_ok=True)
@@ -66,10 +68,65 @@ async def update_client_library_file(client_id: str, file_path: str, content: di
         
         logger.info(f"Updated library file for client {client_id[:8]}: {file_path}")
         return True
-        
     except Exception as e:
         logger.error(f"Error updating library file for client {client_id[:8]}: {e}")
         return False
+
+
+def delete_client_library_file(client_id: str, file_path: str) -> bool:
+    """Delete a file from a client's library.
+
+    Args:
+        client_id: The client identifier
+        file_path: Relative path within the client's project
+
+    Returns:
+        True on success, False on failure or if file does not exist.
+    """
+    from client_manager import client_manager
+    try:
+        if not client_id or client_id not in client_manager.client_projects:
+            logger.warning(f"Client {client_id[:8] if client_id else 'unknown'} not found in client projects")
+            return False
+
+        project_dir = Path(client_manager.get_client_project_dir(client_id))
+        target_file = project_dir / file_path
+
+        # Normalize and ensure path stays within project_dir
+        try:
+            target_file = target_file.resolve()
+            # Robust inside-project check (Windows-safe)
+            base = os.path.normcase(os.path.abspath(str(project_dir)))
+            cand = os.path.normcase(os.path.abspath(str(target_file)))
+            if not (cand == base or cand.startswith(base + os.sep)):
+                logger.error(f"Refusing to delete outside project dir: {target_file} (base={base}, cand={cand})")
+                return False
+        except Exception:
+            logger.error(f"Refusing to delete outside project dir (resolve/check failed): {target_file}")
+            return False
+
+        if not target_file.exists():
+            # Try alternate normalization (backslashes) in case of oddities
+            alt_rel = safe_rel.replace('/', '\\')
+            alt_target = (project_dir / alt_rel)
+            exists_alt = alt_target.exists()
+            logger.info(f"Delete requested for non-existent file: {target_file} | alt: {alt_target} exists={exists_alt}")
+            if not exists_alt:
+                return False
+            target_file = alt_target.resolve()
+
+        target_file.unlink()
+        try:
+            rel = target_file.relative_to(project_dir)
+        except Exception:
+            rel = target_file.name
+        logger.info(f"Deleted file {rel} for client {client_id[:8]}")
+        return True
+    except Exception as e:
+        logger.error(f"Error deleting file for client {client_id[:8] if client_id else 'unknown'}: {e}")
+        return False
+        
+    
 
 
 def get_client_library_file(client_id: str, file_path: str) -> dict:
