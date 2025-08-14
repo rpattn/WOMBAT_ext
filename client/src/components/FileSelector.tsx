@@ -181,7 +181,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
           <span className="actions file-actions">
             <button
               title="Delete file"
-              style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#b00020', background: 'transparent', border: '1px solid #eee', borderRadius: 4 }}
+              style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#b00020', background: 'transparent', border: '1px solid #b00020', borderRadius: 4 }}
               onClick={(e) => {
                 e.stopPropagation();
                 if (!node.fullPath) return;
@@ -192,7 +192,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
             >Delete</button>
             <button
               title="Replace file (upload)"
-              style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#0b5ed7', background: 'transparent', border: '1px solid #eee', borderRadius: 4, marginLeft: 6 }}
+              style={{ fontSize: 12, padding: '2px 6px', cursor: 'pointer', color: '#0b5ed7', background: 'transparent', border: '1px solid #0b5ed7', borderRadius: 4, marginLeft: 6 }}
               onClick={(e) => {
                 e.stopPropagation();
                 if (!node.fullPath) return;
