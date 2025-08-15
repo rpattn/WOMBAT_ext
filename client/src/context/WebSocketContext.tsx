@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import type { JsonObject } from '../components/JsonEditor';
 
 export type WsMessageHandler = (message: string) => void;
