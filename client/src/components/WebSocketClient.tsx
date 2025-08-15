@@ -203,8 +203,8 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
   }, [])
 
   return (
-    <div className="ws-container">
-      <div className="card ws-card">
+    <div className="ws-container" style={{margin: '5px'}}>
+      <div className="card ws-card" style={{margin: '5px'}}>
         <label className="ws-label">
           <span>Server WebSocket URL</span>
           <input

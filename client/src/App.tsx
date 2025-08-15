@@ -42,9 +42,9 @@ export default function App() {
     <>
       <Navbar />
       {/* Single shared WebSocket connection*/}
-      <div className="app-container app-full" style={{minHeight: '0px', padding: '0px', margin: '5px auto'}}>
+      <div className="app-container app-full" style={{minHeight: '0px'}}>
         <details open={pathname === '/connect'}>
-          <summary style={{textAlign: 'left', padding: '0px 16px'}}>WebSocket Client</summary>
+          <summary style={{textAlign: 'left', padding: '0px'}}>WebSocket Client</summary>
           <WebSocketClient onMessage={onMessage} onSendReady={ws.setSend} />
         </details>
       </div>
@@ -54,7 +54,7 @@ export default function App() {
         <Route path="/connect" element={<></>} />
       </Routes>
       {/* Global theme selector */}
-      <div className="app-container" style={{minHeight: '0px', padding: '0px', margin: '5px auto'}}>
+      <div className="app-container app-full" style={{minHeight: '0px'}}>
         <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
       </div>
     </>

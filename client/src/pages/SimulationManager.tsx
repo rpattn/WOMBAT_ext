@@ -228,7 +228,7 @@ export default function SimulationManager() {
   };
 
   return (<>
-    <div className="app-container">
+    <div className="app-container app-full">
       <div className="row" style={{ marginBottom: '0.75rem', alignItems: 'center' }}>
         <div className="col">
           <SavedLibrariesDropdown
