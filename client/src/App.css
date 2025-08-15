@@ -2,6 +2,20 @@
   margin: 0 auto;
   text-align: center;
   width: 100%;
+  min-height: 100vh; /* prevent page from shrinking and jumping when content mounts */
+}
+
+html {
+  height: 100%;
+}
+
+:root {
+  --navbar-height: 64px;
+}
+
+/* Spacer below sticky navbar to prevent overlap with first content row */
+.navbar-spacer {
+  height: var(--navbar-height); /* keep in sync with .sidebar-sticky top and app-container min-height calc */
 }
 
 .logo {
@@ -46,6 +60,8 @@
   max-width: 1200px;
   margin: 0 auto;
   text-align: left;
+  /* Reserve space so when data-driven components expand, the page doesn't jump */
+  min-height: calc(100vh - 64px); /* 64px ~ navbar height; keep in sync with Navbar */
 }
 
 .section { margin-bottom: 24px; }
@@ -71,6 +87,7 @@
 .editor-wrap {
   max-width: 1200px;
   margin: 0 auto;
+  min-height: 360px; /* reserve editor space prior to data load */
 }
 
 /* Buttons */
@@ -115,3 +132,25 @@ html.light .btn-danger  { background-color: rgba(220, 53, 69, 0.1); color: #b000
   white-space: pre-wrap;
 }
 .csv-note { font-size: 12px; opacity: 0.8; margin-top: 8px; }
+
+/* Results page layout */
+.layout-results {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  min-height: 60vh; /* reserve main area so sidebar/content don't cause jump on mount */
+}
+
+.results-sidebar {
+  flex: 0 0 320px;
+}
+
+.sidebar-sticky {
+  position: sticky;
+  top: 64px; /* account for sticky navbar height */
+}
+
+.results-main {
+  flex: 1 1 auto;
+  min-width: 0; /* prevent overflow with flex */
+}

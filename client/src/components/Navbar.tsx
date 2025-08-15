@@ -8,6 +8,12 @@ export default function Navbar() {
         <div className="brand">WOMBAT</div>
         <div className="links">
           <NavLink
+            to="/connect"
+            className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
+          >
+            WebSocket Client
+          </NavLink>
+          <NavLink
             to="/"
             end
             className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}

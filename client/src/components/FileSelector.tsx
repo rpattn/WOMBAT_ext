@@ -10,6 +10,7 @@ interface FileSelectorProps {
   onReplaceFile?: (filePath: string) => void;
   onDownloadFile?: (filePath: string) => void;
   projectName?: string;
+  showActions?: boolean; // when false, hide hover action buttons (e.g., on Results page)
 }
 
 interface TreeNode {
@@ -21,7 +22,7 @@ interface TreeNode {
   folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile, projectName }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile, projectName, showActions = true }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const rootLabel = useMemo(() => (projectName && projectName.trim().length > 0 ? projectName : 'Library Files'), [projectName]);
@@ -149,18 +150,20 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               {isExpanded ? '📂' : '📁'}
             </span>
             <span className="folder-name">{node.name}</span>
-            <span className="actions folder-actions" onClick={(e) => e.stopPropagation()}>
-              <button
-                title="Add YAML file here"
-                className="btn btn-outline-violet"
-                onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'yaml')}
-              >+ YAML</button>
-              <button
-                title="Add CSV file here"
-                className="btn btn-outline-emerald"
-                onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'csv')}
-              >+ CSV</button>
-            </span>
+            {showActions && (
+              <span className="actions folder-actions" onClick={(e) => e.stopPropagation()}>
+                <button
+                  title="Add YAML file here"
+                  className="btn btn-outline-violet"
+                  onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'yaml')}
+                >+ YAML</button>
+                <button
+                  title="Add CSV file here"
+                  className="btn btn-outline-emerald"
+                  onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'csv')}
+                >+ CSV</button>
+              </span>
+            )}
           </div>
           {isExpanded && node.children && (
             <div className="tree-folder-content">
@@ -182,37 +185,39 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         >
           <span className="file-icon">{fileIcon}</span>
           <span className="file-name">{node.name}</span>
-          <span className="actions file-actions">
-            <button
-              title="Download file"
-              className="btn btn-outline-primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!node.fullPath) return;
-                onDownloadFile?.(node.fullPath);
-              }}
-            >Download</button>
-            <button
-              title="Delete file"
-              className="btn btn-outline-danger"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!node.fullPath) return;
-                const confirmDel = window.confirm(`Delete file: ${node.fullPath}?`);
-                if (!confirmDel) return;
-                onDeleteFile?.(node.fullPath);
-              }}
-            >Delete</button>
-            <button
-              title="Replace file (upload)"
-              className="btn btn-outline-primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!node.fullPath) return;
-                onReplaceFile?.(node.fullPath);
-              }}
-            >Replace</button>
-          </span>
+          {showActions && (
+            <span className="actions file-actions">
+              <button
+                title="Download file"
+                className="btn btn-outline-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!node.fullPath) return;
+                  onDownloadFile?.(node.fullPath);
+                }}
+              >Download</button>
+              <button
+                title="Delete file"
+                className="btn btn-outline-danger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!node.fullPath) return;
+                  const confirmDel = window.confirm(`Delete file: ${node.fullPath}?`);
+                  if (!confirmDel) return;
+                  onDeleteFile?.(node.fullPath);
+                }}
+              >Delete</button>
+              <button
+                title="Replace file (upload)"
+                className="btn btn-outline-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!node.fullPath) return;
+                  onReplaceFile?.(node.fullPath);
+                }}
+              >Replace</button>
+            </span>
+          )}
         </div>
       );
     }

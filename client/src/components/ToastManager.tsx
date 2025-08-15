@@ -28,7 +28,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={api}>
       {children}
       <ToastContainer
-        position="top-right"
+        position="top-left"
         theme="colored"
         newestOnTop
         closeOnClick

@@ -204,7 +204,6 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
 
   return (
     <div className="ws-container">
-      <h1>WebSocket Client</h1>
       <div className="card ws-card">
         <label className="ws-label">
           <span>Server WebSocket URL</span>
