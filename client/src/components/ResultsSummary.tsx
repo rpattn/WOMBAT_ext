@@ -1,9 +1,14 @@
 import { useWebSocketContext } from '../context/WebSocketContext';
 
-export default function ResultsSummary() {
-  const { results } = useWebSocketContext();
+type ResultsSummaryProps = {
+  data?: any;
+};
 
-  if (!results) {
+export default function ResultsSummary({ data }: ResultsSummaryProps) {
+  const { results } = useWebSocketContext();
+  const src = data ?? results;
+
+  if (!src) {
     return (
       <div className="card" style={{ padding: 16 }}>
         <h3 style={{ marginTop: 0 }}>Results</h3>
@@ -12,7 +17,7 @@ export default function ResultsSummary() {
     );
   }
 
-  const stats = results.stats ?? {};
+  const stats = src.stats ?? {};
   const maint = stats.maintenance ?? {};
   const power = stats.power_production ?? {};
 
@@ -21,14 +26,14 @@ export default function ResultsSummary() {
       <div className="card" style={{ padding: 16 }}>
         <h3 style={{ marginTop: 0 }}>Simulation</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', rowGap: 6, columnGap: 12 }}>
-          <div>Status</div><div>{results.status ?? 'unknown'}</div>
-          {results.files && (
+          <div>Status</div><div>{src.status ?? 'unknown'}</div>
+          {src.results && (
             <>
-              <div>Events log</div><div>{results.files.events_log}</div>
-              <div>Operations log</div><div>{results.files.operations_log}</div>
-              <div>Power potential</div><div>{results.files.power_potential}</div>
-              <div>Power production</div><div>{results.files.power_production}</div>
-              <div>Metrics input</div><div>{results.files.metrics_input}</div>
+              <div>Events log</div><div>{src.results.events}</div>
+              <div>Operations log</div><div>{src.results.operations}</div>
+              <div>Power potential</div><div>{src.results.power_potential}</div>
+              <div>Power production</div><div>{src.results.power_production}</div>
+              <div>Metrics input</div><div>{src.results.metrics_input}</div>
             </>
           )}
         </div>

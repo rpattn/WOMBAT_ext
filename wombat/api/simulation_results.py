@@ -1,6 +1,15 @@
 import pandas as pd
 from wombat import Simulation
 from typing import Dict, Any
+from pathlib import Path
+import time
+import plotly.express as px
+from wombat.utilities.gantt import (
+    ensure_results_directory,
+    extract_maintenance_requests as util_extract_maintenance_requests,
+    build_completed_tasks,
+    save_plotly_figure,
+)
 
 
 def extract_maintenance_requests(sim: Simulation):
@@ -222,3 +231,87 @@ def power_production_summary_statistics(env) -> Dict[str, Any]:
         "monthly_energy_mwh": monthly_energy_mwh,
         "per_component_energy_mwh": per_component_energy_mwh,
     }
+
+
+def create_detailed_gantt_chart_plotly(sim: Simulation, project_dir: str | Path, filename: str | None = None) -> str:
+    """
+    Generate a detailed Plotly Gantt chart of maintenance task durations and
+    save it to the project's results directory.
+
+    Parameters
+    ----------
+    sim : Simulation
+        Completed simulation instance.
+    project_dir : str | Path
+        Root of the project directory where results/ resides.
+    filename : Optional[str]
+        Custom output HTML filename. If omitted, uses a timestamped default
+        like "YYYY-MM-DD_HH-MM_gantt_detailed.html".
+
+    Returns
+    -------
+    str
+        The path to the saved HTML file. Returns an empty string if no data.
+    """
+    project_dir_path = Path(project_dir)
+    results_dir = project_dir_path / "results"
+
+    # Default filename with timestamp if not provided
+    if not filename:
+        timestamp = time.strftime("%Y-%m-%d_%H-%M", time.localtime())
+        filename = f"{timestamp}_gantt_detailed.html"
+
+    output_path = results_dir / filename
+    ensure_results_directory(output_path)
+
+    # Extract maintenance requests and build completed tasks table
+    maintenance_data = util_extract_maintenance_requests(sim)
+    if maintenance_data is None or maintenance_data.empty:
+        return ""
+
+    completed_df = build_completed_tasks(sim, maintenance_data)
+    if completed_df is None or completed_df.empty:
+        return ""
+
+    # Prepare data for plotting
+    completed_df = completed_df.copy()
+    color_map = {"maintenance": "#2E86AB", "repair": "#A23B72"}
+    category_orders = {
+        "row_label": completed_df.sort_values("request_time")["row_label"].tolist()
+    }
+
+    hover_fields: Dict[str, Any] = {
+        "row_label": False,
+        "task_description": True,
+        "part_name": True,
+        "request_time": True,
+        "completion_time": True,
+        "duration_days": ":.1f",
+        "request_type": True,
+    }
+    if "vessel" in completed_df.columns:
+        hover_fields["vessel"] = True
+
+    fig = px.timeline(
+        completed_df,
+        x_start="request_time",
+        x_end="completion_time",
+        y="row_label",
+        color="request_type",
+        color_discrete_map=color_map,
+        hover_data=hover_fields,
+        category_orders=category_orders,
+        title="Wind Farm Maintenance Task Durations",
+        template="plotly_white",
+    )
+
+    fig.update_yaxes(title="")
+    fig.update_xaxes(title="Time")
+
+    height = max(500, 28 * len(completed_df))
+    fig.update_layout(height=height, legend_title_text="Task Type")
+
+    # Save HTML (and PNG if kaleido available)
+    save_plotly_figure(fig, output_path)
+
+    return str(output_path)

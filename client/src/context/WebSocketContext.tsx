@@ -3,6 +3,8 @@ import type { JsonObject } from '../components/JsonEditor';
 
 export type WsMessageHandler = (message: string) => void;
 
+type LibraryFiles = { yaml_files: string[]; csv_files: string[]; html_files?: string[]; total_files?: number };
+
 export type WebSocketContextType = {
   send: ((message: string) => boolean) | null;
   setSend: (fn: ((message: string) => boolean) | null) => void;
@@ -10,8 +12,8 @@ export type WebSocketContextType = {
   notify: (message: string) => void;
 
   // Shared data
-  libraryFiles: { yaml_files: string[]; csv_files: string[]; total_files?: number } | null;
-  setLibraryFiles: React.Dispatch<React.SetStateAction<{ yaml_files: string[]; csv_files: string[]; total_files?: number } | null>>;
+  libraryFiles: LibraryFiles | null;
+  setLibraryFiles: React.Dispatch<React.SetStateAction<LibraryFiles | null>>;
   savedLibraries: string[];
   setSavedLibraries: React.Dispatch<React.SetStateAction<string[]>>;
   selectedSavedLibrary: string;
@@ -36,7 +38,7 @@ export function WebSocketProvider({ children }: PropsWithChildren) {
   const listenersRef = useRef(new Set<WsMessageHandler>());
 
   // Shared data state
-  const [libraryFiles, setLibraryFiles] = useState<{ yaml_files: string[]; csv_files: string[]; total_files?: number } | null>(null);
+  const [libraryFiles, setLibraryFiles] = useState<LibraryFiles | null>(null);
   const [savedLibraries, setSavedLibraries] = useState<string[]>([]);
   const [selectedSavedLibrary, setSelectedSavedLibrary] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<string>('');

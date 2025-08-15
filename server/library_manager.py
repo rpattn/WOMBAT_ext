@@ -311,10 +311,11 @@ def scan_library_files(library_path: str) -> dict:
         
         if not library_dir.exists():
             logger.warning(f"Library directory does not exist: {library_path}")
-            return {"yaml_files": [], "csv_files": []}
+            return {"yaml_files": [], "csv_files": [], "html_files": [], "total_files": 0}
         
         yaml_files = []
         csv_files = []
+        html_files = []
         
         # Recursively find all .yaml and .csv files
         for file_path in library_dir.rglob('*'):
@@ -325,22 +326,26 @@ def scan_library_files(library_path: str) -> dict:
                     yaml_files.append(relative_path)
                 elif file_path.suffix.lower() == '.csv':
                     csv_files.append(relative_path)
+                elif file_path.suffix.lower() == '.html':
+                    html_files.append(relative_path)
         
         # Sort the lists for consistent output
         yaml_files.sort()
         csv_files.sort()
+        html_files.sort()
         
         logger.info(f"Scanned library {library_path}: {len(yaml_files)} YAML files, {len(csv_files)} CSV files")
         
         return {
             "yaml_files": yaml_files,
             "csv_files": csv_files,
-            "total_files": len(yaml_files) + len(csv_files)
+            "html_files": html_files,
+            "total_files": len(yaml_files) + len(csv_files) + len(html_files)
         }
         
     except Exception as e:
         logger.error(f"Error scanning library files in {library_path}: {e}")
-        return {"yaml_files": [], "csv_files": [], "total_files": 0}
+        return {"yaml_files": [], "csv_files": [], "html_files": [], "total_files": 0}
 
 
 def scan_client_library_files(client_id: str) -> dict:

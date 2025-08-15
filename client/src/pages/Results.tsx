@@ -15,6 +15,7 @@ export default function Results() {
     savedLibraries,
     selectedSavedLibrary, setSelectedSavedLibrary,
     configData,
+    csvPreview,
   } = useWebSocketContext();
   // Shared toasts are handled in App.tsx; this page reads shared state
 
@@ -28,8 +29,12 @@ export default function Results() {
   const handleFileSelect = (filePath: string) => {
     setSelectedFile(filePath);
     if (sendWebSocketMessage) {
-      const msg = JSON.stringify({ event: 'file_select', data: filePath });
-      sendWebSocketMessage(msg);
+      const lf = filePath.toLowerCase();
+      const isHtml = lf.endsWith('.html');
+      const payload = isHtml
+        ? { event: 'file_select', data: filePath, raw: true }
+        : { event: 'file_select', data: filePath };
+      sendWebSocketMessage(JSON.stringify(payload));
     }
   };
 
@@ -106,11 +111,22 @@ export default function Results() {
                 const lf = selectedFile?.toLowerCase() || '';
                 const isYaml = lf.endsWith('.yaml') || lf.endsWith('.yml');
                 const isSummary = lf.includes('summary.yaml');
-                if (isSummary) {
-                  return <ResultsSummary />;
-                }
-                if (isYaml) {
-                  return <YamlJsonViewer title={selectedFile.split('\\').pop() || 'YAML'} data={configData} />;
+                const isHtml = lf.endsWith('.html');
+                if (isSummary) return <ResultsSummary data={configData} />;
+                if (isYaml) return <YamlJsonViewer title={selectedFile.split('\\').pop() || 'YAML'} data={configData} />;
+                if (isHtml) {
+                  // Render HTML directly in an iframe using the raw content captured by csvPreview
+                  // Note: server sends raw text when raw: true; websocket handler stores string in csvPreview
+                  return (
+                    <div style={{ height: '70vh', border: '1px solid #ddd' }}>
+                      <iframe
+                        title={selectedFile}
+                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        sandbox="allow-scripts allow-same-origin"
+                        srcDoc={String(csvPreview || '')}
+                      />
+                    </div>
+                  );
                 }
                 return <ResultsSummary />;
               })()}

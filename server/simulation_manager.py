@@ -70,6 +70,7 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
                         websocket.send_text(f"saved summary to {path}"),
                         loop,
                     )
+                    # Gantt generation is performed inside run_wombat_simulation -> run_simulation
             except Exception as e:
                 logger.error(f"Failed to save summary YAML for client {client_id[:8]}: {e}")
             

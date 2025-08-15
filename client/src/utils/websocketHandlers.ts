@@ -1,10 +1,12 @@
 import type { MutableRefObject } from 'react';
 import type { JsonObject } from '../components/JsonEditor';
 
+type LibraryFiles = { yaml_files: string[]; csv_files: string[]; html_files?: string[]; total_files?: number };
+
 export type CreateWebSocketMessageHandlerArgs = {
   setConfigData: (data: any) => void;
   setCsvPreview: (data: string | null) => void;
-  setLibraryFiles: (files: { yaml_files: string[]; csv_files: string[]; total_files?: number } | null) => void;
+  setLibraryFiles: (files: LibraryFiles | null) => void;
   setSavedLibraries?: (dirs: string[]) => void;
   pendingDownloadRef: MutableRefObject<string | null>;
   onToast?: (level: 'info' | 'success' | 'warning' | 'error', message: string) => void;

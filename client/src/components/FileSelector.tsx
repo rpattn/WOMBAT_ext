@@ -4,7 +4,7 @@ import './FileSelector.css';
 interface FileSelectorProps {
   onFileSelect: (fileName: string) => void;
   selectedFile?: string;
-  libraryFiles?: { yaml_files: string[]; csv_files: string[]; total_files?: number };
+  libraryFiles?: { yaml_files: string[]; csv_files: string[]; html_files?: string[]; total_files?: number };
   onAddFile?: (filePath: string, content: any) => void;
   onDeleteFile?: (filePath: string) => void;
   onReplaceFile?: (filePath: string) => void;
@@ -31,7 +31,8 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     const root: TreeNode = { name: rootLabel, type: 'folder', children: [], folderFullPath: '' };
     const yaml = libraryFiles?.yaml_files ?? [];
     const csv = libraryFiles?.csv_files ?? [];
-    const allFiles = [...yaml, ...csv];
+    const html = libraryFiles?.html_files ?? [];
+    const allFiles = [...yaml, ...csv, ...html];
 
     allFiles.forEach(filePath => {
       const parts = filePath.split('\\');
@@ -174,7 +175,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
       );
     } else {
       const fileExtension = node.name.split('.').pop()?.toLowerCase();
-      const fileIcon = fileExtension === 'yaml' ? '📄' : fileExtension === 'csv' ? '📊' : '📄';
+      const fileIcon = fileExtension === 'yaml' ? '📄' : fileExtension === 'csv' ? '📊' : fileExtension === 'html' ? '🌐' : '📄';
       
       return (
         <div 
@@ -228,7 +229,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
       <div className="file-selector-header">
         <h3>Library Files</h3>
         <p className="file-count">
-          {(libraryFiles?.yaml_files?.length ?? 0)} YAML files, {(libraryFiles?.csv_files?.length ?? 0)} CSV files
+          {(libraryFiles?.yaml_files?.length ?? 0)} YAML, {(libraryFiles?.csv_files?.length ?? 0)} CSV, {(libraryFiles?.html_files?.length ?? 0)} HTML
         </p>
       </div>
       <div className="file-tree">
