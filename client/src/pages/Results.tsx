@@ -4,6 +4,7 @@ import SelectedFileInfo from '../components/SelectedFileInfo';
 import { useWebSocketContext } from '../context/WebSocketContext';
 import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown';
 import YamlJsonViewer from '../components/YamlJsonViewer';
+import CsvPreview from '../components/CsvPreview';
 import ResultsSummary from '../components/ResultsSummary';
 
 export default function Results() {
@@ -114,32 +115,53 @@ export default function Results() {
                 const isYaml = lf.endsWith('.yaml') || lf.endsWith('.yml');
                 const isSummary = lf.includes('summary.yaml');
                 const isHtml = lf.endsWith('.html');
+                const isCsv = lf.endsWith('.csv');
                 const isPng = lf.endsWith('.png');
                 if (isSummary) return <ResultsSummary data={configData} />;
                 if (isYaml) return <YamlJsonViewer title={selectedFile.split('\\').pop() || 'YAML'} data={configData} />;
+                if (isCsv) return <CsvPreview preview={csvPreview} filePath={selectedFile} />;
                 if (isHtml) {
                   // Render HTML directly in an iframe using the raw content captured by csvPreview
                   // Note: server sends raw text when raw: true; websocket handler stores string in csvPreview
                   return (
-                    <div style={{ height: '70vh', border: '1px solid #ddd' }}>
-                      <iframe
-                        title={selectedFile}
-                        style={{ width: '100%', height: '100%', border: 'none' }}
-                        sandbox="allow-scripts allow-same-origin"
-                        srcDoc={String(csvPreview || '')}
-                      />
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+                        <button
+                          className="btn-app btn-secondary"
+                          title="Open HTML in new tab"
+                          aria-label="Open HTML in new tab"
+                          onClick={() => {
+                            try {
+                              const blob = new Blob([String(csvPreview || '')], { type: 'text/html' });
+                              const url = URL.createObjectURL(blob);
+                              window.open(url, '_blank', 'noopener,noreferrer');
+                            } catch {
+                              // ignore
+                            }
+                          }}
+                          style={{ padding: '4px 8px' }}
+                        >🗗 Open in new tab</button>
+                      </div>
+                      <div style={{ height: '70vh', border: '1px solid #ddd', overflowX: 'auto', overflowY: 'hidden' }}>
+                        <iframe
+                          title={selectedFile}
+                          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                          sandbox="allow-scripts allow-same-origin"
+                          srcDoc={String(csvPreview || '')}
+                        />
+                      </div>
                     </div>
                   );
                 }
                 if (isPng) {
                   return (
-                    <div style={{ height: '85vh', overflow: 'auto', border: '1px solid #ddd', padding: 8 }}>
+                    <div style={{ height: '85vh', overflowX: 'auto', overflowY: 'auto', border: '1px solid #ddd', padding: 8 }}>
                       {binaryPreviewUrl ? (
                         // eslint-disable-next-line jsx-a11y/img-redundant-alt
                         <img
                           alt={`Image preview: ${selectedFile}`}
                           src={binaryPreviewUrl}
-                          style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                          style={{ height: 'auto', display: 'block' }}
                         />
                       ) : (
                         <div style={{ color: '#777', fontStyle: 'italic', textAlign: 'center', padding: '24px 0' }}>Loading image…</div>
