@@ -8,7 +8,7 @@ import { WebSocketProvider } from './context/WebSocketContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ToastProvider>
         <WebSocketProvider>
           <App />
