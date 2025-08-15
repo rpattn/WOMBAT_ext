@@ -96,6 +96,7 @@ export default function Results() {
                 onReplaceFile={handleReplaceFile}
                 onDownloadFile={handleDownloadFile}
                 showActions={false}
+                defaultExpandFolders={['results']}
               />
               <SelectedFileInfo selectedFile={selectedFile} />
               <div style={{ marginTop: 12 }}>
@@ -125,6 +126,14 @@ export default function Results() {
                   // Note: server sends raw text when raw: true; websocket handler stores string in csvPreview
                   return (
                     <div>
+                      <div style={{ height: '70vh', border: '1px solid #ddd', overflowX: 'auto', overflowY: 'hidden' }}>
+                        <iframe
+                          title={selectedFile}
+                          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                          sandbox="allow-scripts allow-same-origin"
+                          srcDoc={String(csvPreview || '')}
+                        />
+                      </div>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
                         <button
                           className="btn-app btn-secondary"
@@ -141,14 +150,6 @@ export default function Results() {
                           }}
                           style={{ padding: '4px 8px' }}
                         >🗗 Open in new tab</button>
-                      </div>
-                      <div style={{ height: '70vh', border: '1px solid #ddd', overflowX: 'auto', overflowY: 'hidden' }}>
-                        <iframe
-                          title={selectedFile}
-                          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                          sandbox="allow-scripts allow-same-origin"
-                          srcDoc={String(csvPreview || '')}
-                        />
                       </div>
                     </div>
                   );

@@ -11,6 +11,8 @@ interface FileSelectorProps {
   onDownloadFile?: (filePath: string) => void;
   projectName?: string;
   showActions?: boolean; // when false, hide hover action buttons (e.g., on Results page)
+  // Optional list of top-level folders to expand by default if present (e.g., ["results"]).
+  defaultExpandFolders?: string[];
 }
 
 interface TreeNode {
@@ -22,7 +24,7 @@ interface TreeNode {
   folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile, projectName, showActions = true }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile, projectName, showActions = true, defaultExpandFolders = [] }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const rootLabel = useMemo(() => (projectName && projectName.trim().length > 0 ? projectName : 'Library Files'), [projectName]);
@@ -90,13 +92,15 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     return root;
   }, [libraryFiles, rootLabel]);
 
-  // Expand root and "project" and "project/config" by default when present
+  // Expand root and some common folders (like "project") by default when present.
   useEffect(() => {
     const next = new Set<string>();
     next.add(rootLabel);
     const yaml = libraryFiles?.yaml_files ?? [];
     const csv = libraryFiles?.csv_files ?? [];
-    const allFiles = [...yaml, ...csv];
+    const html = libraryFiles?.html_files ?? [];
+    const png = libraryFiles?.png_files ?? [];
+    const allFiles = [...yaml, ...csv, ...html, ...png];
     const parts = allFiles.map(p => (p || '').split('\\'));
     const hasProject = parts.some(seg => seg[0] === 'project');
     const hasProjectConfig = parts.some(seg => seg[0] === 'project' && seg[1] === 'config');
@@ -106,8 +110,20 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     if (hasProjectConfig) {
       next.add(`${rootLabel}/project/config`);
     }
-    setExpandedFolders(next);
-  }, [rootLabel, libraryFiles]);
+    // Expand any requested default top-level folders if they are present
+    for (const folderName of defaultExpandFolders) {
+      if (!folderName) continue;
+      const hasFolder = parts.some(seg => seg[0] === folderName);
+      if (hasFolder) {
+        next.add(`${rootLabel}/${folderName}`);
+      }
+    }
+    // Only update state if changed to avoid triggering re-renders unnecessarily
+    const isSame = expandedFolders.size === next.size && Array.from(next).every(v => expandedFolders.has(v));
+    if (!isSame) {
+      setExpandedFolders(next);
+    }
+  }, [rootLabel, libraryFiles, JSON.stringify(defaultExpandFolders), expandedFolders]);
 
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders(prev => {
