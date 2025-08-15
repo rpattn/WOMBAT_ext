@@ -173,3 +173,23 @@ html.light .btn-danger  { background-color: rgba(220, 53, 69, 0.1); color: #b000
     flex: 1 1 100%;
   }
 }
+
+/* Saved Libraries dropdown layout */
+.saved-libs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 400px;
+}
+.saved-libs-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.saved-libs-label-text { margin-right: 8px; white-space: nowrap; }
+.saved-libs-select { padding: 6px 8px; width: 100%; min-width: 0; max-width: 100%; }
+.saved-libs-actions { flex: 0 0 auto; }

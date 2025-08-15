@@ -9,13 +9,13 @@ type Props = {
 export default function SavedLibrariesDropdown({ libraries, value, onChange, label = 'Saved Libraries', children }: Props) {
   const hasItems = Array.isArray(libraries) && libraries.length > 0;
   return (
-    <div className="saved-libs" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-      <label style={{ display: 'inline-flex', alignItems: 'center', marginBottom: 0 }}>
-        <span style={{ marginRight: 8 }}>{label}</span>
+    <div className="saved-libs">
+      <label className="saved-libs-label">
+        <span className="saved-libs-label-text">{label}</span>
         <select
+          className="saved-libs-select"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          style={{ padding: '6px 8px', minWidth: 240 }}
         >
           <option value="">{hasItems ? 'Select a saved library…' : 'No saved libraries found'}</option>
           {libraries.map((dir) => (
@@ -23,7 +23,9 @@ export default function SavedLibrariesDropdown({ libraries, value, onChange, lab
           ))}
         </select>
       </label>
-      {children}
+      {children && (
+        <div className="saved-libs-actions">{children}</div>
+      )}
     </div>
   );
 }

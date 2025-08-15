@@ -145,6 +145,8 @@ export default function SimulationManager() {
     console.log('Sent add_file for', filePath);
     // Optionally pre-select the file immediately; content will arrive after server stores it
     setSelectedFile(filePath);
+    //toast the user
+    toast.info(`Added file: ${filePath} to working library.`);
   };
 
   // State is updated centrally in App.tsx; no page-level subscription needed
