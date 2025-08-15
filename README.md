@@ -35,6 +35,47 @@ Client:\
 `cd client`\
 `npm run dev`
 
+## Frontend Testing (Vitest + React Testing Library)
+
+Client-side tests are configured with Vitest and React Testing Library.
+
+- **Key files**
+  - `client/vitest.config.ts` — Vitest config (jsdom, setup files, coverage)
+  - `client/src/test/setupTests.ts` — jsdom setup, matchMedia polyfill, WebSocket mock
+  - `client/src/test/test-utils.tsx` — `renderWithProviders()` (MemoryRouter + Toast + WebSocket providers)
+  - `client/src/__tests__/` — test files (`*.test.tsx`)
+  - `client/tsconfig.app.json` — includes `"types": ["vite/client", "vitest/globals"]`
+- **Run tests**
+  npm run test
+
+  # watch mode
+  npm run test:watch
+
+  # coverage report (text + lcov)
+  npm run test:coverage
+  ```
+
+- **IDE TypeScript notes**
+  - If `describe/test/expect` are not recognized, ensure `client/tsconfig.app.json` has `vitest/globals` in `types`, then restart the TS server.
+
+- **Writing tests**
+  - Prefer `renderWithProviders` from `client/src/test/test-utils.tsx` so components get the necessary providers.
+  - Example:
+    ```tsx
+    import { screen } from '@testing-library/react'
+    import { renderWithProviders } from '../test/test-utils'
+    import App from '../App'
+
+    test('renders results page', () => {
+      renderWithProviders(<App />, { routerProps: { initialEntries: ['/results'] } })
+      expect(screen.getByRole('heading', { name: /results/i })).toBeInTheDocument()
+    })
+    ```
+
+- **Environment polyfills & mocks**
+  - `setupTests.ts` provides a `window.matchMedia` polyfill for components that check color scheme.
+  - A lightweight `WebSocket` mock is installed globally and tracks instances at `globalThis.__wsInstances` for assertions in tests.
+
 ## Deployment
 
 Server: \
