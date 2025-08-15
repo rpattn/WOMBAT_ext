@@ -16,6 +16,7 @@ export default function Results() {
     selectedSavedLibrary, setSelectedSavedLibrary,
     configData,
     csvPreview,
+    binaryPreviewUrl,
   } = useWebSocketContext();
   // Shared toasts are handled in App.tsx; this page reads shared state
 
@@ -31,7 +32,8 @@ export default function Results() {
     if (sendWebSocketMessage) {
       const lf = filePath.toLowerCase();
       const isHtml = lf.endsWith('.html');
-      const payload = isHtml
+      const isPng = lf.endsWith('.png');
+      const payload = (isHtml || isPng)
         ? { event: 'file_select', data: filePath, raw: true }
         : { event: 'file_select', data: filePath };
       sendWebSocketMessage(JSON.stringify(payload));
@@ -112,6 +114,7 @@ export default function Results() {
                 const isYaml = lf.endsWith('.yaml') || lf.endsWith('.yml');
                 const isSummary = lf.includes('summary.yaml');
                 const isHtml = lf.endsWith('.html');
+                const isPng = lf.endsWith('.png');
                 if (isSummary) return <ResultsSummary data={configData} />;
                 if (isYaml) return <YamlJsonViewer title={selectedFile.split('\\').pop() || 'YAML'} data={configData} />;
                 if (isHtml) {
@@ -125,6 +128,14 @@ export default function Results() {
                         sandbox="allow-scripts allow-same-origin"
                         srcDoc={String(csvPreview || '')}
                       />
+                    </div>
+                  );
+                }
+                if (isPng) {
+                  return (
+                    <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid #ddd', padding: 8 }}>
+                      {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
+                      <img alt={`Image preview: ${selectedFile}`} src={binaryPreviewUrl || ''} style={{ maxWidth: '100%' }} />
                     </div>
                   );
                 }

@@ -20,6 +20,7 @@ export default function App() {
     setSavedLibraries: ws.setSavedLibraries,
     pendingDownloadRef: ws.pendingDownloadRef,
     setResults: ws.setResults,
+    setBinaryPreviewUrl: ws.setBinaryPreviewUrl,
     onToast: (level, message) => {
       switch (level) {
         case 'success': toast.success(message); break;

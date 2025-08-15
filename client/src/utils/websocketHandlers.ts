@@ -1,7 +1,7 @@
 import type { MutableRefObject } from 'react';
 import type { JsonObject } from '../components/JsonEditor';
 
-type LibraryFiles = { yaml_files: string[]; csv_files: string[]; html_files?: string[]; total_files?: number };
+type LibraryFiles = { yaml_files: string[]; csv_files: string[]; html_files?: string[]; png_files?: string[]; total_files?: number };
 
 export type CreateWebSocketMessageHandlerArgs = {
   setConfigData: (data: any) => void;
@@ -11,6 +11,7 @@ export type CreateWebSocketMessageHandlerArgs = {
   pendingDownloadRef: MutableRefObject<string | null>;
   onToast?: (level: 'info' | 'success' | 'warning' | 'error', message: string) => void;
   setResults?: (data: any | null) => void;
+  setBinaryPreviewUrl?: (url: string | null) => void;
 };
 
 export function createWebSocketMessageHandler({
@@ -21,6 +22,7 @@ export function createWebSocketMessageHandler({
   pendingDownloadRef,
   onToast,
   setResults,
+  setBinaryPreviewUrl,
 }: CreateWebSocketMessageHandlerArgs) {
   return function handleWebSocketMessage(message: string) {
     try {
@@ -39,25 +41,29 @@ export function createWebSocketMessageHandler({
             const isCsv = filePath.toLowerCase().endsWith('.csv');
             const isYaml = filePath.toLowerCase().endsWith('.yaml') || filePath.toLowerCase().endsWith('.yml');
             const fileName = filePath.split('\\').pop() || 'download';
-
-            let text: string;
-            let mime: string;
-            if (typeof parsedData.data === 'string') {
-              text = parsedData.data;
-              if (isCsv) {
-                mime = 'text/csv;charset=utf-8';
-              } else if (isYaml) {
-                mime = 'application/x-yaml;charset=utf-8';
-              } else {
-                mime = 'text/plain;charset=utf-8';
-              }
+            let blob: Blob;
+            if (parsedData.data_b64 && parsedData.mime) {
+              // Binary download
+              const byteChars = atob(parsedData.data_b64 as string);
+              const byteNumbers = new Array(byteChars.length);
+              for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+              const byteArray = new Uint8Array(byteNumbers);
+              blob = new Blob([byteArray], { type: parsedData.mime as string });
             } else {
-              // Received structured data (e.g., YAML parsed as object) -> provide JSON download
-              text = JSON.stringify(parsedData.data, null, 2);
-              mime = 'application/json;charset=utf-8';
+              // Text or JSON download
+              let text: string;
+              let mime: string;
+              if (typeof parsedData.data === 'string') {
+                text = parsedData.data;
+                if (isCsv) mime = 'text/csv;charset=utf-8';
+                else if (isYaml) mime = 'application/x-yaml;charset=utf-8';
+                else mime = (parsedData.mime as string) || 'text/plain;charset=utf-8';
+              } else {
+                text = JSON.stringify(parsedData.data, null, 2);
+                mime = 'application/json;charset=utf-8';
+              }
+              blob = new Blob([text], { type: mime });
             }
-
-            const blob = new Blob([text], { type: mime });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -73,11 +79,26 @@ export function createWebSocketMessageHandler({
         }
 
         // Normal UI update path
-        if (typeof parsedData.data === 'string') {
-          // Pass full CSV text to the UI so the CsvPreview can render a complete table
+        if (parsedData.data_b64 && parsedData.mime && parsedData.mime.startsWith('image/')) {
+          // Create blob URL for image preview
+          try {
+            const byteChars = atob(parsedData.data_b64 as string);
+            const byteNumbers = new Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: parsedData.mime as string });
+            const url = URL.createObjectURL(blob);
+            setCsvPreview(null);
+            setBinaryPreviewUrl?.(url);
+          } catch {
+            setBinaryPreviewUrl?.(null);
+          }
+        } else if (typeof parsedData.data === 'string') {
           setCsvPreview(parsedData.data);
+          setBinaryPreviewUrl?.(null);
         } else {
           setConfigData(parsedData.data);
+          setBinaryPreviewUrl?.(null);
         }
       }
 

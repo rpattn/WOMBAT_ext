@@ -3,7 +3,7 @@ import type { JsonObject } from '../components/JsonEditor';
 
 export type WsMessageHandler = (message: string) => void;
 
-type LibraryFiles = { yaml_files: string[]; csv_files: string[]; html_files?: string[]; total_files?: number };
+type LibraryFiles = { yaml_files: string[]; csv_files: string[]; html_files?: string[]; png_files?: string[]; total_files?: number };
 
 export type WebSocketContextType = {
   send: ((message: string) => boolean) | null;
@@ -24,6 +24,8 @@ export type WebSocketContextType = {
   setConfigData: React.Dispatch<React.SetStateAction<JsonObject>>;
   csvPreview: string | null;
   setCsvPreview: React.Dispatch<React.SetStateAction<string | null>>;
+  binaryPreviewUrl?: string | null;
+  setBinaryPreviewUrl?: React.Dispatch<React.SetStateAction<string | null>>;
   pendingDownloadRef: React.MutableRefObject<string | null>;
 
   // Simulation results
@@ -44,6 +46,7 @@ export function WebSocketProvider({ children }: PropsWithChildren) {
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [configData, setConfigData] = useState<JsonObject>({});
   const [csvPreview, setCsvPreview] = useState<string | null>(null);
+  const [binaryPreviewUrl, setBinaryPreviewUrl] = useState<string | null>(null);
   const pendingDownloadRef = useRef<string | null>(null);
   const [results, setResults] = useState<any | null>(null);
 
@@ -94,11 +97,13 @@ export function WebSocketProvider({ children }: PropsWithChildren) {
     setConfigData,
     csvPreview,
     setCsvPreview,
+    binaryPreviewUrl,
+    setBinaryPreviewUrl,
     pendingDownloadRef,
 
     results,
     setResults,
-  }), [sendFn, setSend, addListener, notify, libraryFiles, savedLibraries, selectedSavedLibrary, selectedFile, configData, csvPreview, results]);
+  }), [sendFn, setSend, addListener, notify, libraryFiles, savedLibraries, selectedSavedLibrary, selectedFile, configData, csvPreview, binaryPreviewUrl, results]);
 
   return (
     <WebSocketContext.Provider value={value}>

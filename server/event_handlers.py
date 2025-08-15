@@ -128,25 +128,39 @@ async def handle_file_select(websocket: WebSocket, data: dict, client_id: str = 
     
     try:
         if raw:
-            # Read the file directly as UTF-8 text (used for downloads)
+            # Read raw file; if binary, send base64 + mime for client to preview/download
             from pathlib import Path
+            import base64
+            import mimetypes
             project_dir = Path(client_manager.get_client_project_dir(client_id)).resolve()
             abs_path = (project_dir / file_path).resolve()
-            # Safety: ensure path is within the project directory
             if not str(abs_path).startswith(str(project_dir)):
                 await websocket.send_text("Error: Invalid file path")
                 return
             if not abs_path.exists() or not abs_path.is_file():
                 await websocket.send_text(f"Error: File not found: {file_path}")
                 return
-            content = abs_path.read_text(encoding='utf-8')
+            mime_guess, _ = mimetypes.guess_type(abs_path.name)
+            is_binary = abs_path.suffix.lower() in {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico', '.webp'}
             client_manager.set_last_selected_file(client_id, file_path)
-            response = {
-                'event': 'file_content',
-                'file': file_path,
-                'data': content,
-                'raw': True
-            }
+            if is_binary:
+                data_b64 = base64.b64encode(abs_path.read_bytes()).decode('ascii')
+                response = {
+                    'event': 'file_content',
+                    'file': file_path,
+                    'data_b64': data_b64,
+                    'mime': mime_guess or 'application/octet-stream',
+                    'raw': True
+                }
+            else:
+                content = abs_path.read_text(encoding='utf-8')
+                response = {
+                    'event': 'file_content',
+                    'file': file_path,
+                    'data': content,
+                    'mime': mime_guess or 'text/plain',
+                    'raw': True
+                }
             await websocket.send_text(json.dumps(response))
         else:
             # Get the file content via library manager (may parse YAML -> dict)
