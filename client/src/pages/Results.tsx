@@ -51,55 +51,58 @@ export default function Results() {
 
   return (
     <div className="app-container" style={{ paddingTop: '1rem' }}>
-      <div className="layout-results">
-        <aside className="results-sidebar sidebar-sticky">
-          <div className="card" style={{ padding: 12 }}>
-            <h3 style={{ marginTop: 0 }}>Files</h3>
-            <div style={{ marginBottom: 12 }}>
-              {/* Shared Saved Libraries selector */}
-              <SavedLibrariesDropdown
-                libraries={savedLibraries}
-                value={selectedSavedLibrary}
-                onChange={(val: string) => {
-                  setSelectedSavedLibrary(val);
-                  try {
-                    window.localStorage.setItem('lastSavedLibraryName', val || '');
-                  } catch { /* ignore */ }
-                  if (val && sendWebSocketMessage) {
-                    const msg = JSON.stringify({ event: 'load_saved_library', data: { name: val } });
-                    sendWebSocketMessage(msg);
-                  }
-                }}
-              >
-              </SavedLibrariesDropdown>
+      <div className="card">
+        <div className="row stack-sm">
+          <div className="col col-1-4">
+            <details open>
+              <summary style={{textAlign: 'left', padding: '0px 16px'}}>Files</summary>
+              <div className="card" style={{ padding: 12 }}>
+                <div style={{ marginBottom: 12 }}>
+                  {/* Shared Saved Libraries selector */}
+                <SavedLibrariesDropdown
+                  libraries={savedLibraries}
+                  value={selectedSavedLibrary}
+                  onChange={(val: string) => {
+                    setSelectedSavedLibrary(val);
+                    try {
+                      window.localStorage.setItem('lastSavedLibraryName', val || '');
+                    } catch { /* ignore */ }
+                    if (val && sendWebSocketMessage) {
+                      const msg = JSON.stringify({ event: 'load_saved_library', data: { name: val } });
+                      sendWebSocketMessage(msg);
+                    }
+                  }}
+                >
+                </SavedLibrariesDropdown>
+              </div>
+              <FileSelector
+                onFileSelect={handleFileSelect}
+                selectedFile={selectedFile}
+                libraryFiles={libraryFiles ?? undefined}
+                projectName={selectedSavedLibrary || undefined}
+                onAddFile={handleAddFile}
+                onDeleteFile={handleDeleteFile}
+                onReplaceFile={handleReplaceFile}
+                onDownloadFile={handleDownloadFile}
+                showActions={false}
+              />
+              <SelectedFileInfo selectedFile={selectedFile} />
+              <div style={{ marginTop: 12 }}>
+                <button
+                  className="btn-app btn-secondary"
+                  onClick={() => sendWebSocketMessage?.('get_library_files')}
+                >Refresh Files</button>
+              </div>
             </div>
-            <FileSelector
-              onFileSelect={handleFileSelect}
-              selectedFile={selectedFile}
-              libraryFiles={libraryFiles ?? undefined}
-              projectName={selectedSavedLibrary || undefined}
-              onAddFile={handleAddFile}
-              onDeleteFile={handleDeleteFile}
-              onReplaceFile={handleReplaceFile}
-              onDownloadFile={handleDownloadFile}
-              showActions={false}
-            />
-            <SelectedFileInfo selectedFile={selectedFile} />
-            <div style={{ marginTop: 12 }}>
-              <button
-                className="btn-app btn-secondary"
-                onClick={() => sendWebSocketMessage?.('get_library_files')}
-              >Refresh Files</button>
+            </details>
+          </div>
+          <div className="col col-3-4">
+            <div className="card" style={{ padding: 16 }}>
+              <h2 style={{ marginTop: 0 }}>Results</h2>
+              <p>Select a file on the left to view its results. Content coming soon.</p>
             </div>
           </div>
-        </aside>
-
-        <main className="results-main">
-          <div className="card" style={{ padding: 16 }}>
-            <h2 style={{ marginTop: 0 }}>Results</h2>
-            <p>Select a file on the left to view its results. Content coming soon.</p>
-          </div>
-        </main>
+        </div>
       </div>
     </div>
   );

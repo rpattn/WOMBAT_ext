@@ -226,7 +226,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
   return (
     <div className="file-selector">
       <div className="file-selector-header">
-        <h3>Select a Configuration File</h3>
+        <h3>Library Files</h3>
         <p className="file-count">
           {(libraryFiles?.yaml_files?.length ?? 0)} YAML files, {(libraryFiles?.csv_files?.length ?? 0)} CSV files
         </p>

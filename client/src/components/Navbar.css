@@ -6,6 +6,17 @@
   border-bottom: 1px solid var(--border-color, #dddddd);
 }
 
+/* Animate hamburger into an "X" when open */
+.navbar.open .menu-toggle .bar:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.navbar.open .menu-toggle .bar:nth-child(2) {
+  opacity: 0;
+}
+.navbar.open .menu-toggle .bar:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
 .navbar-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -81,6 +92,8 @@ html.dark .navbar .link.active {
   height: 2px;
   background: currentColor;
   margin: 0; /* use container gap to space bars equally */
+  transition: transform 200ms ease, opacity 200ms ease;
+  transform-origin: center;
 }
 
 /* Small screens: collapse links into dropdown */
