@@ -133,9 +133,17 @@ export default function Results() {
                 }
                 if (isPng) {
                   return (
-                    <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid #ddd', padding: 8 }}>
-                      {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
-                      <img alt={`Image preview: ${selectedFile}`} src={binaryPreviewUrl || ''} style={{ maxWidth: '100%' }} />
+                    <div style={{ height: '85vh', overflow: 'auto', border: '1px solid #ddd', padding: 8 }}>
+                      {binaryPreviewUrl ? (
+                        // eslint-disable-next-line jsx-a11y/img-redundant-alt
+                        <img
+                          alt={`Image preview: ${selectedFile}`}
+                          src={binaryPreviewUrl}
+                          style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                        />
+                      ) : (
+                        <div style={{ color: '#777', fontStyle: 'italic', textAlign: 'center', padding: '24px 0' }}>Loading image…</div>
+                      )}
                     </div>
                   );
                 }
