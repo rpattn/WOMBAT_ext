@@ -1,0 +1,66 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--card-bg, #ffffff);
+  border-bottom: 1px solid var(--border-color, #dddddd);
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+}
+
+.brand {
+  font-weight: 700;
+}
+
+.links {
+  display: flex;
+  gap: 1rem;
+}
+
+.link {
+  text-decoration: none;
+  color: inherit;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.link.active {
+  background: var(--btn-bg, #efefef);
+}
+
+/* Light theme explicit (optional) */
+html.light .navbar {
+  background: #ffffff;
+  border-bottom-color: #e5e7eb; /* neutral-200 */
+}
+html.light .navbar .link:hover {
+  background: #f3f4f6; /* neutral-100 */
+}
+html.light .navbar .link.active {
+  background: #eef2ff; /* indigo-50-ish */
+}
+
+/* Dark theme overrides */
+html.dark .navbar {
+  background: #1f2937; /* slate-800 */
+  border-bottom-color: #374151; /* slate-700 */
+}
+html.dark .navbar .brand {
+  color: rgba(255, 255, 255, 0.95);
+}
+html.dark .navbar .link {
+  color: rgba(255, 255, 255, 0.87);
+}
+html.dark .navbar .link:hover {
+  background: #111827; /* slate-900 */
+}
+html.dark .navbar .link.active {
+  background: #374151; /* slate-700 */
+}
