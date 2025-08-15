@@ -154,3 +154,13 @@ html.light .btn-danger  { background-color: rgba(220, 53, 69, 0.1); color: #b000
   flex: 1 1 auto;
   min-width: 0; /* prevent overflow with flex */
 }
+
+/* Responsive helpers */
+@media (max-width: 768px) {
+  .row.stack-sm {
+    flex-direction: column;
+  }
+  .row.stack-sm .col {
+    flex: 1 1 100%;
+  }
+}

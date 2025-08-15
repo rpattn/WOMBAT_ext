@@ -285,7 +285,7 @@ export default function SimulationManager() {
         onSaveLibrary={handleSaveLibrary}
       />
       <div className="card">
-        <div className="row">
+        <div className="row stack-sm">
           <div className="col">
             <FileSelector
               onFileSelect={handleFileSelect}

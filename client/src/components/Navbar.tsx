@@ -1,12 +1,24 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import './Navbar.css';
 
 export default function Navbar() {
+  const [open, setOpen] = useState(false);
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${open ? 'open' : ''}`}>
       <div className="navbar-inner">
         <div className="brand">WOMBAT</div>
-        <div className="links">
+        <button
+          className="menu-toggle"
+          aria-label="Toggle navigation menu"
+          aria-expanded={open}
+          onClick={() => setOpen(prev => !prev)}
+        >
+          <span className="bar" />
+          <span className="bar" />
+          <span className="bar" />
+        </button>
+        <div className="links" onClick={() => setOpen(false)}>
           <NavLink
             to="/connect"
             className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
