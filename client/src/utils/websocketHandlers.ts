@@ -8,6 +8,7 @@ export type CreateWebSocketMessageHandlerArgs = {
   setSavedLibraries?: (dirs: string[]) => void;
   pendingDownloadRef: MutableRefObject<string | null>;
   onToast?: (level: 'info' | 'success' | 'warning' | 'error', message: string) => void;
+  setResults?: (data: any | null) => void;
 };
 
 export function createWebSocketMessageHandler({
@@ -17,6 +18,7 @@ export function createWebSocketMessageHandler({
   setSavedLibraries,
   pendingDownloadRef,
   onToast,
+  setResults,
 }: CreateWebSocketMessageHandlerArgs) {
   return function handleWebSocketMessage(message: string) {
     try {
@@ -85,6 +87,11 @@ export function createWebSocketMessageHandler({
         if (Array.isArray(parsedData.dirs)) {
           setSavedLibraries?.(parsedData.dirs as string[]);
         }
+      }
+
+      // Simulation results payload: { event: 'results', data: {...} }
+      if (parsedData && typeof parsedData === 'object' && 'event' in parsedData && parsedData.event === 'results') {
+        setResults?.(parsedData.data ?? null);
       }
 
       // Toast events from server

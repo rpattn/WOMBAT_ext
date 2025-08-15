@@ -23,6 +23,10 @@ export type WebSocketContextType = {
   csvPreview: string | null;
   setCsvPreview: React.Dispatch<React.SetStateAction<string | null>>;
   pendingDownloadRef: React.MutableRefObject<string | null>;
+
+  // Simulation results
+  results: any | null;
+  setResults: React.Dispatch<React.SetStateAction<any | null>>;
 };
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
@@ -39,6 +43,7 @@ export function WebSocketProvider({ children }: PropsWithChildren) {
   const [configData, setConfigData] = useState<JsonObject>({});
   const [csvPreview, setCsvPreview] = useState<string | null>(null);
   const pendingDownloadRef = useRef<string | null>(null);
+  const [results, setResults] = useState<any | null>(null);
 
   // Initialize from localStorage (persist selection across pages/reloads)
   /*
@@ -88,7 +93,10 @@ export function WebSocketProvider({ children }: PropsWithChildren) {
     csvPreview,
     setCsvPreview,
     pendingDownloadRef,
-  }), [sendFn, setSend, addListener, notify, libraryFiles, savedLibraries, selectedSavedLibrary, selectedFile, configData, csvPreview]);
+
+    results,
+    setResults,
+  }), [sendFn, setSend, addListener, notify, libraryFiles, savedLibraries, selectedSavedLibrary, selectedFile, configData, csvPreview, results]);
 
   return (
     <WebSocketContext.Provider value={value}>

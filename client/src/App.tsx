@@ -19,6 +19,7 @@ export default function App() {
     setLibraryFiles: ws.setLibraryFiles,
     setSavedLibraries: ws.setSavedLibraries,
     pendingDownloadRef: ws.pendingDownloadRef,
+    setResults: ws.setResults,
     onToast: (level, message) => {
       switch (level) {
         case 'success': toast.success(message); break;
@@ -40,7 +41,7 @@ export default function App() {
     <>
       <Navbar />
       {/* Single shared WebSocket connection*/}
-      <div className="app-container" style={{minHeight: '0px', padding: '0px', margin: '5px auto'}}>
+      <div className="app-container app-full" style={{minHeight: '0px', padding: '0px', margin: '5px auto'}}>
         <details open={pathname === '/connect'}>
           <summary style={{textAlign: 'left', padding: '0px 16px'}}>WebSocket Client</summary>
           <WebSocketClient onMessage={onMessage} onSendReady={ws.setSend} />

@@ -3,6 +3,7 @@ import FileSelector from '../components/FileSelector';
 import SelectedFileInfo from '../components/SelectedFileInfo';
 import { useWebSocketContext } from '../context/WebSocketContext';
 import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown';
+import ResultsSummary from '../components/ResultsSummary';
 
 export default function Results() {
   const {
@@ -99,7 +100,7 @@ export default function Results() {
           <div className="col col-3-4">
             <div className="card" style={{ padding: 16 }}>
               <h2 style={{ marginTop: 0 }}>Results</h2>
-              <p>Select a file on the left to view its results. Content coming soon.</p>
+              <ResultsSummary />
             </div>
           </div>
         </div>
