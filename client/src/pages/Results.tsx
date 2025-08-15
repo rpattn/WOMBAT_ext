@@ -50,7 +50,7 @@ export default function Results() {
   };
 
   return (
-    <div className="app-container" style={{ paddingTop: '1rem' }}>
+    <div className="app-container app-full" style={{ paddingTop: '1rem' }}>
       <div className="card">
         <div className="row stack-sm">
           <div className="col col-1-4">

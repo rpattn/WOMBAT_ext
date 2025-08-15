@@ -38,6 +38,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         className="wombat-toast-container"
         toastClassName="wombat-toast"
         progressClassName="wombat-toast-progress"
+        autoClose={2000}
       />
     </ToastContext.Provider>
   );
