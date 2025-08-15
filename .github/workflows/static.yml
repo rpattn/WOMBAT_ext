@@ -43,7 +43,7 @@ jobs:
         working-directory: client
 
       - name: Build
-        run: npm run build
+        run: npm run build -- --base=/WOMBAT_ext/
         working-directory: client
 
       - name: Setup Pages
