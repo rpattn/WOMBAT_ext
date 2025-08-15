@@ -41,12 +41,14 @@ export function WebSocketProvider({ children }: PropsWithChildren) {
   const pendingDownloadRef = useRef<string | null>(null);
 
   // Initialize from localStorage (persist selection across pages/reloads)
+  /*
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem('lastSavedLibraryName') || '';
       if (stored) setSelectedSavedLibrary(stored);
-    } catch { /* ignore */ }
+    } catch { }
   }, []);
+  */
 
   const setSend = useCallback((fn: ((message: string) => boolean) | null) => {
     setSendFn(() => fn);
