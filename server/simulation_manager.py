@@ -44,8 +44,10 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
         try:
             # Get client-specific project directory
             from client_manager import client_manager
-            from library_manager import scan_client_library_files
+            from library_manager import scan_client_library_files, add_client_library_file
             import json
+            import time
+            import os
             
             project_dir = client_manager.get_client_project_dir(client_id)
             
@@ -54,6 +56,21 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
             else:
                 # Fallback to default
                 result = run_wombat_simulation()
+
+            # save result to a summary yaml file within the client's project directory
+            try:
+                if project_dir:
+                    # Persist a stable location so UI can find it predictably
+                    summary_rel_path = "results/"
+                    filename = f"summary_{time.time()}.yaml"
+                    path = os.path.join(summary_rel_path, filename)
+                    add_client_library_file(client_id, path, content=result)
+                    asyncio.run_coroutine_threadsafe(
+                        websocket.send_text(f"saved summary to {path}"),
+                        loop,
+                    )
+            except Exception as e:
+                logger.error(f"Failed to save summary YAML for client {client_id[:8]}: {e}")
             
             # Send results only to the client that initiated the simulation
             """asyncio.run_coroutine_threadsafe(
