@@ -62,7 +62,8 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
                 if project_dir:
                     # Persist a stable location so UI can find it predictably
                     summary_rel_path = "results/"
-                    filename = f"summary_{time.time()}.yaml"
+                    timestamp = time.strftime("%Y-%m-%d_%H-%M", time.localtime())
+                    filename = f"{timestamp}_summary.yaml"
                     path = os.path.join(summary_rel_path, filename)
                     add_client_library_file(client_id, path, content=result)
                     asyncio.run_coroutine_threadsafe(

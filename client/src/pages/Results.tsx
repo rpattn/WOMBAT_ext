@@ -3,6 +3,7 @@ import FileSelector from '../components/FileSelector';
 import SelectedFileInfo from '../components/SelectedFileInfo';
 import { useWebSocketContext } from '../context/WebSocketContext';
 import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown';
+import YamlJsonViewer from '../components/YamlJsonViewer';
 import ResultsSummary from '../components/ResultsSummary';
 
 export default function Results() {
@@ -13,6 +14,7 @@ export default function Results() {
     pendingDownloadRef,
     savedLibraries,
     selectedSavedLibrary, setSelectedSavedLibrary,
+    configData,
   } = useWebSocketContext();
   // Shared toasts are handled in App.tsx; this page reads shared state
 
@@ -100,7 +102,18 @@ export default function Results() {
           <div className="col col-3-4">
             <div className="card" style={{ padding: 16 }}>
               <h2 style={{ marginTop: 0 }}>Results</h2>
-              <ResultsSummary />
+              {(() => {
+                const lf = selectedFile?.toLowerCase() || '';
+                const isYaml = lf.endsWith('.yaml') || lf.endsWith('.yml');
+                const isSummary = lf.includes('summary.yaml');
+                if (isSummary) {
+                  return <ResultsSummary />;
+                }
+                if (isYaml) {
+                  return <YamlJsonViewer title={selectedFile.split('\\').pop() || 'YAML'} data={configData} />;
+                }
+                return <ResultsSummary />;
+              })()}
             </div>
           </div>
         </div>
