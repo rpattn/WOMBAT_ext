@@ -13,7 +13,6 @@ export default function App() {
   const ws = useWebSocketContext();
   const toast = useToast();
 
-
   const handleWebSocketMessage = createWebSocketMessageHandler({
     setConfigData: ws.setConfigData,
     setCsvPreview: ws.setCsvPreview,
