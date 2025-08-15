@@ -23,11 +23,22 @@ def run_simulation(library: str = "DINWOODIE", config: str = "base.yaml") -> dic
         The configuration YAML filename inside `<library>/project/config/>`.
     """
     from wombat import Simulation
+    from wombat.api.simulation_results import extract_maintenance_requests, maintenance_summary_statistics, power_production_summary_statistics
 
-    sim = Simulation.from_config(library, config)
+    sim = Simulation.from_config(library, config)   
     sim.run()
 
     env = sim.env
+
+    # Extract maintenance data
+    maintenance_data = extract_maintenance_requests(sim)
+    
+    # get summary statistics
+    maintenance_stats = maintenance_summary_statistics(maintenance_data)
+
+    # get power production summary statistics
+    power_production_stats = power_production_summary_statistics(env)
+
     result: dict[str, Any] = {
         "status": "completed",
         "name": sim.config.name,
@@ -39,6 +50,10 @@ def run_simulation(library: str = "DINWOODIE", config: str = "base.yaml") -> dic
             "power_production": str(env.power_production_fname),
             "metrics_input": str(env.metrics_input_fname),
         },
+        "stats": {
+            "maintenance": maintenance_stats,
+            "power_production": power_production_stats
+        }
     }
 
     return result

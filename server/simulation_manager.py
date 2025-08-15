@@ -78,6 +78,14 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
                 websocket.send_text(f"Send 'clear_temp' to clean files when done"),
                 loop,
             )
+            message = {
+                'event': 'results',
+                'data': result
+            }
+            asyncio.run_coroutine_threadsafe(
+                websocket.send_text(json.dumps(message)),
+                loop,
+            )
         except Exception as exc:  # noqa: BLE001
             try:
                 asyncio.run_coroutine_threadsafe(
