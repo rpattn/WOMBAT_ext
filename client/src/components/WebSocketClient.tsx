@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './WebSocketClient.css'
 import { useToast } from './ToastManager'
+import { toast } from 'react-toastify'
 
 type WebSocketClientProps = {
   initialUrl?: string
@@ -16,7 +17,9 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
   const [messages, setMessages] = useState<string[]>([])
   const [outgoing, setOutgoing] = useState<string>('')
   const websocketRef = useRef<WebSocket | null>(null)
-  const toast = useToast()
+  const toastApi = useToast()
+  // Track a single spinner for repeated "[server] running..." updates
+  const runningSpinnerRef = useRef<{ resolve?: (v?: unknown) => void; reject?: (e?: unknown) => void } | null>(null)
 
   const appendMessage = (msg: string) => {
     setMessages((prev) => [...prev, msg])
@@ -27,31 +30,61 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
 
     // Error messages
     if (lower.startsWith('[error]')) {
-      toast.error(stripPrefix(trimmed) || 'An error occurred')
+      toastApi.error(stripPrefix(trimmed) || 'An error occurred')
       return
     }
 
     // Connection status
     if (lower.includes('connected ->')) {
-      toast.success('Connected to server')
+      toastApi.success('Connected to server')
       return
     }
     if (lower.includes('disconnected')) {
-      toast.warning('Disconnected from server')
+      toastApi.warning('Disconnected from server')
       return
     }
 
     // Cannot send warnings
     if (lower.includes('cannot send')) {
-      toast.warning(stripPrefix(trimmed))
+      toastApi.warning(stripPrefix(trimmed))
       return
     }
 
-    // Non-JSON server messages surfaced as info
+    // Non-JSON server messages: special-case "running..." with a promise spinner
     if (lower.startsWith('[server]')) {
       const text = stripPrefix(trimmed)
+      // If it's a streaming progress like "running... 5s" -> show a single spinner (no repeated toasts)
+      if (/^running\.\.\./i.test(text)) {
+        if (!runningSpinnerRef.current) {
+          let resolveFn!: (value?: unknown) => void
+          let rejectFn!: (reason?: unknown) => void
+          const p = new Promise<unknown>((resolve, reject) => {
+            resolveFn = resolve
+            rejectFn = reject
+          })
+          toast.promise(
+            p,
+            {
+              pending: 'Simulation is running...',
+              success: 'Simulation is complete',
+              error: 'Simulation stopped',
+            },
+            { toastId: 'server-running-spinner', autoClose: 3000, closeOnClick: false, draggable: false }
+          )
+          runningSpinnerRef.current = { resolve: resolveFn!, reject: rejectFn! }
+        }
+        // Do not show an info toast for each tick
+        return
+      }
+
+      // If we had a running spinner and we receive a different server message, consider it completed
+      if (runningSpinnerRef.current) {
+        runningSpinnerRef.current.resolve?.()
+        runningSpinnerRef.current = null
+      }
+
       if (text && !/json config received/i.test(text)) {
-        toast.info(text)
+        toastApi.info(text)
       }
       return
     }
@@ -106,12 +139,22 @@ export default function WebSocketClient({ initialUrl, onMessage, onSendReady }: 
 
       socket.onerror = (event) => {
         appendMessage(`[error] ${String((event as ErrorEvent)?.message ?? 'ws error')}`)
+        // Fail the running spinner if present
+        if (runningSpinnerRef.current) {
+          runningSpinnerRef.current.reject?.(new Error('WebSocket error'))
+          runningSpinnerRef.current = null
+        }
       }
 
       socket.onclose = () => {
         setIsConnected(false)
         appendMessage('[client] disconnected')
         websocketRef.current = null
+        // Reject spinner on disconnect
+        if (runningSpinnerRef.current) {
+          runningSpinnerRef.current.reject?.(new Error('Disconnected'))
+          runningSpinnerRef.current = null
+        }
       }
     } catch (err) {
       appendMessage(`[error] ${(err as Error).message}`)

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { ToastContainer, toast, type ToastOptions } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './ToastManager.css';
 
 export type ToastLevel = 'info' | 'success' | 'warning' | 'error';
 
@@ -27,13 +28,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={api}>
       {children}
       <ToastContainer
-        position="bottom-right"
+        position="top-right"
         theme="colored"
         newestOnTop
         closeOnClick
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        className="wombat-toast-container"
+        toastClassName="wombat-toast"
+        progressClassName="wombat-toast-progress"
       />
     </ToastContext.Provider>
   );
@@ -44,3 +48,4 @@ export function useToast(): ToastAPI {
   if (!ctx) throw new Error('useToast must be used within a ToastProvider');
   return ctx;
 }
+
