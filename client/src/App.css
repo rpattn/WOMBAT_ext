@@ -84,6 +84,9 @@ html {
 }
 .col { flex: 1; }
 
+/* Utility: force vertical stacking regardless of screen size */
+.row.column { flex-direction: column; }
+
 .editor-wrap {
   max-width: 1200px;
   margin: 0 auto;

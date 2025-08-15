@@ -13,6 +13,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 1rem;
+  position: relative; /* for dropdown positioning */
 }
 
 .brand {
@@ -63,4 +64,51 @@ html.dark .navbar .link:hover {
 }
 html.dark .navbar .link.active {
   background: #374151; /* slate-700 */
+}
+
+/* Hamburger toggle (hidden on large screens) */
+.menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+}
+.menu-toggle .bar {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  margin: 0; /* use container gap to space bars equally */
+}
+
+/* Small screens: collapse links into dropdown */
+@media (max-width: 768px) {
+  .menu-toggle { display: inline-flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; }
+  .links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 0;
+    background: var(--card-bg, #ffffff);
+    border-bottom: 1px solid var(--border-color, #dddddd);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    padding: 0.5rem;
+    z-index: 1000;
+  }
+  .navbar.open .links { display: flex; }
+  .links .link {
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+  }
+
+  /* Dark theme dropdown bg */
+  html.dark .links {
+    background: #1f2937; /* slate-800 */
+    border-bottom-color: #374151; /* slate-700 */
+  }
 }
