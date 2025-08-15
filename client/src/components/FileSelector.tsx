@@ -191,16 +191,20 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
             <span className="actions file-actions">
               <button
                 title="Download file"
+                aria-label="Download file"
                 className="btn btn-outline-primary"
+                style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!node.fullPath) return;
                   onDownloadFile?.(node.fullPath);
                 }}
-              >Download</button>
+              >⬇️</button>
               <button
                 title="Delete file"
+                aria-label="Delete file"
                 className="btn btn-outline-danger"
+                style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!node.fullPath) return;
@@ -208,16 +212,18 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
                   if (!confirmDel) return;
                   onDeleteFile?.(node.fullPath);
                 }}
-              >Delete</button>
+              >🗑️</button>
               <button
                 title="Replace file (upload)"
+                aria-label="Replace file"
                 className="btn btn-outline-primary"
+                style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!node.fullPath) return;
                   onReplaceFile?.(node.fullPath);
                 }}
-              >Replace</button>
+              >↻</button>
             </span>
           )}
         </div>

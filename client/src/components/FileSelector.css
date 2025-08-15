@@ -60,6 +60,12 @@
   padding-left: var(--indent, 0px);
 }
 
+/* Make folder header a positioning context and reserve space so text doesn't shift */
+.tree-folder-header {
+  position: relative;
+  padding-right: 88px; /* space for floating actions */
+}
+
 .tree-folder-header:hover {
   background-color: #f5f5f5;
 }
@@ -93,6 +99,22 @@
   margin: 2px 0;
   /* indentation via css var set inline: --indent */
   padding-left: var(--indent, 20px);
+}
+
+/* Make file row a positioning context and reserve space so filename doesn't shift */
+.tree-file {
+  position: relative;
+  padding-right: 88px; /* space for floating actions */
+}
+
+/* Float action buttons to the right for files and folders */
+.folder-actions,
+.file-actions {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
 }
 
 .tree-file:hover {
