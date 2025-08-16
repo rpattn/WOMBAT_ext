@@ -60,7 +60,7 @@
 - [x] Split `SimulationManager.tsx` into subcomponents (initial pass: `SavedLibrariesBar`, `LibraryPanel`, `EditorPanel`).
 - [x] Centralize toast handling via `useToasts()` and error utilities.
 - [x] Add tests for `ApiContext` functions (init session, list files, get config, add/replace/delete, simulate). Status: `src/__tests__/apiContext.test.tsx` extended to cover these flows.
-- [ ] Add component tests for the new subcomponents of `SimulationManager`.
+- [x] Add component tests for the new subcomponents of `SimulationManager`.
 - [ ] Verify package compatibility with React 19; pin versions if needed in `package.json`.
 - [ ] Consider adding Prettier config (if formatting inconsistencies emerge) and ensure ESLint+Prettier play well.
 
@@ -74,3 +74,9 @@
     - `src/components/LibraryPanel.tsx` (wraps `FileSelector` + `SelectedFileInfo`)
     - `src/components/EditorPanel.tsx` (wraps `JsonEditor`)
   - Centralized notifications via `src/hooks/useToasts.ts`; `SimulationManager` refactored to use it. Only `ToastManager` imports `react-toastify` directly.
+  - Added component tests:
+    - `src/__tests__/SavedLibrariesBar.test.tsx`
+    - `src/__tests__/LibraryPanel.test.tsx`
+    - `src/__tests__/EditorPanel.test.tsx`
+    - Updated selectors in `App.test.tsx` and `Navbar.test.tsx` to match current labels (brand `WOMBAT_ext`, `Connection Manager`).
+    - Adjusted `LibraryPanel` test to use exact count string and `hidden: true` for action buttons revealed on hover.

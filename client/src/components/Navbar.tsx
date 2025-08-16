@@ -7,7 +7,7 @@ export default function Navbar() {
   return (
     <nav className={`navbar ${open ? 'open' : ''}`}>
       <div className="navbar-inner">
-        <div className="brand">WOMBAT</div>
+        <div className="brand">WOMBAT_ext</div>
         <button
           className="menu-toggle"
           aria-label="Toggle navigation menu"
@@ -23,7 +23,7 @@ export default function Navbar() {
             to="/connect"
             className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
           >
-            WebSocket Client
+            Connection Manager
           </NavLink>
           <NavLink
             to="/"
