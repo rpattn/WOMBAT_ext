@@ -168,3 +168,5 @@ ENV/
 /examples/results/
 /server/temp/
 /server/client_library
+/client/coverage/
+
