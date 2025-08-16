@@ -64,6 +64,28 @@ export default function RestClient() {
             <button className="btn-app btn-primary" onClick={api.fetchSavedLibraries}>Refresh Saved</button>
             <button className="btn-app btn-primary" onClick={api.getConfig} disabled={!api.sessionId}>Get Config</button>
             <button className="btn-app btn-primary" onClick={api.runSimulation} disabled={!api.sessionId}>Run Simulation</button>
+            <button
+              className="btn-app btn-secondary"
+              onClick={async () => {
+                try {
+                  const count = await api.sweepTemp();
+                  console.info(`Sweep Temp removed ${count} folder(s)`)
+                } catch (e) {
+                  console.warn('Sweep Temp failed', e)
+                }
+              }}
+            >Sweep Temp</button>
+            <button
+              className="btn-app btn-secondary"
+              onClick={async () => {
+                try {
+                  const count = await api.sweepTempAll();
+                  console.info(`Sweep Temp All removed ${count} folder(s)`)
+                } catch (e) {
+                  console.warn('Sweep Temp All failed', e)
+                }
+              }}
+            >Sweep Temp All</button>
           </div>
         </div>
 

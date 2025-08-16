@@ -41,6 +41,7 @@ export default function SimulationManager() {
     saveLibrary,
     loadSaved,
     deleteSaved,
+    sweepTemp,
   } = useApiContext();
   const toast = useToast();
 
@@ -114,22 +115,13 @@ export default function SimulationManager() {
   const handleGetConfig = () => { getConfig().catch(() => {}); };
 
   const handleClearTemp = () => {
-    // Sweep all unused temp dirs server-side
-    const p = fetch(`${apiBaseUrl}/temp/sweep`, { method: 'POST' })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(await r.text())
-        return r.json()
-      })
-      .then((payload: { removed: string[] }) => {
-        const count = Array.isArray(payload?.removed) ? payload.removed.length : 0
-        return count
-      })
-    toastify.info('Clearing temp folders…')
+    const p = sweepTemp();
+    toastify.info('Clearing temp folders…');
     p.then((count) => {
-      toastify.success(`Cleared ${count} temp folder(s)`)
+      toastify.success(`Cleared ${count} temp folder(s)`);
     }).catch(() => {
-      toastify.error('Failed to clear temp folders')
-    })
+      toastify.error('Failed to clear temp folders');
+    });
   };
 
   const handleRunSimulation = () => {

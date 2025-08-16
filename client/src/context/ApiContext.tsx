@@ -44,6 +44,11 @@ export type ApiContextType = {
   loadSaved: (name: string) => Promise<void>
   deleteSaved: (name: string) => Promise<void>
   runSimulation: () => Promise<void>
+
+  // Temp maintenance
+  clearClientTemp: () => Promise<boolean>
+  sweepTemp: () => Promise<number>
+  sweepTempAll: () => Promise<number>
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined)
@@ -252,6 +257,31 @@ export function ApiProvider({ children }: PropsWithChildren) {
     setLibraryFiles(data.files)
   }, [apiBaseUrl, requireSession])
 
+  // Temp maintenance REST helpers
+  const clearClientTemp = useCallback(async () => {
+    const id = requireSession()
+    const res = await fetch(`${apiBaseUrl}/${id}/temp`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(await res.text())
+    const data = await res.json()
+    return Boolean(data?.ok)
+  }, [apiBaseUrl, requireSession])
+
+  const sweepTemp = useCallback(async () => {
+    const res = await fetch(`${apiBaseUrl}/temp/sweep`, { method: 'POST' })
+    if (!res.ok) throw new Error(await res.text())
+    const data = await res.json()
+    const removed = Array.isArray(data?.removed) ? data.removed : []
+    return removed.length as number
+  }, [apiBaseUrl])
+
+  const sweepTempAll = useCallback(async () => {
+    const res = await fetch(`${apiBaseUrl}/temp/sweep_all`, { method: 'POST' })
+    if (!res.ok) throw new Error(await res.text())
+    const data = await res.json()
+    const removed = Array.isArray(data?.removed) ? data.removed : []
+    return removed.length as number
+  }, [apiBaseUrl])
+
   const refreshAll = useCallback(async () => {
     const id = requireSession()
     const r = await fetch(`${apiBaseUrl}/${id}/refresh`)
@@ -306,6 +336,9 @@ export function ApiProvider({ children }: PropsWithChildren) {
     loadSaved,
     deleteSaved,
     runSimulation,
+    clearClientTemp,
+    sweepTemp,
+    sweepTempAll,
   }), [
     apiBaseUrl,
     sessionId,
@@ -330,6 +363,9 @@ export function ApiProvider({ children }: PropsWithChildren) {
     loadSaved,
     deleteSaved,
     runSimulation,
+    clearClientTemp,
+    sweepTemp,
+    sweepTempAll,
   ])
 
   return (
