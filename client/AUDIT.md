@@ -61,8 +61,7 @@
 - [x] Centralize toast handling via `useToasts()` and error utilities.
 - [x] Add tests for `ApiContext` functions (init session, list files, get config, add/replace/delete, simulate). Status: `src/__tests__/apiContext.test.tsx` extended to cover these flows.
 - [x] Add component tests for the new subcomponents of `SimulationManager`.
-- [ ] Verify package compatibility with React 19; pin versions if needed in `package.json`.
-- [ ] Consider adding Prettier config (if formatting inconsistencies emerge) and ensure ESLint+Prettier play well.
+- [x] Add Prettier config and scripts; align with ESLint workflow.
 
 ## Notes
 - Code changes applied:
@@ -80,3 +79,6 @@
     - `src/__tests__/EditorPanel.test.tsx`
     - Updated selectors in `App.test.tsx` and `Navbar.test.tsx` to match current labels (brand `WOMBAT_ext`, `Connection Manager`).
     - Adjusted `LibraryPanel` test to use exact count string and `hidden: true` for action buttons revealed on hover.
+  - React 19 compatibility and pins:
+    - Pinned deps in `client/package.json` (React 19.1.1, Router 7.8.0, Toastify 11.0.5, Vite 7.1.0, Vitest 2.1.9, TS 5.8.3, ESLint 9.32.0).
+    - Added Prettier 3.3.3 with scripts: `npm run format`, `npm run format:check` and `.prettierrc` base config.
