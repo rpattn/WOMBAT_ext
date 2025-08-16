@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import type { JsonDict, LibraryFiles } from '../types'
+import { useSession } from '../hooks/useSession'
+import { b64toBlob } from '../utils/blob'
 
 export type ApiContextType = {
   // REST base
@@ -54,8 +56,14 @@ export type ApiContextType = {
 const ApiContext = createContext<ApiContextType | undefined>(undefined)
 
 export function ApiProvider({ children }: PropsWithChildren) {
-  const [apiBaseUrl, setApiBaseUrl] = useState<string>((import.meta as any).env?.VITE_API_URL ?? 'http://127.0.0.1:8000/api')
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const {
+    apiBaseUrl,
+    setApiBaseUrl,
+    sessionId,
+    initSession: initSessionBase,
+    endSession: endSessionBase,
+    requireSession,
+  } = useSession((import.meta as any).env?.VITE_API_URL ?? 'http://127.0.0.1:8000/api')
 
   // Shared data state (mirrors WebSocketContext)
   const [libraryFiles, setLibraryFiles] = useState<ApiContextType['libraryFiles']>(null)
@@ -68,66 +76,7 @@ export function ApiProvider({ children }: PropsWithChildren) {
   const pendingDownloadRef = useRef<string | null>(null)
   const [results, setResults] = useState<any | null>(null)
 
-  const requireSession = useCallback(() => {
-    if (!sessionId) throw new Error('No REST session. Initialize first.')
-    return sessionId
-  }, [sessionId])
-
-  const initSession = useCallback(async () => {
-    try {
-      const res = await fetch(`${apiBaseUrl}/session`, { method: 'POST' })
-      if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      setSessionId(data.client_id)
-      // Kick off unified refresh after session is set.
-      setTimeout(() => {
-        ;(async () => {
-          try {
-            const id = data.client_id as string
-            const r = await fetch(`${apiBaseUrl}/${id}/refresh`)
-            if (r.ok) {
-              const payload = await r.json()
-              setLibraryFiles(payload.files ?? null)
-              setConfigData(payload.config ?? {})
-              setSavedLibraries(payload.saved ?? [])
-            } else {
-              // fallback to individual calls if refresh not supported server-side
-              await Promise.allSettled([
-                fetchSavedLibraries(),
-                fetchLibraryFiles(),
-                getConfig(),
-              ])
-            }
-          } catch {
-            // ignore
-          }
-        })()
-      }, 0)
-      return data.client_id as string
-    } catch (e) {
-      console.error('initSession error', e)
-      setSessionId(null)
-      return null
-    }
-  }, [apiBaseUrl])
-
-  const endSession = useCallback(async () => {
-    try {
-      const id = requireSession()
-      await fetch(`${apiBaseUrl}/session/${id}`, { method: 'DELETE' })
-    } catch (e) {
-      console.warn('endSession error', e)
-    } finally {
-      setSessionId(null)
-      setLibraryFiles(null)
-      setSavedLibraries([])
-      setConfigData({})
-      setCsvPreview(null)
-      setBinaryPreviewUrl(null)
-      setResults(null)
-    }
-  }, [apiBaseUrl, requireSession])
-
+  // Declare data-fetching helpers before initSession so they can be referenced safely
   const fetchSavedLibraries = useCallback(async () => {
     const res = await fetch(`${apiBaseUrl}/saved`)
     if (!res.ok) throw new Error(await res.text())
@@ -150,6 +99,56 @@ export function ApiProvider({ children }: PropsWithChildren) {
     const data = await res.json()
     setConfigData(data ?? {})
   }, [apiBaseUrl, requireSession])
+
+  const initSession = useCallback(async () => {
+    try {
+      const id = await initSessionBase()
+      if (!id) return null
+      // Kick off unified refresh after session is set.
+      setTimeout(() => {
+        ;(async () => {
+          try {
+            const sid = id as string
+            const r = await fetch(`${apiBaseUrl}/${sid}/refresh`)
+            if (r.ok) {
+              const payload = await r.json()
+              setLibraryFiles(payload.files ?? null)
+              setConfigData(payload.config ?? {})
+              setSavedLibraries(payload.saved ?? [])
+            } else {
+              // fallback to individual calls if refresh not supported server-side
+              await Promise.allSettled([
+                fetchSavedLibraries(),
+                fetchLibraryFiles(),
+                getConfig(),
+              ])
+            }
+          } catch {
+            // ignore
+          }
+        })()
+      }, 0)
+      return id
+    } catch (e) {
+      console.error('initSession error', e)
+      return null
+    }
+  }, [apiBaseUrl, initSessionBase, fetchSavedLibraries, fetchLibraryFiles, getConfig])
+
+  const endSession = useCallback(async () => {
+    try {
+      await endSessionBase()
+    } finally {
+      setLibraryFiles(null)
+      setSavedLibraries([])
+      setConfigData({})
+      setCsvPreview(null)
+      setBinaryPreviewUrl(null)
+      setResults(null)
+    }
+  }, [endSessionBase])
+
+  
 
   const readFile = useCallback(async (path: string, raw = false) => {
     const id = requireSession()
@@ -413,25 +412,4 @@ export function useApiContext(): ApiContextType {
   const ctx = useContext(ApiContext)
   if (!ctx) throw new Error('useApiContext must be used within an ApiProvider')
   return ctx
-}
-
-// helpers
-function b64toBlob(b64Data: string, contentType = '', sliceSize = 512) {
-  const byteCharacters = atob(b64Data)
-  const byteArrays = []
-
-  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-    const slice = byteCharacters.slice(offset, offset + sliceSize)
-
-    const byteNumbers = new Array(slice.length)
-    for (let i = 0; i < slice.length; i++) {
-      byteNumbers[i] = slice.charCodeAt(i)
-    }
-
-    const byteArray = new Uint8Array(byteNumbers)
-    byteArrays.push(byteArray)
-  }
-
-  const blob = new Blob(byteArrays, { type: contentType })
-  return blob
 }

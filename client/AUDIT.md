@@ -59,7 +59,7 @@
 - [ ] Refactor `ApiContext.tsx` into smaller hooks (session/library/simulation/temp). Keep external API stable initially.
 - [ ] Split `SimulationManager.tsx` into subcomponents (Explorer, Editor, Preview, Toolbar, SavedLibraries).
 - [ ] Centralize toast handling via `useToasts()` and error utilities.
-- [x] Add tests for `ApiContext` functions (init session, list files, get config). Status: `src/__tests__/apiContext.test.tsx` exists; extend to cover add/replace/delete and simulations.
+- [x] Add tests for `ApiContext` functions (init session, list files, get config, add/replace/delete, simulate). Status: `src/__tests__/apiContext.test.tsx` extended to cover these flows.
 - [ ] Add component tests for the new subcomponents of `SimulationManager`.
 - [ ] Verify package compatibility with React 19; pin versions if needed in `package.json`.
 - [ ] Consider adding Prettier config (if formatting inconsistencies emerge) and ensure ESLint+Prettier play well.
