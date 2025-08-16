@@ -35,10 +35,10 @@ describe('App', () => {
     await user.click(screen.getByRole('link', { name: /results/i }));
     expect(screen.getByRole('heading', { level: 2, name: /results/i })).toBeInTheDocument();
 
-    // Navigate to WebSocket Client
+    // Navigate to Connect panel (navbar label still says WebSocket Client)
     await user.click(screen.getByRole('link', { name: /websocket client/i }));
-    // The details element summary should be present on /connect
-    const matches = screen.getAllByText(/websocket client/i);
+    // The details element summary shows REST Client now
+    const matches = screen.getAllByText(/rest client/i);
     const summaryEl = matches.find((el) => el.tagName.toLowerCase() === 'summary');
     expect(summaryEl).toBeTruthy();
   });

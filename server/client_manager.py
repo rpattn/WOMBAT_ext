@@ -216,6 +216,24 @@ class ClientManager:
             logger.error(f"Error sweeping unused temp: {e}")
         return removed
 
+    def sweep_all_temp(self) -> list[str]:
+        """Remove all temp client directories."""
+        removed: list[str] = []
+        try:
+            base = self.temp_base_dir
+            base.mkdir(parents=True, exist_ok=True)
+            for path in base.iterdir():
+                if path.is_dir() and path.name.startswith("client_"):
+                    try:
+                        shutil.rmtree(path)
+                        removed.append(path.name)
+                        logger.info(f"Swept temp directory: {path}")
+                    except Exception as e:
+                        logger.error(f"Failed sweeping {path}: {e}")
+        except Exception as e:
+            logger.error(f"Error sweeping temp: {e}")
+        return removed
+
 
 # Global client manager instance
 client_manager = ClientManager()

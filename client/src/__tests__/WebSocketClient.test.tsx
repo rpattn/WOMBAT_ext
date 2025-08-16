@@ -1,43 +1,29 @@
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test/test-utils';
-import WebSocketClient from '../components/WebSocketClient';
+import RestClient from '../components/RestClient';
 
-function getLastSocket() {
-  const arr = (globalThis as any).__wsInstances as any[] | undefined;
-  return arr?.[arr.length - 1];
-}
+describe('RestClient', () => {
+  test('shows basic REST controls and initializes a session', async () => {
+    const user = userEvent.setup();
+    const fetchSpy = vi.spyOn(globalThis as any, 'fetch');
 
-describe('WebSocketClient', () => {
-  test('auto-connects, sends initial messages, and renders incoming messages', async () => {
-    renderWithProviders(<WebSocketClient />);
+    renderWithProviders(<RestClient />);
 
-    // Wait microtask turn for mock to open
-    await Promise.resolve();
+    // UI elements
+    expect(screen.getByText(/server rest api base url/i)).toBeInTheDocument();
+    const initBtn = screen.getByRole('button', { name: /init session/i });
+    expect(initBtn).toBeInTheDocument();
 
-    const socket = getLastSocket();
-    expect(socket).toBeTruthy();
+    await user.click(initBtn);
 
-    // Should auto-send get_library_files and list_saved_libraries
-    // Give a tick for component effects to run
-    await Promise.resolve();
-
-    const sent = socket.sent.map(String);
-    expect(sent).toEqual(
-      expect.arrayContaining([
-        'get_library_files',
-        expect.stringContaining('list_saved_libraries'),
-      ])
-    );
-
-    // Simulate incoming non-JSON message
-    socket.receive('hello from server');
-
-    // Expand details to view messages list
-    const details = screen.getByText(/messages \(/i).closest('details');
-    if (details && !details.open) {
-      (details as HTMLDetailsElement).open = true;
-    }
-    const messagesRegion = within(screen.getByText(/messages \(/i).parentElement!.parentElement!);
-    expect(await messagesRegion.findByText(/\[server] hello from server/i)).toBeInTheDocument();
+    // Expect a POST /api/session among fetch calls
+    const sawSessionPost = fetchSpy.mock.calls.some((args: any[]) => {
+      const url = String(args[0]);
+      const init = args[1] as RequestInit | undefined;
+      return url.endsWith('/api/session') && (!init || (init.method || 'GET').toUpperCase() === 'POST');
+    });
+    expect(sawSessionPost).toBe(true);
   });
 });

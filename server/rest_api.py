@@ -199,6 +199,12 @@ def sweep_temp() -> dict:
     removed = client_manager.sweep_unused_temp()
     return {"removed": removed}
 
+@router.post("/temp/sweep_all")
+def sweep_temp_all() -> dict:
+    """Remove all temp client directories."""
+    removed = client_manager.sweep_all_temp()
+    return {"removed": removed}
+
 
 @router.post("/{client_id}/simulate")
 def run_simulation(client_id: str) -> dict:

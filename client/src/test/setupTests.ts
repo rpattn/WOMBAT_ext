@@ -1,5 +1,6 @@
 // Vitest setup: jsdom, jest-dom matchers, and global mocks
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Polyfill matchMedia for jsdom
 if (typeof window !== 'undefined' && (typeof window.matchMedia !== 'function')) {
@@ -27,55 +28,40 @@ if (typeof window !== 'undefined' && (typeof window.matchMedia !== 'function')) 
   };
 }
 
-// Basic WebSocket mock for jsdom environment
-class MockWebSocket {
-  static CONNECTING = 0;
-  static OPEN = 1;
-  static CLOSING = 2;
-  static CLOSED = 3;
+// Default REST fetch mock. Individual tests can override per-call expectations.
+const defaultFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = String(typeof input === 'string' ? input : (input as URL).toString());
+  const method = (init?.method || 'GET').toUpperCase();
+  const ok = (data: any) => new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
-  public readyState = MockWebSocket.CONNECTING;
-  public sent: any[] = [];
-  public url: string;
-  public onopen: ((ev: Event) => any) | null = null;
-  public onmessage: ((ev: MessageEvent) => any) | null = null;
-  public onerror: ((ev: Event) => any) | null = null;
-  public onclose: ((ev: CloseEvent) => any) | null = null;
-
-  constructor(url: string) {
-    this.url = url;
-    // Track instances globally for tests
-    (globalThis as any).__wsInstances ??= [];
-    (globalThis as any).__wsInstances.push(this);
-    // Simulate async open
-    queueMicrotask(() => {
-      this.readyState = MockWebSocket.OPEN;
-      this.onopen?.(new Event('open'));
-    });
+  // Minimal stubs
+  if (url.endsWith('/api/session') && method === 'POST') {
+    return ok({ client_id: 'test-session-1234' });
   }
-
-  send(data: any) {
-    if (this.readyState !== MockWebSocket.OPEN) {
-      throw new Error('WebSocket not open');
-    }
-    this.sent.push(data);
+  if (/\/api\/[^/]+\/refresh$/.test(url) && method === 'GET') {
+    return ok({ files: { yaml_files: [], csv_files: [], total_files: 0 }, config: {}, saved: [] });
   }
-
-  receive(data: any) {
-    const evt = new MessageEvent('message', { data });
-    this.onmessage?.(evt as any);
+  if (/\/api\/[^/]+\/library\/files$/.test(url) && method === 'GET') {
+    return ok({ yaml_files: ['project/config/base.yaml'], csv_files: ['results/summary.csv'], total_files: 2 });
   }
-
-  close() {
-    this.readyState = MockWebSocket.CLOSED;
-    this.onclose?.(new CloseEvent('close'));
+  if (/\/api\/saved$/.test(url) && method === 'GET') {
+    return ok({ dirs: [] });
   }
-}
+  if (/\/api\/[^/]+\/config$/.test(url) && method === 'GET') {
+    return ok({ hello: 'world' });
+  }
+  if (/\/api\/[^/]+\/simulate$/.test(url) && method === 'POST') {
+    return ok({ status: 'finished', results: {}, files: { yaml_files: [], csv_files: [], total_files: 0 } });
+  }
+  if (/\/api\/[^/]+\/library\/file$/.test(url)) {
+    return ok({ file: 'project/config/base.yaml', data: { hello: 'world' } });
+  }
+  return ok({});
+});
 
-// Attach to global
-// @ts-expect-error override for tests
-global.WebSocket = MockWebSocket as any;
+// @ts-expect-error set global fetch for tests
+global.fetch = defaultFetch;
 
-// Provide env var used by WebSocketClient fallback
+// Provide env var used by REST client
 // @ts-expect-error process-like env for Vite tests
-import.meta.env = { ...(import.meta as any).env, VITE_WS_URL: 'ws://localhost:1234/ws' };
+import.meta.env = { ...(import.meta as any).env, VITE_API_URL: 'http://127.0.0.1:8000/api' };
