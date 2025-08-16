@@ -13,6 +13,27 @@ logger = logging.getLogger("uvicorn.error")
 # WebSocket-based settings update handler removed as part of REST-only migration
 
 
+# ---- Path safety helpers ----
+def _normalize_rel(path_like: str) -> str:
+    """Normalize a relative path string to forward-slash form without leading separators."""
+    s = str(path_like).replace('\\\\', '/').lstrip('/')
+    return s
+
+
+def _resolve_inside(base_dir: Path, rel_path: str) -> Path:
+    """Resolve rel_path under base_dir and ensure it stays inside base_dir.
+
+    Raises ValueError if the resolved path escapes the base directory.
+    """
+    base = Path(base_dir).resolve()
+    target = (base / _normalize_rel(rel_path)).resolve()
+    base_nc = os.path.normcase(str(base))
+    target_nc = os.path.normcase(str(target))
+    if not (target_nc == base_nc or target_nc.startswith(base_nc + os.sep)):
+        raise ValueError(f"Path outside base: {target} (base={base})")
+    return target
+
+
 async def update_client_library_file(client_id: str, file_path: str, content: dict) -> bool:
     """Update a specific file in the client's library."""
     from server.client_manager import client_manager
@@ -22,14 +43,13 @@ async def update_client_library_file(client_id: str, file_path: str, content: di
     
     try:
         project_dir = Path(client_manager.get_client_project_dir(client_id)).resolve()
-        safe_rel = file_path.replace('\\', '/') if isinstance(file_path, str) else str(file_path)
-        target_file = (project_dir / safe_rel)
+        target_file = _resolve_inside(project_dir, file_path)
         
         # Ensure directory exists
         target_file.parent.mkdir(parents=True, exist_ok=True)
         
         # Save content to file
-        with open(target_file, 'w') as f:
+        with open(target_file, 'w', encoding='utf-8') as f:
             yaml.safe_dump(content, f, default_flow_style=False)
         
         logger.info(f"Updated library file for client {client_id[:8]}: {file_path}")
@@ -155,19 +175,10 @@ def delete_client_library_file(client_id: str, file_path: str) -> bool:
             return False
 
         project_dir = Path(client_manager.get_client_project_dir(client_id))
-        target_file = project_dir / file_path
-
-        # Normalize and ensure path stays within project_dir
         try:
-            target_file = target_file.resolve()
-            # Robust inside-project check (Windows-safe)
-            base = os.path.normcase(os.path.abspath(str(project_dir)))
-            cand = os.path.normcase(os.path.abspath(str(target_file)))
-            if not (cand == base or cand.startswith(base + os.sep)):
-                logger.error(f"Refusing to delete outside project dir: {target_file} (base={base}, cand={cand})")
-                return False
-        except Exception:
-            logger.error(f"Refusing to delete outside project dir (resolve/check failed): {target_file}")
+            target_file = _resolve_inside(project_dir, file_path)
+        except ValueError as e:
+            logger.error(str(e))
             return False
 
         if not target_file.exists():
@@ -200,24 +211,24 @@ def get_client_library_file(client_id: str, file_path: str):
     Returns:
         - dict for YAML files
         - str for CSV/text files
-        - {} or '' on error
+        - None if file missing or on error
     """
     from server.client_manager import client_manager
     
     if not client_id or client_id not in client_manager.client_projects:
-        return {} if str(file_path).lower().endswith(('.yaml', '.yml')) else ''
+        return None
     
     try:
         project_dir = Path(client_manager.get_client_project_dir(client_id))
-        target_file = project_dir / file_path
+        target_file = _resolve_inside(project_dir, file_path)
         
         if not target_file.exists():
-            return {}
+            return None
         
         suffix = (target_file.suffix or '').lower()
         if suffix in ['.yaml', '.yml']:
             with open(target_file, 'r', encoding='utf-8') as f:
-                return yaml.safe_load(f) or {}
+                return yaml.safe_load(f)
         else:
             # Treat CSV and any other non-YAML files as plain UTF-8 text
             with open(target_file, 'r', encoding='utf-8', errors='replace') as f:
@@ -225,7 +236,7 @@ def get_client_library_file(client_id: str, file_path: str):
             
     except Exception as e:
         logger.error(f"Error reading library file for client {client_id[:8]}: {e}")
-        return {}
+        return None
 
 
 def list_client_library_files(client_id: str, directory: str = "") -> list:
