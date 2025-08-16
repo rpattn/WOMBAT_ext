@@ -6,11 +6,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from server.client_manager import client_manager
-from server.library_manager import (
+from server.services.libraries import (
     get_client_library_file,
     scan_client_library_files,
     add_client_library_file,
     delete_client_library_file,
+)
+from server.services.saved_libraries import (
     save_client_library,
     load_saved_library,
     delete_saved_library,
