@@ -4,14 +4,14 @@
 - App type: Vite + React + TypeScript
 - Key areas reviewed:
   - `client/src/pages/SimulationManager.tsx` (~262 LOC)
-  - `client/src/context/ApiContext.tsx` (~404 LOC)
+  - `client/src/context/ApiContext.tsx` (now composed from hooks; slimmer)
   - `client/src/components/RestClient.tsx` (~124 LOC)
   - `client/src/context/WebSocketContext.tsx` (~120 LOC)
   - Configs: `package.json`, `eslint.config.js`, `tsconfig*.json`
 
 ## Findings
 - __Large/complex files__
-  - `src/context/ApiContext.tsx` is a single, central abstraction for REST calls, session handling, file/library state, previews, and results. At ~400 LOC it’s a complexity hotspot.
+  - `src/context/ApiContext.tsx` was a single, central abstraction for REST calls, session handling, file/library state, previews, and results. It has now been modularized via hooks to reduce complexity.
   - `src/pages/SimulationManager.tsx` bundles many UI concerns (file selection, editor, previews, save/load, run simulation, toasts). ~260 LOC suggests splitting.
 - __Potentially unused/underused code__
   - WebSocket path: no `src/context/WebSocketContext.tsx` present in the current tree. App uses REST-only `ApiProvider`.
@@ -38,8 +38,8 @@
   - `useSession()` (base URL, session lifecycle)
   - `useLibrary()` (list/read/add/replace/delete files + saved libraries)
   - `useSimulation()` (run, results)
-  - `useTempMaintenance()` (sweep/clear temp)
-  - Keep a thin `ApiProvider` composing these hooks and exposing a tidy interface.
+  - `useTemp()` (sweep/clear temp)
+  - `ApiProvider` now composes these hooks and exposes the same public API.
 - __Decompose `SimulationManager.tsx`__:
   - Extract: File actions toolbar, Library explorer, Editor pane, Preview pane, Saved libraries panel.
 - __Unify notifications__
@@ -56,7 +56,7 @@
 ## TODOs (Incremental)
 - [x] Decide on strategy: REST-only vs WebSocket. Status: REST-only; no WebSocket context present.
 - [x] Extract `src/types/` and move shared types from `ApiContext` and components. Status: added `src/types/index.ts`; `ApiContext` now uses `LibraryFiles` and `JsonDict`.
-- [ ] Refactor `ApiContext.tsx` into smaller hooks (session/library/simulation/temp). Keep external API stable initially.
+- [x] Refactor `ApiContext.tsx` into smaller hooks (session/library/simulation/temp). Public API preserved.
 - [ ] Split `SimulationManager.tsx` into subcomponents (Explorer, Editor, Preview, Toolbar, SavedLibraries).
 - [ ] Centralize toast handling via `useToasts()` and error utilities.
 - [x] Add tests for `ApiContext` functions (init session, list files, get config, add/replace/delete, simulate). Status: `src/__tests__/apiContext.test.tsx` extended to cover these flows.
@@ -65,4 +65,7 @@
 - [ ] Consider adding Prettier config (if formatting inconsistencies emerge) and ensure ESLint+Prettier play well.
 
 ## Notes
-- Code changes applied: created `src/types/index.ts` and updated `src/context/ApiContext.tsx` to consume shared types. This document also tracks progress on the incremental TODOs.
+- Code changes applied:
+  - Created `src/types/index.ts` and updated `src/context/ApiContext.tsx` to consume shared types.
+  - Added hooks: `src/hooks/useSession.ts`, `src/hooks/useLibrary.ts`, `src/hooks/useSimulation.ts`, `src/hooks/useTemp.ts`.
+  - `ApiProvider` composes these hooks; external API and tests remain intact.

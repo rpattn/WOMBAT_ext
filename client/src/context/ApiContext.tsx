@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import type { JsonDict, LibraryFiles } from '../types'
 import { useSession } from '../hooks/useSession'
-import { b64toBlob } from '../utils/blob'
+import { useLibrary } from '../hooks/useLibrary'
+import { useSimulation } from '../hooks/useSimulation'
+import { useTemp } from '../hooks/useTemp'
 
 export type ApiContextType = {
   // REST base
@@ -76,29 +78,37 @@ export function ApiProvider({ children }: PropsWithChildren) {
   const pendingDownloadRef = useRef<string | null>(null)
   const [results, setResults] = useState<any | null>(null)
 
-  // Declare data-fetching helpers before initSession so they can be referenced safely
-  const fetchSavedLibraries = useCallback(async () => {
-    const res = await fetch(`${apiBaseUrl}/saved`)
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    setSavedLibraries(data.dirs ?? [])
-  }, [apiBaseUrl])
+  // Compose feature hooks
+  const {
+    fetchSavedLibraries,
+    fetchLibraryFiles,
+    getConfig,
+    readFile,
+    addOrReplaceFile,
+    deleteFile,
+    saveLibrary,
+    loadSaved,
+    deleteSaved,
+  } = useLibrary({
+    apiBaseUrl,
+    requireSession,
+    setSavedLibraries,
+    setLibraryFiles,
+    setConfigData,
+    setCsvPreview,
+    setBinaryPreviewUrl,
+    setSelectedFile,
+  })
 
-  const fetchLibraryFiles = useCallback(async () => {
-    const id = requireSession()
-    const res = await fetch(`${apiBaseUrl}/${id}/library/files`)
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    setLibraryFiles(data?.files ?? data)
-  }, [apiBaseUrl, requireSession])
+  const { runSimulation } = useSimulation({
+    apiBaseUrl,
+    requireSession,
+    setResults,
+    setLibraryFiles,
+    fetchLibraryFiles,
+  })
 
-  const getConfig = useCallback(async () => {
-    const id = requireSession()
-    const res = await fetch(`${apiBaseUrl}/${id}/config`)
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    setConfigData(data ?? {})
-  }, [apiBaseUrl, requireSession])
+  const { clearClientTemp, sweepTemp, sweepTempAll } = useTemp({ apiBaseUrl, requireSession })
 
   const initSession = useCallback(async () => {
     try {
@@ -148,172 +158,6 @@ export function ApiProvider({ children }: PropsWithChildren) {
     }
   }, [endSessionBase])
 
-  
-
-  const readFile = useCallback(async (path: string, raw = false) => {
-    const id = requireSession()
-    const url = new URL(`${apiBaseUrl}/${id}/library/file`)
-    url.searchParams.set('path', path)
-    url.searchParams.set('raw', String(raw))
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    // Update previews
-    if (raw && 'data_b64' in data) {
-      // Binary: create object URL
-      const blob = b64toBlob(data.data_b64, data.mime || 'application/octet-stream')
-      const objectUrl = URL.createObjectURL(blob)
-      setBinaryPreviewUrl?.(objectUrl)
-      setCsvPreview(null)
-    } else if (raw && 'data' in data) {
-      // Textual raw content (e.g., .html). Store in csvPreview for iframe rendering path.
-      const file = String(data.file || path)
-      if (file.toLowerCase().endsWith('.html')) {
-        setCsvPreview(String(data.data ?? ''))
-        setBinaryPreviewUrl?.(null)
-      }
-    } else if (!raw) {
-      const file = String(data.file || path)
-      if (file.toLowerCase().endsWith('.csv')) {
-        setCsvPreview(String(data.data ?? ''))
-        setBinaryPreviewUrl?.(null)
-      } else if (file.toLowerCase().endsWith('.yaml') || file.toLowerCase().endsWith('.yml')) {
-        setConfigData(data.data ?? {})
-      }
-    }
-    setSelectedFile(path)
-  }, [apiBaseUrl, requireSession])
-
-  const addOrReplaceFile = useCallback(async (file_path: string, content: any) => {
-    const id = requireSession()
-    const method = 'PUT'
-    const res = await fetch(`${apiBaseUrl}/${id}/library/file`, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file_path, content }),
-    })
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    setLibraryFiles(data.files)
-  }, [apiBaseUrl, requireSession])
-
-  const deleteFile = useCallback(async (file_path: string) => {
-    const id = requireSession()
-    const url = new URL(`${apiBaseUrl}/${id}/library/file`)
-    url.searchParams.set('file_path', file_path)
-    const res = await fetch(url.toString(), { method: 'DELETE' })
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    setLibraryFiles(data.files)
-  }, [apiBaseUrl, requireSession])
-
-  const saveLibrary = useCallback(async (project_name: string) => {
-    const id = requireSession()
-    const res = await fetch(`${apiBaseUrl}/${id}/library/save`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ project_name }),
-    })
-    if (!res.ok) throw new Error(await res.text())
-    await fetchSavedLibraries()
-  }, [apiBaseUrl, requireSession, fetchSavedLibraries])
-
-  const loadSaved = useCallback(async (name: string) => {
-    const id = requireSession()
-    const res = await fetch(`${apiBaseUrl}/${id}/saved/load`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    })
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    // Apply new file list from server response (no extra round-trip)
-    setLibraryFiles(data.files)
-    // Refresh saved libraries list only
-    await Promise.allSettled([fetchSavedLibraries()])
-    // Prefer base config; loading it will update configData and selectedFile
-    const basePath = 'project\\config\\base.yaml'
-    try {
-      setSelectedFile(basePath)
-      await readFile(basePath, false)
-    } catch {
-      // If base not available, leave selection as-is without extra clears to avoid flicker
-    }
-  }, [apiBaseUrl, requireSession, fetchSavedLibraries, readFile, setSelectedFile])
-
-  const deleteSaved = useCallback(async (name: string) => {
-    const res = await fetch(`${apiBaseUrl}/saved/${encodeURIComponent(name)}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error(await res.text())
-    await fetchSavedLibraries()
-  }, [apiBaseUrl, fetchSavedLibraries])
-
-  const runSimulation = useCallback(async () => {
-    const id = requireSession()
-    // Prefer async trigger + poll; fallback to sync if not available
-    try {
-      const triggerRes = await fetch(`${apiBaseUrl}/${id}/simulate/trigger`, { method: 'POST' })
-      if (triggerRes.ok) {
-        const tdata = await triggerRes.json() as { task_id: string, status: string }
-        const taskId = tdata.task_id
-
-        // Poll until finished/failed
-        let attempts = 0
-        const maxAttempts = 600 // up to ~10 minutes at 1s interval
-        const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
-        while (attempts < maxAttempts) {
-          attempts++
-          const st = await fetch(`${apiBaseUrl}/simulate/status/${taskId}`)
-          if (!st.ok) throw new Error(await st.text())
-          const sdata = await st.json() as { status: string, result?: any, files?: any }
-          if (sdata.status !== 'running' && sdata.status !== 'unknown') {
-            // finished or failed
-            if (sdata.result) setResults(sdata.result)
-            if (sdata.files) setLibraryFiles(sdata.files)
-            return
-          }
-          await delay(1000)
-        }
-        // Timed out; still refresh files to show any partial outputs
-        await fetchLibraryFiles().catch(() => {})
-        return
-      }
-    } catch (e) {
-      // fall through to sync
-      console.warn('Async simulation not available or failed, falling back to sync', e)
-    }
-
-    // Fallback: synchronous endpoint
-    const res = await fetch(`${apiBaseUrl}/${id}/simulate`, { method: 'POST' })
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    setResults(data.results)
-    setLibraryFiles(data.files)
-  }, [apiBaseUrl, requireSession])
-
-  // Temp maintenance REST helpers
-  const clearClientTemp = useCallback(async () => {
-    const id = requireSession()
-    const res = await fetch(`${apiBaseUrl}/${id}/temp`, { method: 'DELETE' })
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    return Boolean(data?.ok)
-  }, [apiBaseUrl, requireSession])
-
-  const sweepTemp = useCallback(async () => {
-    const res = await fetch(`${apiBaseUrl}/temp/sweep`, { method: 'POST' })
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    const removed = Array.isArray(data?.removed) ? data.removed : []
-    return removed.length as number
-  }, [apiBaseUrl])
-
-  const sweepTempAll = useCallback(async () => {
-    const res = await fetch(`${apiBaseUrl}/temp/sweep_all`, { method: 'POST' })
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    const removed = Array.isArray(data?.removed) ? data.removed : []
-    return removed.length as number
-  }, [apiBaseUrl])
 
   const refreshAll = useCallback(async () => {
     const id = requireSession()
