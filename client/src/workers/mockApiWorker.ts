@@ -287,14 +287,7 @@ function randomId(): string {
   return 'mock-' + Math.random().toString(36).slice(2, 10);
 }
 
-self.addEventListener('message', (evt: MessageEvent<WorkerRequest>) => {
-  const msg = evt.data;
-  if (!msg || !msg.id) return;
-
-  const respond = (res: WorkerResponse) => {
-    (self as any).postMessage(res);
-  };
-
+export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerResponse> {
   try {
     const { id, method, path } = msg;
     // Sessions
@@ -302,8 +295,7 @@ self.addEventListener('message', (evt: MessageEvent<WorkerRequest>) => {
       const cid = randomId();
       activeClients.add(cid);
       ensureClientStore(cid);
-      respond({ id, ok: true, status: 200, json: { client_id: cid } });
-      return;
+      return { id, ok: true, status: 200, json: { client_id: cid } };
     }
 
     // moved simulation handlers below after regex declarations
@@ -312,24 +304,21 @@ self.addEventListener('message', (evt: MessageEvent<WorkerRequest>) => {
       const cid = path.split('/').pop() || '';
       if (activeClients.has(cid)) {
         activeClients.delete(cid);
-        respond({ id, ok: true, status: 200, json: { status: 'ended' } });
+        return { id, ok: true, status: 200, json: { status: 'ended' } };
       } else {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
-      return;
     }
 
     // Saved libraries
     if (method === 'GET' && path === '/api/saved') {
-      respond({ id, ok: true, status: 200, json: { dirs: Array.from(savedLibraries) } });
-      return;
+      return { id, ok: true, status: 200, json: { dirs: Array.from(savedLibraries) } };
     }
 
     if (method === 'DELETE' && path.startsWith('/api/saved/')) {
       const name = decodeURIComponent(path.substring('/api/saved/'.length));
       if (savedLibraries.has(name)) savedLibraries.delete(name);
-      respond({ id, ok: true, status: 200, json: { ok: true, message: `Deleted ${name}` } });
-      return;
+      return { id, ok: true, status: 200, json: { ok: true, message: `Deleted ${name}` } };
     }
 
     // Client-scoped helpers
@@ -347,21 +336,18 @@ self.addEventListener('message', (evt: MessageEvent<WorkerRequest>) => {
     if (simulateSyncMatch && method === 'POST') {
       const cid = simulateSyncMatch[1];
       if (!activeClients.has(cid)) {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
-        return;
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const store = ensureClientStore(cid);
       // Produce deterministic mock results and update results files
       const result = runMockSimulation(store);
-      respond({ id, ok: true, status: 200, json: { status: 'finished', results: result, files: scanFiles(store) } });
-      return;
+      return { id, ok: true, status: 200, json: { status: 'finished', results: result, files: scanFiles(store) } };
     }
 
     if (simulateTriggerMatch && method === 'POST') {
       const cid = simulateTriggerMatch[1];
       if (!activeClients.has(cid)) {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
-        return;
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const taskId = `task-${Math.random().toString(36).slice(2, 10)}`;
       tasks.set(taskId, { clientId: cid, status: 'running' });
@@ -371,65 +357,55 @@ self.addEventListener('message', (evt: MessageEvent<WorkerRequest>) => {
         const result = runMockSimulation(store);
         tasks.set(taskId, { clientId: cid, status: 'finished', result });
       }, 1000);
-      respond({ id, ok: true, status: 200, json: { task_id: taskId, status: 'running' } });
-      return;
+      return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running' } };
     }
 
     if (simulateStatusMatch && method === 'GET') {
       const taskId = simulateStatusMatch[1];
       const t = tasks.get(taskId);
       if (!t) {
-        respond({ id, ok: true, status: 200, json: { task_id: taskId, status: 'unknown' } });
-        return;
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'unknown' } };
       }
       if (t.status === 'finished') {
         const store = ensureClientStore(t.clientId);
-        respond({ id, ok: true, status: 200, json: { task_id: taskId, status: 'finished', result: t.result, files: scanFiles(store) } });
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'finished', result: t.result, files: scanFiles(store) } };
       } else {
-        respond({ id, ok: true, status: 200, json: { task_id: taskId, status: 'running' } });
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running' } };
       }
-      return;
     }
 
     if (refreshMatch && method === 'GET') {
       const cid = refreshMatch[1];
       if (!activeClients.has(cid)) {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
-        return;
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const store = ensureClientStore(cid);
-      respond({ id, ok: true, status: 200, json: { files: scanFiles(store), config: getConfig(store), saved: Array.from(savedLibraries) } });
-      return;
+      return { id, ok: true, status: 200, json: { files: scanFiles(store), config: getConfig(store), saved: Array.from(savedLibraries) } };
     }
 
     if (filesMatch && method === 'GET') {
       const cid = filesMatch[1];
       if (!activeClients.has(cid)) {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
-        return;
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const store = ensureClientStore(cid);
-      respond({ id, ok: true, status: 200, json: scanFiles(store) });
-      return;
+      return { id, ok: true, status: 200, json: scanFiles(store) };
     }
 
     if (configMatch && method === 'GET') {
       const cid = configMatch[1];
       if (!activeClients.has(cid)) {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
-        return;
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const store = ensureClientStore(cid);
-      respond({ id, ok: true, status: 200, json: getConfig(store) });
-      return;
+      return { id, ok: true, status: 200, json: getConfig(store) };
     }
 
     if (fileMatch) {
       const cid = fileMatch[1];
       const query = new URLSearchParams((fileMatch[2] || '').replace(/^\?/, ''));
       if (!activeClients.has(cid)) {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
-        return;
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const store = ensureClientStore(cid);
 
@@ -437,37 +413,35 @@ self.addEventListener('message', (evt: MessageEvent<WorkerRequest>) => {
         const p = query.get('path');
         const raw = (query.get('raw') || 'false').toLowerCase() === 'true';
         if (!p || !store.has(p)) {
-          respond({ id, ok: false, status: 404, json: { error: 'File not found' } });
-          return;
+          return { id, ok: false, status: 404, json: { error: 'File not found' } };
         }
         const entry = store.get(p)!;
         const ext = p.toLowerCase();
         if (raw) {
           if (entry.kind === 'binary') {
-            respond({ id, ok: true, status: 200, json: { file: p, data_b64: String(entry.data), mime: entry.mime || 'application/octet-stream', raw: true } });
+            return { id, ok: true, status: 200, json: { file: p, data_b64: String(entry.data), mime: entry.mime || 'application/octet-stream', raw: true } };
           } else {
             const mime = entry.mime || (ext.endsWith('.html') ? 'text/html' : 'text/plain');
             const data = entry.kind === 'yaml' ? JSON.stringify(entry.data, null, 2) : String(entry.data);
-            respond({ id, ok: true, status: 200, json: { file: p, data, mime, raw: true } });
+            return { id, ok: true, status: 200, json: { file: p, data, mime, raw: true } };
           }
         } else {
           if (entry.kind === 'yaml') {
-            respond({ id, ok: true, status: 200, json: { file: p, data: entry.data } });
+            return { id, ok: true, status: 200, json: { file: p, data: entry.data } };
           } else if (ext.endsWith('.csv') || ext.endsWith('.html')) {
-            respond({ id, ok: true, status: 200, json: { file: p, data: String(entry.data) } });
+            return { id, ok: true, status: 200, json: { file: p, data: String(entry.data) } };
           } else {
             // default parsed as string
-            respond({ id, ok: true, status: 200, json: { file: p, data: String(entry.data) } });
+            return { id, ok: true, status: 200, json: { file: p, data: String(entry.data) } };
           }
         }
-        return;
+        
       }
 
       if (method === 'PUT' || method === 'POST') {
         const { file_path, content } = (msg.body || {}) as { file_path?: string; content?: any };
         if (!file_path) {
-          respond({ id, ok: false, status: 400, json: { error: 'Missing file_path' } });
-          return;
+          return { id, ok: false, status: 400, json: { error: 'Missing file_path' } };
         }
         const lf = file_path.toLowerCase();
         let kind: FileEntry['kind'] = 'text';
@@ -477,52 +451,53 @@ self.addEventListener('message', (evt: MessageEvent<WorkerRequest>) => {
         else if (lf.endsWith('.csv')) { kind = 'text'; mime = 'text/csv'; }
         else if (lf.endsWith('.png')) { kind = 'binary'; mime = 'image/png'; }
         store.set(file_path, { kind, mime, data: content ?? '' });
-        respond({ id, ok: true, status: 200, json: { ok: true, files: scanFiles(store) } });
-        return;
+        return { id, ok: true, status: 200, json: { ok: true, files: scanFiles(store) } };
       }
 
       if (method === 'DELETE') {
         const fp = query.get('file_path');
         if (!fp || !store.has(fp)) {
-          respond({ id, ok: true, status: 200, json: { ok: true, files: scanFiles(store) } });
-          return;
+          return { id, ok: true, status: 200, json: { ok: true, files: scanFiles(store) } };
         }
         store.delete(fp);
-        respond({ id, ok: true, status: 200, json: { ok: true, files: scanFiles(store) } });
-        return;
+        return { id, ok: true, status: 200, json: { ok: true, files: scanFiles(store) } };
       }
     }
 
     if (saveLibMatch && method === 'POST') {
       const cid = saveLibMatch[1];
       if (!activeClients.has(cid)) {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
-        return;
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const project_name = String((msg.body?.project_name ?? '').toString() || 'project');
       savedLibraries.add(project_name);
-      respond({ id, ok: true, status: 200, json: { ok: true, message: `Saved ${project_name}` } });
-      return;
+      return { id, ok: true, status: 200, json: { ok: true, message: `Saved ${project_name}` } };
     }
 
     if (loadSavedMatch && method === 'POST') {
       const cid = loadSavedMatch[1];
       if (!activeClients.has(cid)) {
-        respond({ id, ok: false, status: 404, json: { error: 'Unknown client_id' } });
-        return;
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const name = String(msg.body?.name || 'dinwoodie_mock');
       const store = templateLibrary(name);
       clientStores.set(cid, store);
-      respond({ id, ok: true, status: 200, json: { ok: true, message: `Loaded ${name}`, files: scanFiles(store) } });
-      return;
+      return { id, ok: true, status: 200, json: { ok: true, message: `Loaded ${name}`, files: scanFiles(store) } };
     }
 
     // Not implemented yet
-    respond({ id: msg.id, ok: false, status: 501, error: `Not implemented in mock worker: ${method} ${path}` });
+    return { id: msg.id, ok: false, status: 501, error: `Not implemented in mock worker: ${method} ${path}` };
   } catch (e: any) {
-    respond({ id: msg.id, ok: false, status: 500, error: String(e?.message || e) });
+    return { id: msg.id, ok: false, status: 500, error: String(e?.message || e) };
   }
+}
+
+// Web Worker event bridge
+self.addEventListener('message', async (evt: MessageEvent<WorkerRequest>) => {
+  const msg = evt.data;
+  if (!msg || !msg.id) return;
+  const res = await handleWorkerRequest(msg);
+  (self as any).postMessage(res);
 });
 
 // Create/update results files and return a mock result payload

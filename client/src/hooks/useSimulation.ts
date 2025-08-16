@@ -4,6 +4,17 @@ import { mockApiRequest } from '../workers/mockApiClient'
 import { useToasts } from './useToasts'
 
 let workerFallbackWarned_sim = false
+let workerSessionId: string | null = null
+
+async function ensureWorkerSession(): Promise<string> {
+  if (workerSessionId) return workerSessionId
+  const wr = await mockApiRequest('POST', '/api/session')
+  if (wr.ok && wr.json?.client_id) {
+    workerSessionId = String(wr.json.client_id)
+    return workerSessionId
+  }
+  throw new Error(wr.error || 'Failed to initialize mock worker session')
+}
 
 export type UseSimulationDeps = {
   apiBaseUrl: string
@@ -47,7 +58,8 @@ export function useSimulation({ apiBaseUrl, requireSession, setResults, setLibra
 
     // Try worker async simulate
     try {
-      const t = await mockApiRequest('POST', `/api/${id}/simulate/trigger`)
+      const wid = await ensureWorkerSession()
+      const t = await mockApiRequest('POST', `/api/${wid}/simulate/trigger`)
       if (t.ok && t.json?.task_id) {
         if (!workerFallbackWarned_sim) {
           workerFallbackWarned_sim = true
@@ -77,7 +89,8 @@ export function useSimulation({ apiBaseUrl, requireSession, setResults, setLibra
     }
 
     // Fallback to sync worker simulate
-    const wr = await mockApiRequest('POST', `/api/${id}/simulate`)
+    const wid = await ensureWorkerSession()
+    const wr = await mockApiRequest('POST', `/api/${wid}/simulate`)
     if (!wr.ok) throw new Error(wr.error || 'Simulation failed')
     if (!workerFallbackWarned_sim) {
       workerFallbackWarned_sim = true

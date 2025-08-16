@@ -8,6 +8,10 @@ const pending = new Map<string, { resolve: (v: WorkerResponse) => void; reject: 
 
 function ensureWorker(): Worker {
   if (worker) return worker;
+  // If Worker is not available (e.g., Node/JSDOM test env), we won't create a web worker
+  if (typeof Worker === 'undefined') {
+    throw new Error('Worker is not available in this environment');
+  }
   worker = new Worker(new URL('./mockApiWorker.ts', import.meta.url), { type: 'module' });
   worker.addEventListener('message', (evt: MessageEvent<WorkerResponse>) => {
     const res = evt.data;
@@ -30,9 +34,14 @@ function requestId(): string {
 }
 
 export async function mockApiRequest(method: string, path: string, body?: any): Promise<WorkerResponse> {
-  const w = ensureWorker();
   const id = requestId();
   const msg: WorkerRequest = { id, method: method.toUpperCase(), path, body };
+  // Fallback: in test/non-browser envs without Worker, call the handler directly
+  if (typeof Worker === 'undefined') {
+    const { handleWorkerRequest } = await import('./mockApiWorker');
+    return handleWorkerRequest(msg);
+  }
+  const w = ensureWorker();
   const p = new Promise<WorkerResponse>((resolve, reject) => {
     pending.set(id, { resolve, reject });
     // Add a timeout to avoid hanging forever
