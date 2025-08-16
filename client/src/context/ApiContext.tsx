@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type PropsWithChildren } from 'react'
-import type { JsonObject } from '../components/JsonEditor'
+import type { JsonDict, LibraryFiles } from '../types'
 
 export type ApiContextType = {
   // REST base
@@ -12,16 +12,16 @@ export type ApiContextType = {
   endSession: () => Promise<void>
 
   // Shared data
-  libraryFiles: { yaml_files: string[]; csv_files: string[]; html_files?: string[]; png_files?: string[]; total_files?: number } | null
-  setLibraryFiles: React.Dispatch<React.SetStateAction<{ yaml_files: string[]; csv_files: string[]; html_files?: string[]; png_files?: string[]; total_files?: number } | null>>
+  libraryFiles: LibraryFiles | null
+  setLibraryFiles: React.Dispatch<React.SetStateAction<LibraryFiles | null>>
   savedLibraries: string[]
   setSavedLibraries: React.Dispatch<React.SetStateAction<string[]>>
   selectedSavedLibrary: string
   setSelectedSavedLibrary: React.Dispatch<React.SetStateAction<string>>
   selectedFile: string
   setSelectedFile: React.Dispatch<React.SetStateAction<string>>
-  configData: JsonObject
-  setConfigData: React.Dispatch<React.SetStateAction<JsonObject>>
+  configData: JsonDict
+  setConfigData: React.Dispatch<React.SetStateAction<JsonDict>>
   csvPreview: string | null
   setCsvPreview: React.Dispatch<React.SetStateAction<string | null>>
   binaryPreviewUrl?: string | null
@@ -62,7 +62,7 @@ export function ApiProvider({ children }: PropsWithChildren) {
   const [savedLibraries, setSavedLibraries] = useState<string[]>([])
   const [selectedSavedLibrary, setSelectedSavedLibrary] = useState<string>('')
   const [selectedFile, setSelectedFile] = useState<string>('')
-  const [configData, setConfigData] = useState<JsonObject>({})
+  const [configData, setConfigData] = useState<JsonDict>({})
   const [csvPreview, setCsvPreview] = useState<string | null>(null)
   const [binaryPreviewUrl, setBinaryPreviewUrl] = useState<string | null>(null)
   const pendingDownloadRef = useRef<string | null>(null)

@@ -57,8 +57,9 @@
 
 ## Testing
 - __Server tests coverage__
-  - Add REST tests for: session lifecycle, file CRUD, saved library save/load/delete, scanning, and simulation run (can be mocked).
-  - Add WS tests (if WS retained) for key events and error flows.
+  - REST tests present under `tests/server_tests/test_rest_api.py` covering session lifecycle, file CRUD, config fallback/override, and simulation run.
+  - TODO: add error cases and path traversal protections, saved library save/load/delete edge cases, and background job polling endpoints.
+  - WS tests not applicable (REST-only).
 
 ## Potential Legacy/Dead Code
 - If moving toward REST-only, `event_handlers.py` may become legacy. Conversely, if WS is primary, consider trimming REST or ensuring parity via shared services.
@@ -71,7 +72,7 @@
 - [n/a] Fix duplicate `except` blocks in `server/event_handlers.py` `handle_delete_saved_library()` — file not present.
 - [x] Define Pydantic response models for REST and align response shapes.
 - [x] Add background job for `run_simulation` with progress updates via polling endpoints.
-- [ ] Add server-side tests for REST endpoints (success + error cases) and for path traversal protections.
+- [~] Add server-side tests for REST endpoints (success + error cases) and for path traversal protections. Status: initial coverage added in `tests/server_tests/test_rest_api.py`; expand to error and security cases.
 
 ## Notes
 - No code changes made. This document records issues and recommended refactors to improve reliability, maintainability, and consistency across interfaces.

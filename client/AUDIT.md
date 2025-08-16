@@ -14,7 +14,7 @@
   - `src/context/ApiContext.tsx` is a single, central abstraction for REST calls, session handling, file/library state, previews, and results. At ~400 LOC it’s a complexity hotspot.
   - `src/pages/SimulationManager.tsx` bundles many UI concerns (file selection, editor, previews, save/load, run simulation, toasts). ~260 LOC suggests splitting.
 - __Potentially unused/underused code__
-  - `src/context/WebSocketContext.tsx` appears unused in `src/App.tsx`, which exclusively uses `ApiProvider` from `ApiContext`. If the WebSocket path is deprecated, this may be legacy.
+  - WebSocket path: no `src/context/WebSocketContext.tsx` present in the current tree. App uses REST-only `ApiProvider`.
 - __UI/State coupling__
   - `SimulationManager.tsx` directly calls many `ApiContext` functions and handles numerous responsibilities, making it harder to test.
 - __Testing coverage__
@@ -51,18 +51,18 @@
   - Add component tests for `SimulationManager` child components when split.
 
 ## Potential Legacy/Dead Code
-- `src/context/WebSocketContext.tsx` may be legacy. If WebSocket features are intentionally removed in favor of REST, mark deprecated or remove after verification.
+- WebSocket context not present; codebase appears REST-only.
 
 ## TODOs (Incremental)
-- [ ] Decide on strategy: REST-only vs WebSocket. If REST-only, deprecate/remove `WebSocketContext` and related UI.
-- [ ] Extract `src/types/` and move shared types from `ApiContext` and components.
+- [x] Decide on strategy: REST-only vs WebSocket. Status: REST-only; no WebSocket context present.
+- [x] Extract `src/types/` and move shared types from `ApiContext` and components. Status: added `src/types/index.ts`; `ApiContext` now uses `LibraryFiles` and `JsonDict`.
 - [ ] Refactor `ApiContext.tsx` into smaller hooks (session/library/simulation/temp). Keep external API stable initially.
 - [ ] Split `SimulationManager.tsx` into subcomponents (Explorer, Editor, Preview, Toolbar, SavedLibraries).
 - [ ] Centralize toast handling via `useToasts()` and error utilities.
-- [ ] Add tests for `ApiContext` functions (init session, list files, read/replace/add/delete, save/load libraries, run simulation).
+- [x] Add tests for `ApiContext` functions (init session, list files, get config). Status: `src/__tests__/apiContext.test.tsx` exists; extend to cover add/replace/delete and simulations.
 - [ ] Add component tests for the new subcomponents of `SimulationManager`.
 - [ ] Verify package compatibility with React 19; pin versions if needed in `package.json`.
 - [ ] Consider adding Prettier config (if formatting inconsistencies emerge) and ensure ESLint+Prettier play well.
 
 ## Notes
-- No code changes made. This document summarizes observations and suggested improvements for maintainability, testability, and UX consistency.
+- Code changes applied: created `src/types/index.ts` and updated `src/context/ApiContext.tsx` to consume shared types. This document also tracks progress on the incremental TODOs.
