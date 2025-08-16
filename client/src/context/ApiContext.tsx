@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type PropsWithChildren } from 'react'
+import { mockApiRequest } from '../workers/mockApiClient'
 import type { JsonDict, LibraryFiles } from '../types'
 import { useSession } from '../hooks/useSession'
 import { useLibrary } from '../hooks/useLibrary'
@@ -119,6 +120,23 @@ export function ApiProvider({ children }: PropsWithChildren) {
         ;(async () => {
           try {
             const sid = id as string
+            if (sid.startsWith('mock-')) {
+              // Use worker refresh directly to avoid network error noise
+              const wr = await mockApiRequest('GET', `/api/${sid}/refresh`)
+              if (wr.ok) {
+                setLibraryFiles(wr.json?.files ?? null)
+                setConfigData(wr.json?.config ?? {})
+                setSavedLibraries(wr.json?.saved ?? [])
+                return
+              }
+              // fallback to individual worker-backed calls
+              await Promise.allSettled([
+                fetchSavedLibraries(),
+                fetchLibraryFiles(),
+                getConfig(),
+              ])
+              return
+            }
             const r = await fetch(`${apiBaseUrl}/${sid}/refresh`)
             if (r.ok) {
               const payload = await r.json()
@@ -134,7 +152,12 @@ export function ApiProvider({ children }: PropsWithChildren) {
               ])
             }
           } catch {
-            // ignore
+            // Network error -> use worker-backed fallbacks
+            await Promise.allSettled([
+              fetchSavedLibraries(),
+              fetchLibraryFiles(),
+              getConfig(),
+            ])
           }
         })()
       }, 0)
@@ -161,19 +184,39 @@ export function ApiProvider({ children }: PropsWithChildren) {
 
   const refreshAll = useCallback(async () => {
     const id = requireSession()
-    const r = await fetch(`${apiBaseUrl}/${id}/refresh`)
-    if (r.ok) {
-      const payload = await r.json()
-      setLibraryFiles(payload.files ?? null)
-      setConfigData(payload.config ?? {})
-      setSavedLibraries(payload.saved ?? [])
-    } else {
-      await Promise.allSettled([
-        fetchSavedLibraries(),
-        fetchLibraryFiles(),
-        getConfig(),
-      ])
+    try {
+      if (id.startsWith('mock-')) {
+        const wr = await mockApiRequest('GET', `/api/${id}/refresh`)
+        if (wr.ok) {
+          setLibraryFiles(wr.json?.files ?? null)
+          setConfigData(wr.json?.config ?? {})
+          setSavedLibraries(wr.json?.saved ?? [])
+          return
+        }
+        // worker refresh failed; fall back to individual calls
+        await Promise.allSettled([
+          fetchSavedLibraries(),
+          fetchLibraryFiles(),
+          getConfig(),
+        ])
+        return
+      }
+      const r = await fetch(`${apiBaseUrl}/${id}/refresh`)
+      if (r.ok) {
+        const payload = await r.json()
+        setLibraryFiles(payload.files ?? null)
+        setConfigData(payload.config ?? {})
+        setSavedLibraries(payload.saved ?? [])
+        return
+      }
+    } catch {
+      // fall through to worker-backed fallbacks
     }
+    await Promise.allSettled([
+      fetchSavedLibraries(),
+      fetchLibraryFiles(),
+      getConfig(),
+    ])
   }, [apiBaseUrl, requireSession, fetchSavedLibraries, fetchLibraryFiles, getConfig])
 
   const value = useMemo<ApiContextType>(() => ({

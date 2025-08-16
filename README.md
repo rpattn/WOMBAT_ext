@@ -2,6 +2,8 @@
 Extended version of the NREL WOMBAT Project!
 - And experimenting with Vibe Coding (scary!!)
 
+https://rpattn.github.io/WOMBAT_ext
+
 ## Installation
 Reccommended installation vs. WOMBAT guide
 
@@ -34,6 +36,22 @@ Server:\
 Client:\
 `cd client`\
 `npm run dev`
+
+## Mock API Worker & Offline Mode
+
+When the backend is unavailable, the client now automatically falls back to a mock Web Worker with a one-time toast warning:
+
+- __Toast__: "Server unavailable. Using mock Web Worker. Some behavior may be unexpected."
+- __Seeded data__: the worker hosts a virtual filesystem with Dinwoodie-like files (e.g., `project/config/base.yaml`, `project/plant/layout.csv`, `weather/alpha_ventus_weather_2002_2014.csv`, `cables/array.yaml`, `cables/export.yaml`, `turbines/vestas_v90.yaml`, `turbines/vestas_v90_power_curve.csv`, and `vessels/ctv*.yaml`).
+- __Saved libraries__: includes `dinwoodie_mock` and `dinwoodie_base` for quick loading.
+
+This improves offline/fallback simulation fidelity without requiring the server.
+
+## Live Site (GitHub Pages)
+
+WOMBAT_ext UI is published at:
+
+- https://rpattn.github.io/WOMBAT_ext
 
 ## Frontend Testing (Vitest + React Testing Library)
 
