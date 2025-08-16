@@ -280,6 +280,40 @@ paths:
         '404':
           description: Unknown client_id
 
+  /api/{client_id}/simulate/trigger:
+    post:
+      tags: [simulation]
+      summary: Trigger an asynchronous WOMBAT simulation for the client
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Simulation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationTrigger'
+        '404':
+          description: Unknown client_id
+
+  /api/simulate/status/{task_id}:
+    get:
+      tags: [simulation]
+      summary: Get status/result for a background simulation task
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationStatus'
+
   /api/{client_id}/temp:
     delete:
       tags: [temp]
@@ -521,6 +555,32 @@ components:
         files:
           $ref: '#/components/schemas/FilesScan'
       required: [status, results, files]
+
+    SimulationTrigger:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          example: running
+      required: [task_id, status]
+
+    SimulationStatus:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          example: finished
+        result:
+          type: object
+          nullable: true
+          additionalProperties: true
+        files:
+          $ref: '#/components/schemas/FilesScan'
+      required: [task_id, status]
 
 tags:
   - name: wombat-rest

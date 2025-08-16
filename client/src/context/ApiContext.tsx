@@ -250,6 +250,40 @@ export function ApiProvider({ children }: PropsWithChildren) {
 
   const runSimulation = useCallback(async () => {
     const id = requireSession()
+    // Prefer async trigger + poll; fallback to sync if not available
+    try {
+      const triggerRes = await fetch(`${apiBaseUrl}/${id}/simulate/trigger`, { method: 'POST' })
+      if (triggerRes.ok) {
+        const tdata = await triggerRes.json() as { task_id: string, status: string }
+        const taskId = tdata.task_id
+
+        // Poll until finished/failed
+        let attempts = 0
+        const maxAttempts = 600 // up to ~10 minutes at 1s interval
+        const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
+        while (attempts < maxAttempts) {
+          attempts++
+          const st = await fetch(`${apiBaseUrl}/simulate/status/${taskId}`)
+          if (!st.ok) throw new Error(await st.text())
+          const sdata = await st.json() as { status: string, result?: any, files?: any }
+          if (sdata.status !== 'running' && sdata.status !== 'unknown') {
+            // finished or failed
+            if (sdata.result) setResults(sdata.result)
+            if (sdata.files) setLibraryFiles(sdata.files)
+            return
+          }
+          await delay(1000)
+        }
+        // Timed out; still refresh files to show any partial outputs
+        await fetchLibraryFiles().catch(() => {})
+        return
+      }
+    } catch (e) {
+      // fall through to sync
+      console.warn('Async simulation not available or failed, falling back to sync', e)
+    }
+
+    // Fallback: synchronous endpoint
     const res = await fetch(`${apiBaseUrl}/${id}/simulate`, { method: 'POST' })
     if (!res.ok) throw new Error(await res.text())
     const data = await res.json()

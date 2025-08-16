@@ -8,7 +8,7 @@ Routes are included under the `/api` prefix from `server/rest_api.py`.
 from fastapi import APIRouter
 
 from server.client_manager import client_manager
-from server.models import LoadSavedPayload
+from server.models import LoadSavedPayload, SavedListResponse, OkWithFilesAndMessageResponse, OperationOkResponse
 from server.services.libraries import scan_client_library_files
 from server.services.saved_libraries import (
     load_saved_library,
@@ -18,7 +18,7 @@ from server.services.saved_libraries import (
 router = APIRouter(prefix="", tags=["saved"])
 
 
-@router.get("/saved")
+@router.get("/saved", response_model=SavedListResponse)
 def list_saved_libraries() -> dict:
     from pathlib import Path
     base = Path(client_manager.get_save_library_dir()).resolve()
@@ -28,14 +28,14 @@ def list_saved_libraries() -> dict:
     return {"dirs": dirs}
 
 
-@router.post("/{client_id}/saved/load")
+@router.post("/{client_id}/saved/load", response_model=OkWithFilesAndMessageResponse)
 def load_saved(client_id: str, payload: LoadSavedPayload) -> dict:
     ok, msg = load_saved_library(client_id, payload.name)
     files = scan_client_library_files(client_id) if ok else {"yaml_files": [], "csv_files": [], "total_files": 0}
     return {"ok": bool(ok), "message": msg, "files": files}
 
 
-@router.delete("/saved/{name}")
+@router.delete("/saved/{name}", response_model=OperationOkResponse)
 def delete_saved(name: str) -> dict:
     ok, msg = delete_saved_library(name)
     return {"ok": bool(ok), "message": msg}

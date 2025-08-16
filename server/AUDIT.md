@@ -9,7 +9,7 @@
   - `server/utils/paths.py` — shared path helpers.
   - `server/library_manager.py` — deprecated thin compatibility layer delegating to services.
   - `server/client_manager.py` — session and temp-dir management.
-  - `server/event_handlers.py` — legacy WS handlers (may become deprecated if REST-only).
+  - `server/event_handlers.py` — legacy WS handlers (not present in repo; REST-only currently).
 
 ## Findings
 - __Modularization achieved__
@@ -27,7 +27,7 @@
   - Previous: `server/library_manager.py` referenced `safe_rel` in `delete_client_library_file()`.
   - Now: Deletion is delegated to `server/services/libraries.py::delete_client_library_file()` with consistent handling and path safety.
 - __Duplicate except blocks (syntax/logic issue)__
-  - File: `server/event_handlers.py`, `handle_delete_saved_library()` likely has duplicate excepts. Consolidate into one.
+  - Originally noted in `server/event_handlers.py` but this file is not present. Consider this resolved/not applicable in current REST-only codebase.
 - __RESOLVED: inconsistent return shapes__
   - `get_client_library_file()` now returns `None` on missing; YAML returns dict, others return str.
 
@@ -45,9 +45,9 @@
 - __DONE: Path utilities__
   - Implemented `server/utils/paths.py`; used throughout services and raw reads.
 - __Response schemas__
-  - Request models centralized in `server/models.py`. Response models still ad-hoc; consider adding Pydantic response models for consistency.
+  - Request models centralized in `server/models.py`. Response models ADDED: standardized `OperationOkResponse`, file responses, and simulation responses. Routers updated to use `response_model`.
 - __Background execution__
-  - For `run_simulation`, consider FastAPI BackgroundTasks or a task queue; emit progress via WS or polling endpoints.
+  - Implemented lightweight background simulation runner with in-memory task store and polling endpoints.
 
 ## Security Considerations
 - __Path traversal__
@@ -68,9 +68,9 @@
 - [x] Create a service layer for library operations; make REST/WS thin wrappers.
 - [x] Normalize `get_client_library_file()` return contract to `None` on missing.
 - [x] Modularize REST endpoints into routers under `server/routers/` and include from `rest_api.py`.
-- [ ] Fix duplicate `except` blocks in `server/event_handlers.py` `handle_delete_saved_library()`.
-- [ ] Define Pydantic response models for REST and align WS event schemas.
-- [ ] Consider background job for `run_simulation` with progress updates.
+- [n/a] Fix duplicate `except` blocks in `server/event_handlers.py` `handle_delete_saved_library()` — file not present.
+- [x] Define Pydantic response models for REST and align response shapes.
+- [x] Add background job for `run_simulation` with progress updates via polling endpoints.
 - [ ] Add server-side tests for REST endpoints (success + error cases) and for path traversal protections.
 
 ## Notes

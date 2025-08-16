@@ -9,7 +9,15 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from server.client_manager import client_manager
-from server.models import AddOrReplacePayload, SaveLibraryPayload
+from server.models import (
+    AddOrReplacePayload,
+    SaveLibraryPayload,
+    FileListResponse,
+    RefreshResponse,
+    FileContentResponse,
+    RawFileContentResponse,
+    OperationOkResponse,
+)
 from server.services.libraries import (
     get_client_library_file,
     scan_client_library_files,
@@ -33,14 +41,14 @@ def get_config(client_id: str) -> Any:
     return get_simulation()
 
 
-@router.get("/{client_id}/library/files")
+@router.get("/{client_id}/library/files", response_model=FileListResponse)
 def list_library_files(client_id: str) -> dict:
     if not client_manager.get_client_project_dir(client_id):
         raise HTTPException(status_code=404, detail="Unknown client_id")
     return scan_client_library_files(client_id)
 
 
-@router.get("/{client_id}/refresh")
+@router.get("/{client_id}/refresh", response_model=RefreshResponse)
 def refresh_state(client_id: str) -> dict:
     if not client_manager.get_client_project_dir(client_id):
         raise HTTPException(status_code=404, detail="Unknown client_id")
@@ -57,6 +65,7 @@ def refresh_state(client_id: str) -> dict:
     return {"files": files, "config": cfg, "saved": dirs}
 
 
+# Use a union of raw and parsed responses; FastAPI will validate at runtime.
 @router.get("/{client_id}/library/file")
 def read_library_file(
     client_id: str,
@@ -94,7 +103,7 @@ def read_library_file(
         return {"file": path, "data": file_content}
 
 
-@router.post("/{client_id}/library/file")
+@router.post("/{client_id}/library/file", response_model=OperationOkResponse)
 def add_file(client_id: str, payload: AddOrReplacePayload) -> dict:
     if not client_manager.get_client_project_dir(client_id):
         raise HTTPException(status_code=404, detail="Unknown client_id")
@@ -103,7 +112,7 @@ def add_file(client_id: str, payload: AddOrReplacePayload) -> dict:
     return {"ok": bool(ok), "files": files}
 
 
-@router.put("/{client_id}/library/file")
+@router.put("/{client_id}/library/file", response_model=OperationOkResponse)
 def replace_file(client_id: str, payload: AddOrReplacePayload) -> dict:
     if not client_manager.get_client_project_dir(client_id):
         raise HTTPException(status_code=404, detail="Unknown client_id")
@@ -112,7 +121,7 @@ def replace_file(client_id: str, payload: AddOrReplacePayload) -> dict:
     return {"ok": bool(ok), "files": files}
 
 
-@router.delete("/{client_id}/library/file")
+@router.delete("/{client_id}/library/file", response_model=OperationOkResponse)
 def delete_file(client_id: str, file_path: str = Query(...)) -> dict:
     if not client_manager.get_client_project_dir(client_id):
         raise HTTPException(status_code=404, detail="Unknown client_id")
@@ -121,7 +130,7 @@ def delete_file(client_id: str, file_path: str = Query(...)) -> dict:
     return {"ok": bool(ok), "files": files}
 
 
-@router.post("/{client_id}/library/save")
+@router.post("/{client_id}/library/save", response_model=OperationOkResponse)
 def save_library_endpoint(client_id: str, payload: SaveLibraryPayload) -> dict:
     if not payload.project_name:
         raise HTTPException(status_code=400, detail="Missing project_name")
