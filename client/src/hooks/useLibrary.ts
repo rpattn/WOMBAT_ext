@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import type { JsonDict, LibraryFiles } from '../types'
+import { b64toBlob } from '../utils/blob'
 
 export type UseLibraryDeps = {
   apiBaseUrl: string
@@ -56,7 +57,7 @@ export function useLibrary(deps: UseLibraryDeps) {
     if (!res.ok) throw new Error(await res.text())
     const data = await res.json()
     if (raw && 'data_b64' in data) {
-      const blob = new Blob([Uint8Array.from(atob(data.data_b64), c => c.charCodeAt(0))], { type: data.mime || 'application/octet-stream' })
+      const blob = b64toBlob(data.data_b64, data.mime || 'application/octet-stream')
       const objectUrl = URL.createObjectURL(blob)
       setBinaryPreviewUrl(objectUrl)
       setCsvPreview(null)

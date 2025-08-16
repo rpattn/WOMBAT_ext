@@ -1,14 +1,13 @@
 import { useEffect } from 'react';
-import { toast as toastify } from 'react-toastify';
 import '../App.css';
-import JsonEditor, { type JsonObject } from '../components/JsonEditor';
-import FileSelector from '../components/FileSelector';
+import { type JsonObject } from '../components/JsonEditor';
 import SimulationControls from '../components/SimulationControls';
-import SelectedFileInfo from '../components/SelectedFileInfo';
 import CsvPreview from '../components/CsvPreview';
-import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown';
-import { useToast } from '../components/ToastManager';
 import { useApiContext } from '../context/ApiContext';
+import SavedLibrariesBar from '../components/SavedLibrariesBar';
+import LibraryPanel from '../components/LibraryPanel';
+import EditorPanel from '../components/EditorPanel';
+import { useToasts } from '../hooks/useToasts';
 
 export const example_library_structure = {
   "yaml_files": [
@@ -23,7 +22,6 @@ export const example_library_structure = {
 
 export default function SimulationManager() {
   const {
-    apiBaseUrl,
     libraryFiles,
     savedLibraries,
     selectedFile, setSelectedFile,
@@ -43,7 +41,7 @@ export default function SimulationManager() {
     deleteSaved,
     sweepTemp,
   } = useApiContext();
-  const toast = useToast();
+  const toasts = useToasts();
 
   // Initialize selected saved library from localStorage on mount
   // and keep it consistent with the list as it arrives/updates.
@@ -107,30 +105,18 @@ export default function SimulationManager() {
     // Optionally pre-select the file immediately; content will arrive after server stores it
     setSelectedFile(filePath);
     //toast the user
-    toast.info(`Added file: ${filePath} to working library.`);
+    toasts.info(`Added file: ${filePath} to working library.`);
   };
 
   // State is updated centrally in App.tsx; no page-level subscription needed
 
   const handleGetConfig = () => { getConfig().catch(() => {}); };
 
-  const handleClearTemp = () => {
-    const p = sweepTemp();
-    toastify.info('Clearing temp folders…');
-    p.then((count) => {
-      toastify.success(`Cleared ${count} temp folder(s)`);
-    }).catch(() => {
-      toastify.error('Failed to clear temp folders');
-    });
-  };
+  const handleClearTemp = () => { toasts.tempSweep(sweepTemp()); };
 
   const handleRunSimulation = () => {
     const p = runSimulation();
-    toastify.promise(p, {
-      pending: 'Running simulation…',
-      success: 'Simulation finished!',
-      error: 'Simulation failed',
-    });
+    toasts.simulation(p);
     p.then(() => {
       // Ensure latest files are reflected (server returns files, but refresh in case of race)
       fetchLibraryFiles().catch(() => {});
@@ -169,12 +155,12 @@ export default function SimulationManager() {
         setSelectedFile(targetPath);
         // Refresh editor content from server to reflect canonical YAML dump
         return readFile(targetPath, false).then(() => {
-          toast.success(`Saved ${targetPath}`);
+          toasts.success(`Saved ${targetPath}`);
         });
       })
       .catch((err) => {
         console.error('Save failed', err);
-        toast.error('Failed to save configuration');
+        toasts.error('Failed to save configuration');
       });
     // Provide immediate optimistic update as well
     setConfigData(prev => ({ ...prev, ...data }));
@@ -183,42 +169,31 @@ export default function SimulationManager() {
 
   return (<>
     <div className="app-container app-full">
-      <div className="row" style={{ marginBottom: '0.75rem', alignItems: 'center' }}>
-        <div className="col">
-          <SavedLibrariesDropdown
-            libraries={savedLibraries}
-            value={selectedSavedLibrary}
-            onChange={(val: string) => {
-              setSelectedSavedLibrary(val);
-              try {
-                window.localStorage.setItem(LS_KEY_LAST_SAVED, val || '');
-              } catch { /* ignore */ }
-              if (val) {
-                toast.info(`Loading saved library: ${val}`);
-                loadSaved(val).catch(() => toast.error('Failed to load saved library'));
-              }
-            }}
-          >
-            {selectedSavedLibrary && (
-              <button
-                className="btn btn-outline-danger"
-                onClick={() => {
-                  if (!selectedSavedLibrary) return;
-                  const confirmDel = window.confirm(`Delete saved library: ${selectedSavedLibrary}? This cannot be undone.`);
-                  if (!confirmDel) return;
-                  deleteSaved(selectedSavedLibrary).catch(() => {
-                    toast.error('Failed to delete saved library');
-                    return;
-                  });
-                  // Optimistically clear selection
-                  setSelectedSavedLibrary('');
-                  try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }
-                }}
-              >Delete</button>
-            )}
-          </SavedLibrariesDropdown>
-        </div>
-      </div>
+      <SavedLibrariesBar
+        libraries={savedLibraries}
+        value={selectedSavedLibrary}
+        onChange={(val: string) => {
+          setSelectedSavedLibrary(val);
+          try {
+            window.localStorage.setItem(LS_KEY_LAST_SAVED, val || '');
+          } catch { /* ignore */ }
+          if (val) {
+            toasts.info(`Loading saved library: ${val}`);
+            loadSaved(val).catch(() => toasts.error('Failed to load saved library'));
+          }
+        }}
+        onDelete={(val: string) => {
+          if (!val) return;
+          const confirmDel = window.confirm(`Delete saved library: ${val}? This cannot be undone.`);
+          if (!confirmDel) return;
+          deleteSaved(val).catch(() => {
+            toasts.error('Failed to delete saved library');
+            return;
+          });
+          setSelectedSavedLibrary('');
+          try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }
+        }}
+      />
       <SimulationControls
         onRun={handleRunSimulation}
         onGetConfig={handleGetConfig}
@@ -228,31 +203,24 @@ export default function SimulationManager() {
       />
       <div className="card">
         <div className="row stack-sm">
-          <div className="col">
-            <FileSelector
-              onFileSelect={handleFileSelect}
-              selectedFile={selectedFile}
-              libraryFiles={libraryFiles ?? undefined}
-              projectName={selectedSavedLibrary || undefined}
-              onAddFile={handleAddFile}
-              onDeleteFile={handleDeleteFile}
-              onReplaceFile={handleReplaceFile}
-              onDownloadFile={handleDownloadFile}
-            />
-            <SelectedFileInfo selectedFile={selectedFile} />
-          </div>
-          <div className="col">
-            <div className="editor-wrap">
-              <JsonEditor
-                data={configData}
-                onChange={(newData) => setConfigData(prev => ({
-                  ...prev,
-                  ...newData as JsonObject
-                }))}
-                onSave={(newData) => handleSave(newData as JsonObject)}
-              />
-            </div>
-          </div>
+          <LibraryPanel
+            onFileSelect={handleFileSelect}
+            selectedFile={selectedFile}
+            libraryFiles={libraryFiles}
+            projectName={selectedSavedLibrary || undefined}
+            onAddFile={handleAddFile}
+            onDeleteFile={handleDeleteFile}
+            onReplaceFile={handleReplaceFile}
+            onDownloadFile={handleDownloadFile}
+          />
+          <EditorPanel
+            data={configData as unknown as JsonObject}
+            onChange={(newData) => setConfigData(prev => ({
+              ...prev,
+              ...newData as JsonObject
+            }))}
+            onSave={(newData) => handleSave(newData as JsonObject)}
+          />
         </div>
       </div>
       <CsvPreview preview={csvPreview} filePath={selectedFile} />

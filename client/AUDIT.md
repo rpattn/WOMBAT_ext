@@ -41,9 +41,9 @@
   - `useTemp()` (sweep/clear temp)
   - `ApiProvider` now composes these hooks and exposes the same public API.
 - __Decompose `SimulationManager.tsx`__:
-  - Extract: File actions toolbar, Library explorer, Editor pane, Preview pane, Saved libraries panel.
+  - Extract: Saved libraries panel, Library explorer, Editor pane (initial pass completed; further splits optional).
 - __Unify notifications__
-  - Create a `useToasts()` wrapper and standardize messages and error mapping.
+  - Create a `useToasts()` wrapper and standardize messages and error mapping (completed).
 - __Type consolidation__
   - Extract common types (e.g., LibraryFiles, Results) into `src/types/` to avoid duplication and drift.
 - __Testing__
@@ -57,8 +57,8 @@
 - [x] Decide on strategy: REST-only vs WebSocket. Status: REST-only; no WebSocket context present.
 - [x] Extract `src/types/` and move shared types from `ApiContext` and components. Status: added `src/types/index.ts`; `ApiContext` now uses `LibraryFiles` and `JsonDict`.
 - [x] Refactor `ApiContext.tsx` into smaller hooks (session/library/simulation/temp). Public API preserved.
-- [ ] Split `SimulationManager.tsx` into subcomponents (Explorer, Editor, Preview, Toolbar, SavedLibraries).
-- [ ] Centralize toast handling via `useToasts()` and error utilities.
+- [x] Split `SimulationManager.tsx` into subcomponents (initial pass: `SavedLibrariesBar`, `LibraryPanel`, `EditorPanel`).
+- [x] Centralize toast handling via `useToasts()` and error utilities.
 - [x] Add tests for `ApiContext` functions (init session, list files, get config, add/replace/delete, simulate). Status: `src/__tests__/apiContext.test.tsx` extended to cover these flows.
 - [ ] Add component tests for the new subcomponents of `SimulationManager`.
 - [ ] Verify package compatibility with React 19; pin versions if needed in `package.json`.
@@ -69,3 +69,8 @@
   - Created `src/types/index.ts` and updated `src/context/ApiContext.tsx` to consume shared types.
   - Added hooks: `src/hooks/useSession.ts`, `src/hooks/useLibrary.ts`, `src/hooks/useSimulation.ts`, `src/hooks/useTemp.ts`.
   - `ApiProvider` composes these hooks; external API and tests remain intact.
+  - Decomposed `src/pages/SimulationManager.tsx` to use:
+    - `src/components/SavedLibrariesBar.tsx`
+    - `src/components/LibraryPanel.tsx` (wraps `FileSelector` + `SelectedFileInfo`)
+    - `src/components/EditorPanel.tsx` (wraps `JsonEditor`)
+  - Centralized notifications via `src/hooks/useToasts.ts`; `SimulationManager` refactored to use it. Only `ToastManager` imports `react-toastify` directly.
