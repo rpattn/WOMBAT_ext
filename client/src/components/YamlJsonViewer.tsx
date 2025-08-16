@@ -1,8 +1,9 @@
 import type { JsonObject } from './JsonEditor';
+import type { JsonDict } from '../types';
 
 export type YamlJsonViewerProps = {
   // Either a parsed object or a raw string (already YAML/JSON text)
-  data: JsonObject | string | null | undefined;
+  data: JsonObject | JsonDict | string | null | undefined;
   title?: string;
   defaultOpen?: boolean;
   style?: React.CSSProperties;
