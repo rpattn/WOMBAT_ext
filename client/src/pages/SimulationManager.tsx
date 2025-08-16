@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { toast as toastify } from 'react-toastify';
 import '../App.css';
 import JsonEditor, { type JsonObject } from '../components/JsonEditor';
 import FileSelector from '../components/FileSelector';
@@ -7,7 +8,7 @@ import SelectedFileInfo from '../components/SelectedFileInfo';
 import CsvPreview from '../components/CsvPreview';
 import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown';
 import { useToast } from '../components/ToastManager';
-import { useWebSocketContext } from '../context/WebSocketContext';
+import { useApiContext } from '../context/ApiContext';
 
 export const example_library_structure = {
   "yaml_files": [
@@ -22,7 +23,7 @@ export const example_library_structure = {
 
 export default function SimulationManager() {
   const {
-    send: sendWebSocketMessage,
+    apiBaseUrl,
     libraryFiles,
     savedLibraries,
     selectedFile, setSelectedFile,
@@ -30,7 +31,17 @@ export default function SimulationManager() {
     csvPreview, setCsvPreview,
     pendingDownloadRef,
     selectedSavedLibrary, setSelectedSavedLibrary,
-  } = useWebSocketContext();
+    // REST methods
+    readFile,
+    addOrReplaceFile,
+    deleteFile,
+    getConfig,
+    runSimulation,
+    fetchLibraryFiles,
+    saveLibrary,
+    loadSaved,
+    deleteSaved,
+  } = useApiContext();
   const toast = useToast();
 
   // Initialize selected saved library from localStorage on mount
@@ -52,36 +63,16 @@ export default function SimulationManager() {
     // Reset preview/editor content before loading new file
     setCsvPreview(null);
     setConfigData({});
-
-    // Send WebSocket message when a file is selected
-    if (sendWebSocketMessage) {
-      const message = JSON.stringify({
-        event: 'file_select',
-        data: filePath
-      });
-      const success = sendWebSocketMessage(message);
-      if (!success) {
-        console.error('Failed to send file select message');
-      } else {
-        console.log('Sent file select message for:', filePath);
-      }
-    } else {
-      console.warn('WebSocket not ready to send file select message');
-    }
+    // Fetch via REST
+    readFile(filePath, false).catch(err => console.error('readFile error', err));
   };
 
   const handleDownloadFile = (filePath: string) => {
-    if (!sendWebSocketMessage) {
-      console.warn('WebSocket not ready to request download');
-      return;
-    }
     pendingDownloadRef.current = filePath;
-    const message = JSON.stringify({ event: 'file_select', data: filePath, raw: true });
-    const ok = sendWebSocketMessage(message);
-    if (!ok) {
-      console.error('Failed to request file for download');
+    readFile(filePath, true).catch(err => {
+      console.error('Failed to request file for download', err);
       pendingDownloadRef.current = null;
-    }
+    });
   };
 
   const handleReplaceFile = (filePath: string) => {
@@ -94,36 +85,15 @@ export default function SimulationManager() {
       const file = input.files && input.files[0];
       if (!file) return;
       const text = await file.text();
-      if (!sendWebSocketMessage) {
-        console.warn('WebSocket not ready to send replace_file');
-        return;
-      }
-      const message = JSON.stringify({ event: 'replace_file', data: { file_path: filePath, content: text } });
-      const ok = sendWebSocketMessage(message);
-      if (!ok) {
-        console.error('Failed to send replace_file message');
-        return;
-      }
-      console.log('Sent replace_file for', filePath, 'with local file', file.name);
-      // Optionally re-select to fetch updated content
-      const selectMsg = JSON.stringify({ event: 'file_select', data: filePath });
-      sendWebSocketMessage(selectMsg);
+      addOrReplaceFile(filePath, text)
+        .then(() => readFile(filePath, false))
+        .catch(err => console.error('replace/add file failed', err));
     };
     input.click();
   };
 
   const handleDeleteFile = (filePath: string) => {
-    if (!sendWebSocketMessage) {
-      console.warn('WebSocket not ready to send delete_file');
-      return;
-    }
-    const message = JSON.stringify({ event: 'delete_file', data: { file_path: filePath } });
-    const ok = sendWebSocketMessage(message);
-    if (!ok) {
-      console.error('Failed to send delete_file message');
-      return;
-    }
-    console.log('Sent delete_file for', filePath);
+    deleteFile(filePath).catch(err => console.error('delete file failed', err));
     if (selectedFile === filePath) {
       setSelectedFile('');
       setCsvPreview(null);
@@ -132,17 +102,7 @@ export default function SimulationManager() {
   };
 
   const handleAddFile = (filePath: string, content: any) => {
-    if (!sendWebSocketMessage) {
-      console.warn('WebSocket not ready to send add_file');
-      return;
-    }
-    const message = JSON.stringify({ event: 'add_file', data: { file_path: filePath, content } });
-    const ok = sendWebSocketMessage(message);
-    if (!ok) {
-      console.error('Failed to send add_file message');
-      return;
-    }
-    console.log('Sent add_file for', filePath);
+    addOrReplaceFile(filePath, content).catch(err => console.error('add file failed', err));
     // Optionally pre-select the file immediately; content will arrive after server stores it
     setSelectedFile(filePath);
     //toast the user
@@ -151,41 +111,41 @@ export default function SimulationManager() {
 
   // State is updated centrally in App.tsx; no page-level subscription needed
 
-  const handleGetConfig = () => {
-    if (sendWebSocketMessage) {
-      const success = sendWebSocketMessage('get_config');
-      if (success) {
-        console.log('Requested config from server');
-      }
-    }
-  };
+  const handleGetConfig = () => { getConfig().catch(() => {}); };
 
   const handleClearTemp = () => {
-    if (sendWebSocketMessage) {
-      const success = sendWebSocketMessage('clear_temp');
-      if (success) {
-        console.log('Requested temp cleanup from server');
-      }
-    }
+    // Sweep all unused temp dirs server-side
+    const p = fetch(`${apiBaseUrl}/temp/sweep`, { method: 'POST' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(await r.text())
+        return r.json()
+      })
+      .then((payload: { removed: string[] }) => {
+        const count = Array.isArray(payload?.removed) ? payload.removed.length : 0
+        return count
+      })
+    toastify.info('Clearing temp folders…')
+    p.then((count) => {
+      toastify.success(`Cleared ${count} temp folder(s)`)
+    }).catch(() => {
+      toastify.error('Failed to clear temp folders')
+    })
   };
 
   const handleRunSimulation = () => {
-    if (sendWebSocketMessage) {
-      const success = sendWebSocketMessage('run');
-      if (success) {
-        console.log('Started simulation run');
-      }
-    }
+    const p = runSimulation();
+    toastify.promise(p, {
+      pending: 'Running simulation…',
+      success: 'Simulation finished!',
+      error: 'Simulation failed',
+    });
+    p.then(() => {
+      // Ensure latest files are reflected (server returns files, but refresh in case of race)
+      fetchLibraryFiles().catch(() => {});
+    }).catch(() => {});
   };
 
-  const handleGetLibraryFiles = () => {
-    if (sendWebSocketMessage) {
-      const success = sendWebSocketMessage('get_library_files');
-      if (success) {
-        console.log('Requested library files from server');
-      }
-    }
-  };
+  const handleGetLibraryFiles = () => { fetchLibraryFiles().catch(() => {}); };
 
   const handleSaveLibrary = () => {
     // Ask user for a project name
@@ -199,32 +159,17 @@ export default function SimulationManager() {
       console.log('Save library cancelled or empty name');
       return;
     }
-    if (!sendWebSocketMessage) {
-      console.warn('WebSocket not ready to send save_library');
-      return;
-    }
-    const payload = JSON.stringify({ event: 'save_library', data: { project_name: name } });
-    const ok = sendWebSocketMessage(payload);
-    if (ok) {
-      console.log('Requested save_library for', name);
-      try { window.localStorage.setItem(LS_KEY_LAST_SAVED, name); } catch { /* ignore */ }
-    } else {
-      console.error('Failed to send save_library');
-    }
+    saveLibrary(name)
+      .then(() => {
+        console.log('Requested save_library for', name);
+        try { window.localStorage.setItem(LS_KEY_LAST_SAVED, name); } catch { /* ignore */ }
+      })
+      .catch(() => console.error('Failed to save library'));
   };
 
   const handleSave = (data: JsonObject) => {
-    if (sendWebSocketMessage) {
-      const message = JSON.stringify({ event: 'settings_update', data });
-      const success = sendWebSocketMessage(message);
-      if (!success) {
-        console.error('Failed to send settings update');
-      } else {
-        console.log('Sent settings update');
-      }
-    } else {
-      console.warn('WebSocket not ready to send settings update');
-    }
+    // Optional: persist settings via REST endpoint if available; otherwise keep in-state
+    setConfigData(prev => ({ ...prev, ...data }));
   };
 
   return (<>
@@ -241,15 +186,7 @@ export default function SimulationManager() {
               } catch { /* ignore */ }
               if (val) {
                 toast.info(`Loading saved library: ${val}`);
-                if (sendWebSocketMessage) {
-                  const msg = JSON.stringify({ event: 'load_saved_library', data: { name: val } });
-                  const ok = sendWebSocketMessage(msg);
-                  if (!ok) {
-                    toast.error('Failed to request load_saved_library');
-                  }
-                } else {
-                  toast.warning('WebSocket not ready to load saved library');
-                }
+                loadSaved(val).catch(() => toast.error('Failed to load saved library'));
               }
             }}
           >
@@ -260,16 +197,10 @@ export default function SimulationManager() {
                   if (!selectedSavedLibrary) return;
                   const confirmDel = window.confirm(`Delete saved library: ${selectedSavedLibrary}? This cannot be undone.`);
                   if (!confirmDel) return;
-                  if (!sendWebSocketMessage) {
-                    toast.warning('WebSocket not ready to delete saved library');
+                  deleteSaved(selectedSavedLibrary).catch(() => {
+                    toast.error('Failed to delete saved library');
                     return;
-                  }
-                  const msg = JSON.stringify({ event: 'delete_saved_library', data: { name: selectedSavedLibrary } });
-                  const ok = sendWebSocketMessage(msg);
-                  if (!ok) {
-                    toast.error('Failed to request delete_saved_library');
-                    return;
-                  }
+                  });
                   // Optimistically clear selection
                   setSelectedSavedLibrary('');
                   try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }

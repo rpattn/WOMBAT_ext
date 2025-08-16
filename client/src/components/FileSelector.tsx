@@ -92,8 +92,9 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     return root;
   }, [libraryFiles, rootLabel]);
 
-  // Expand root and some common folders (like "project") by default when present.
+  // Initialize default expanded folders only once per mount or when root label changes.
   useEffect(() => {
+    if (expandedFolders.size > 0) return; // respect user state once set
     const next = new Set<string>();
     next.add(rootLabel);
     const yaml = libraryFiles?.yaml_files ?? [];
@@ -104,26 +105,16 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     const parts = allFiles.map(p => (p || '').split('\\'));
     const hasProject = parts.some(seg => seg[0] === 'project');
     const hasProjectConfig = parts.some(seg => seg[0] === 'project' && seg[1] === 'config');
-    if (hasProject) {
-      next.add(`${rootLabel}/project`);
-    }
-    if (hasProjectConfig) {
-      next.add(`${rootLabel}/project/config`);
-    }
-    // Expand any requested default top-level folders if they are present
+    if (hasProject) next.add(`${rootLabel}/project`);
+    if (hasProjectConfig) next.add(`${rootLabel}/project/config`);
     for (const folderName of defaultExpandFolders) {
       if (!folderName) continue;
       const hasFolder = parts.some(seg => seg[0] === folderName);
-      if (hasFolder) {
-        next.add(`${rootLabel}/${folderName}`);
-      }
+      if (hasFolder) next.add(`${rootLabel}/${folderName}`);
     }
-    // Only update state if changed to avoid triggering re-renders unnecessarily
-    const isSame = expandedFolders.size === next.size && Array.from(next).every(v => expandedFolders.has(v));
-    if (!isSame) {
-      setExpandedFolders(next);
-    }
-  }, [rootLabel, libraryFiles, JSON.stringify(defaultExpandFolders), expandedFolders]);
+    setExpandedFolders(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootLabel]);
 
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders(prev => {

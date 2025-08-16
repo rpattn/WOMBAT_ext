@@ -1,12 +1,10 @@
-import { useWebSocketContext } from '../context/WebSocketContext';
-
 type ResultsSummaryProps = {
   data?: any;
 };
 
 export default function ResultsSummary({ data }: ResultsSummaryProps) {
-  const { results } = useWebSocketContext();
-  const src = data ?? results;
+  // In REST-only mode, consume results from the provided prop.
+  const src = data;
 
   if (!src) {
     return (
