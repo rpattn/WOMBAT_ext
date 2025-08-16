@@ -57,14 +57,18 @@ export function useLibrary(deps: UseLibraryDeps) {
     if (!res.ok) throw new Error(await res.text())
     const data = await res.json()
     if (raw && 'data_b64' in data) {
+      // Binary content provided as base64 (e.g., PNG)
       const blob = b64toBlob(data.data_b64, data.mime || 'application/octet-stream')
       const objectUrl = URL.createObjectURL(blob)
       setBinaryPreviewUrl(objectUrl)
       setCsvPreview(null)
     } else if (raw && 'data' in data) {
+      // Raw text content (e.g., HTML, CSV, YAML)
       const file = String(data.file || path)
-      if (file.toLowerCase().endsWith('.html')) {
+      const lf = file.toLowerCase()
+      if (lf.endsWith('.html') || lf.endsWith('.csv') || lf.endsWith('.yaml') || lf.endsWith('.yml')) {
         setCsvPreview(String(data.data ?? ''))
+        // Clear binary preview URL for text-based files
         setBinaryPreviewUrl(null)
       }
     } else if (!raw) {
