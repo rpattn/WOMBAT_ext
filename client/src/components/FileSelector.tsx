@@ -181,12 +181,12 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               <span className="actions folder-actions" onClick={(e) => e.stopPropagation()}>
                 <button
                   title="Add YAML file here"
-                  className="btn btn-outline-violet"
+                  className="btn btn-success"
                   onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'yaml')}
                 >+ YAML</button>
                 <button
                   title="Add CSV file here"
-                  className="btn btn-outline-emerald"
+                  className="btn btn-success"
                   onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'csv')}
                 >+ CSV</button>
               </span>
@@ -217,7 +217,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               <button
                 title="Download file"
                 aria-label="Download file"
-                className="btn btn-outline-primary"
+                className="btn btn-primary"
                 style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -228,7 +228,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               <button
                 title="Delete file"
                 aria-label="Delete file"
-                className="btn btn-outline-danger"
+                className="btn btn-danger"
                 style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -241,7 +241,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               <button
                 title="Replace file (upload)"
                 aria-label="Replace file"
-                className="btn btn-outline-primary"
+                className="btn btn-primary"
                 style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();

@@ -95,20 +95,20 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                                     </div>
                                     <button
                                         type="button"
-                                        className="btn btn-danger-soft"
+                                        className="btn btn-danger"
                                         onClick={() => {
                                             const newArr = value.slice();
                                             newArr.splice(index, 1);
                                             handleChangeAtPath(name, newArr);
                                         }}
                                     >
-                                        Delete
+                                        X
                                     </button>
                                 </div>
                             ))}
                             <button
                                 type="button"
-                                className="btn btn-success-soft je-mt-4"
+                                className="btn btn-success je-mt-4"
                                 onClick={() => {
                                     const newArr = [...value];
                                     const newItem = value.length > 0
@@ -118,7 +118,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
                                     handleChangeAtPath(name, newArr);
                                 }}
                             >
-                                Add Item
+                                +
                             </button>
                         </div>
                     </details>
@@ -186,10 +186,10 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
         <div className="json-editor json-editor-container">
             {(Object.entries(formData).length === 0) ?
                 <p>Open a .yaml file to edit it</p> :
-                <div className="je-flex je-justify-start je-mt-16">
+                <div className="je-flex je-justify-start">
                     <button
                         type="button"
-                        className="btn btn-success-soft"
+                        className="btn btn-success"
                         onClick={() => onSave?.(formData)}
                     >
                         Save

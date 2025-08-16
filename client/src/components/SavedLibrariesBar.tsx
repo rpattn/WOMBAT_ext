@@ -19,13 +19,13 @@ export default function SavedLibrariesBar({ libraries, value, onChange, onDelete
         >
           {value && (
             <button
-              className="btn btn-outline-danger"
+              className="btn btn-danger"
               onClick={() => {
                 if (!value) return
                 if (!onDelete) return
                 onDelete(value)
               }}
-            >Delete</button>
+            >X</button>
           )}
         </SavedLibrariesDropdown>
         {children}

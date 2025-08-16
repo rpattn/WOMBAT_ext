@@ -1,5 +1,5 @@
 .ws-container {
-  padding: 20px;
+  padding: var(--space-12);
   max-width: 80vw;
   margin: 0 auto;
   width: 100%;
@@ -7,29 +7,30 @@
 
 .ws-card.card {
   display: grid;
-  gap: 12px;
+  gap: var(--space-8);
   max-width: 700px;
   margin: 0 auto;
 }
 
 .ws-label {
   display: grid;
-  gap: 6px;
+  gap: var(--space-4);
 }
 
 .ws-input {
-  padding: 8px 10px;
+  padding: var(--space-6) var(--space-8);
   font-family: monospace;
+  font-size: var(--fs-control);
 }
 
 .ws-row {
   display: flex;
-  gap: 8px;
+  gap: var(--space-6);
 }
 
 .ws-grid {
   display: grid;
-  gap: 6px;
+  gap: var(--space-4);
 }
 
 .ws-summary {
@@ -43,14 +44,14 @@
 
 .ws-messages {
   border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 0;
+  padding: var(--space-8);
   height: 200px;
   background: #111;
   color: #ddd;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   overflow-y: auto;
-  margin-top: 8px;
+  margin-top: var(--space-6);
   max-width: 700px;
   max-height: 900px;
 }

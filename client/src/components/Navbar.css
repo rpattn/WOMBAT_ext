@@ -2,8 +2,8 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--card-bg, #ffffff);
-  border-bottom: 1px solid var(--border-color, #dddddd);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* Animate hamburger into an "X" when open */
@@ -23,7 +23,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
+  padding: 0 var(--space-12);
   position: relative; /* for dropdown positioning */
 }
 
@@ -33,49 +33,24 @@
 
 .links {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-8);
 }
 
 .link {
   text-decoration: none;
-  color: inherit;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  color: var(--color-text);
+  padding: var(--space-4) var(--space-6);
+  border-radius: 0;
+  font-size: var(--fs-control);
+  border: 1px solid transparent;
 }
 
-.link.active {
-  background: var(--btn-bg, #efefef);
-}
+.link:hover { background: var(--color-surface); border-color: var(--color-border); }
+.link.active { border-color: var(--primary-600); color: var(--primary-600); background: transparent; }
 
-/* Light theme explicit (optional) */
-html.light .navbar {
-  background: #ffffff;
-  border-bottom-color: #e5e7eb; /* neutral-200 */
-}
-html.light .navbar .link:hover {
-  background: #f3f4f6; /* neutral-100 */
-}
-html.light .navbar .link.active {
-  background: #eef2ff; /* indigo-50-ish */
-}
+/* Theme classes inherit via variables; no hardcoded colors needed */
 
-/* Dark theme overrides */
-html.dark .navbar {
-  background: #1f2937; /* slate-800 */
-  border-bottom-color: #374151; /* slate-700 */
-}
-html.dark .navbar .brand {
-  color: rgba(255, 255, 255, 0.95);
-}
-html.dark .navbar .link {
-  color: rgba(255, 255, 255, 0.87);
-}
-html.dark .navbar .link:hover {
-  background: #111827; /* slate-900 */
-}
-html.dark .navbar .link.active {
-  background: #374151; /* slate-700 */
-}
+/* Dark/light brand and link colors derive from tokens */
 
 /* Hamburger toggle (hidden on large screens) */
 .menu-toggle {
@@ -83,8 +58,8 @@ html.dark .navbar .link.active {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
+  padding: var(--space-4);
+  border-radius: 0;
 }
 .menu-toggle .bar {
   display: block;
@@ -107,21 +82,16 @@ html.dark .navbar .link.active {
     right: 0;
     flex-direction: column;
     gap: 0;
-    background: var(--card-bg, #ffffff);
-    border-bottom: 1px solid var(--border-color, #dddddd);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    padding: 0.5rem;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: none;
+    padding: var(--space-6);
     z-index: 1000;
   }
   .navbar.open .links { display: flex; }
   .links .link {
-    padding: 0.5rem 0.75rem;
-    border-radius: 4px;
+    padding: var(--space-6) var(--space-8);
+    border-radius: 0;
   }
-
-  /* Dark theme dropdown bg */
-  html.dark .links {
-    background: #1f2937; /* slate-800 */
-    border-bottom-color: #374151; /* slate-700 */
-  }
+  /* Dropdown uses variables; no extra dark override needed */
 }
