@@ -29,7 +29,7 @@ Set python interpreter to `.$name/bin/python` in VS code or as kernel in ipynb n
 ## Running
 
 Server:\
-`./.venv/Scripts/python.exe ./server/main.py`
+`python -m uvicorn server.main:app`
 
 Client:\
 `cd client`\

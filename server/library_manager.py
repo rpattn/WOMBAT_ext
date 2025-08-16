@@ -13,7 +13,7 @@ logger = logging.getLogger("uvicorn.error")
 
 async def handle_settings_update(websocket: WebSocket, data: dict, client_id: str = None) -> None:
     """Handle settings_update event from client."""
-    from client_manager import client_manager
+    from server.client_manager import client_manager
 
     settings_data = data.get('data', {})
     logger.info(f"Received settings update from client {client_id[:8] if client_id else 'unknown'}")
@@ -51,7 +51,7 @@ async def handle_settings_update(websocket: WebSocket, data: dict, client_id: st
 
 async def update_client_library_file(client_id: str, file_path: str, content: dict) -> bool:
     """Update a specific file in the client's library."""
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     
     if not client_id or client_id not in client_manager.client_projects:
         return False
@@ -95,7 +95,7 @@ def save_client_library(client_id: str, project_name: str) -> Tuple[bool, str]:
 
     Returns (ok, destination_path_str)
     """
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     
     try:
         if not client_id or client_id not in client_manager.client_projects:
@@ -125,7 +125,7 @@ def delete_saved_library(saved_name: str) -> Tuple[bool, str]:
 
     Returns (ok, message)
     """
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     try:
         base_saved = Path(client_manager.get_save_library_dir()).resolve()
         target = (base_saved / saved_name).resolve()
@@ -148,7 +148,7 @@ def load_saved_library(client_id: str, saved_name: str) -> Tuple[bool, str]:
 
     Returns (ok, message_or_dest_path)
     """
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     try:
         if not client_id or client_id not in client_manager.client_projects:
             return False, "Client not found"
@@ -184,7 +184,7 @@ def delete_client_library_file(client_id: str, file_path: str) -> bool:
     Returns:
         True on success, False on failure or if file does not exist.
     """
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     try:
         if not client_id or client_id not in client_manager.client_projects:
             logger.warning(f"Client {client_id[:8] if client_id else 'unknown'} not found in client projects")
@@ -238,7 +238,7 @@ def get_client_library_file(client_id: str, file_path: str):
         - str for CSV/text files
         - {} or '' on error
     """
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     
     if not client_id or client_id not in client_manager.client_projects:
         return {} if str(file_path).lower().endswith(('.yaml', '.yml')) else ''
@@ -266,7 +266,7 @@ def get_client_library_file(client_id: str, file_path: str):
 
 def list_client_library_files(client_id: str, directory: str = "") -> list:
     """List files in the client's library directory."""
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     
     if not client_id or client_id not in client_manager.client_projects:
         return []
@@ -363,7 +363,7 @@ def scan_client_library_files(client_id: str) -> dict:
     Returns:
         Dictionary with 'yaml_files' and 'csv_files' lists containing relative paths
     """
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     
     if not client_id or client_id not in client_manager.client_projects:
         logger.warning(f"Client {client_id[:8] if client_id else 'unknown'} not found in client projects")
@@ -391,7 +391,7 @@ def add_client_library_file(client_id: str, file_path: str, content=None) -> boo
     Returns:
         True on success, False on failure.
     """
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     
     if not client_id or client_id not in client_manager.client_projects:
         logger.warning(f"Client {client_id[:8] if client_id else 'unknown'} not found in client projects")

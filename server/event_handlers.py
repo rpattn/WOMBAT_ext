@@ -3,7 +3,7 @@
 import json
 import logging
 from fastapi import WebSocket
-from simulations import get_simulation
+from server.simulations import get_simulation
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -17,7 +17,7 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
             
             # Event routing
             if event_type == "settings_update":
-                from library_manager import handle_settings_update
+                from server.library_manager import handle_settings_update
                 await handle_settings_update(websocket, json_data, client_id)
                 return True
             elif event_type == "file_select":
@@ -58,8 +58,8 @@ async def handle_json_event(websocket: WebSocket, data: str, client_id: str = No
 
 async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None:
     """Handle get_config command."""
-    from client_manager import client_manager
-    from library_manager import get_client_library_file
+    from server.client_manager import client_manager
+    from server.library_manager import get_client_library_file
     import json
     
     if client_id and client_id in client_manager.client_projects:
@@ -87,8 +87,8 @@ async def handle_get_config(websocket: WebSocket, client_id: str = None) -> None
 
 async def handle_file_select(websocket: WebSocket, data: dict, client_id: str = None) -> None:
     """Handle file_select event from client."""
-    from client_manager import client_manager
-    from library_manager import get_client_library_file
+    from server.client_manager import client_manager
+    from server.library_manager import get_client_library_file
     import json
     import os
     
@@ -175,8 +175,8 @@ async def handle_clear_temp(websocket: WebSocket) -> None:
 
 async def handle_get_library_files(websocket: WebSocket, client_id: str = None) -> None:
     """Handle get_library_files command."""
-    from library_manager import scan_client_library_files
-    from client_manager import client_manager
+    from server.library_manager import scan_client_library_files
+    from server.client_manager import client_manager
     
     if client_id and client_id in client_manager.client_projects:
         files = scan_client_library_files(client_id)
@@ -196,8 +196,8 @@ async def handle_add_file(websocket: WebSocket, data: dict, client_id: str = Non
     - { "event": "add_file", "data": { "file_path": "path/to/file.yaml", "content": {..}|"..." } }
     - { "event": "add_file", "file_path": "path/to/file.yaml", "content": {..}|"..." }
     """
-    from library_manager import add_client_library_file, scan_client_library_files
-    from client_manager import client_manager
+    from server.library_manager import add_client_library_file, scan_client_library_files
+    from server.client_manager import client_manager
     import json
 
     if not (client_id and client_id in client_manager.client_projects):
@@ -239,7 +239,7 @@ async def handle_add_file(websocket: WebSocket, data: dict, client_id: str = Non
 async def handle_delete_saved_library(websocket: WebSocket, data: dict) -> None:
     """Delete a saved library by name and refresh the saved libraries list."""
     import json
-    from library_manager import delete_saved_library
+    from server.library_manager import delete_saved_library
     try:
         name = (data.get('data') or {}).get('name')
         if not name:
@@ -266,8 +266,8 @@ async def handle_delete_file(websocket: WebSocket, data: dict, client_id: str = 
     - { "event": "delete_file", "data": { "file_path": "path/to/file.yaml" } }
     - { "event": "delete_file", "file_path": "path/to/file.yaml" }
     """
-    from library_manager import delete_client_library_file, scan_client_library_files
-    from client_manager import client_manager
+    from server.library_manager import delete_client_library_file, scan_client_library_files
+    from server.client_manager import client_manager
     from pathlib import Path
     import json
 
@@ -322,8 +322,8 @@ async def handle_replace_file(websocket: WebSocket, data: dict, client_id: str =
     Accepts payload:
     { "event": "replace_file", "data": { "file_path": "...", "content": "..." } }
     """
-    from library_manager import add_client_library_file, scan_client_library_files
-    from client_manager import client_manager
+    from server.library_manager import add_client_library_file, scan_client_library_files
+    from server.client_manager import client_manager
     import json
 
     if not (client_id and client_id in client_manager.client_projects):
@@ -358,7 +358,7 @@ async def handle_replace_file(websocket: WebSocket, data: dict, client_id: str =
 async def handle_list_saved_libraries(websocket: WebSocket) -> None:
     """Return the list of directories under saved_library_dir."""
     import json
-    from client_manager import client_manager
+    from server.client_manager import client_manager
     from pathlib import Path
     try:
         base = Path(client_manager.get_save_library_dir()).resolve()
@@ -381,8 +381,8 @@ async def handle_list_saved_libraries(websocket: WebSocket) -> None:
 async def handle_load_saved_library(websocket: WebSocket, data: dict, client_id: str = None) -> None:
     """Load a saved library for the given client and refresh library files."""
     import json
-    from library_manager import load_saved_library, scan_client_library_files
-    from client_manager import client_manager
+    from server.library_manager import load_saved_library, scan_client_library_files
+    from server.client_manager import client_manager
     try:
         saved_name = (data.get('data') or {}).get('name')
         if not saved_name:
@@ -415,8 +415,8 @@ async def handle_load_saved_library(websocket: WebSocket, data: dict, client_id:
 
 async def handle_save_library(websocket: WebSocket, data: dict, client_id: str = None) -> None:
     """Handle save_library event from client."""
-    from library_manager import save_client_library, scan_client_library_files
-    from client_manager import client_manager
+    from server.library_manager import save_client_library, scan_client_library_files
+    from server.client_manager import client_manager
     import json
 
     if not data['data']['project_name']:

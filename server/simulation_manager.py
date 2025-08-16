@@ -4,8 +4,8 @@ import asyncio
 import threading
 import logging
 from fastapi import WebSocket
-from client_manager import client_manager
-from simulations import run_wombat_simulation
+from server.client_manager import client_manager
+from server.simulations import run_wombat_simulation
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -43,8 +43,8 @@ async def handle_run_simulation(websocket: WebSocket, client_id: str) -> bool:
         """Run the simulation in a separate thread."""
         try:
             # Get client-specific project directory
-            from client_manager import client_manager
-            from library_manager import scan_client_library_files, add_client_library_file
+            from server.client_manager import client_manager
+            from server.library_manager import scan_client_library_files, add_client_library_file
             import json
             import time
             import os

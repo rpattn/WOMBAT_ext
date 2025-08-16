@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from client_manager import client_manager
-from library_manager import (
+from server.client_manager import client_manager
+from server.library_manager import (
     get_client_library_file,
     scan_client_library_files,
     add_client_library_file,
@@ -15,8 +15,8 @@ from library_manager import (
     load_saved_library,
     delete_saved_library,
 )
-from event_handlers import handle_get_config  # for fallback logic if needed
-from simulations import run_wombat_simulation
+from server.event_handlers import handle_get_config  # for fallback logic if needed
+from server.simulations import run_wombat_simulation
 
 router = APIRouter(prefix="/api", tags=["wombat-rest"])
 
@@ -51,8 +51,8 @@ def end_session(client_id: str) -> dict[str, str]:
 @router.get("/{client_id}/config")
 def get_config(client_id: str) -> Any:
     # Similar to WS handle_get_config: try library file first; fallback to simulation defaults
-    from simulations import get_simulation
-    from library_manager import get_client_library_file
+    from server.simulations import get_simulation
+    from server.library_manager import get_client_library_file
 
     if client_manager.get_client_project_dir(client_id):
         data = get_client_library_file(client_id, "project/config/base.yaml")

@@ -5,13 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import router whether run as a package module or as a script
-try:
-    # Package/module: python -m server.main or uvicorn server.main:app
-    from .rest_api import router as rest_router  # type: ignore[relative-beyond-top-level]
-except Exception:
-    # Script: python server/main.py
-    from rest_api import router as rest_router
+from server.rest_api import router as rest_router  # type: ignore[relative-beyond-top-level]
 
 app = FastAPI(title="WOMBAT Simulation Server")
 
@@ -39,4 +33,4 @@ async def health() -> dict[str, str]:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload_excludes=["server/temp/*", "server/client_library/*"], reload=True)
