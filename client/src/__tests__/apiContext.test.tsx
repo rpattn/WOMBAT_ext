@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { ApiProvider, useApiContext } from '../context/ApiContext'
+import { ToastProvider } from '../components/ToastManager'
 
 function Harness() {
   const api = useApiContext()
@@ -60,9 +61,11 @@ describe('ApiContext', () => {
 
   it('initializes session and fetches data', async () => {
     render(
-      <ApiProvider>
-        <Harness />
-      </ApiProvider>
+      <ToastProvider>
+        <ApiProvider>
+          <Harness />
+        </ApiProvider>
+      </ToastProvider>
     )
 
     // init session
@@ -84,9 +87,11 @@ describe('ApiContext', () => {
 
   it('supports add/replace/delete and simulate', async () => {
     render(
-      <ApiProvider>
-        <Harness />
-      </ApiProvider>
+      <ToastProvider>
+        <ApiProvider>
+          <Harness />
+        </ApiProvider>
+      </ToastProvider>
     )
 
     // init session

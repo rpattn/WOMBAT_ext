@@ -20,6 +20,8 @@ export default function SavedLibrariesBar({ libraries, value, onChange, onDelete
           {value && (
             <button
               className="btn btn-danger"
+              aria-label="Delete saved library"
+              title="Delete"
               onClick={() => {
                 if (!value) return
                 if (!onDelete) return
