@@ -140,7 +140,7 @@ export function ApiProvider({ children }: PropsWithChildren) {
     const res = await fetch(`${apiBaseUrl}/${id}/library/files`)
     if (!res.ok) throw new Error(await res.text())
     const data = await res.json()
-    setLibraryFiles(data)
+    setLibraryFiles(data?.files ?? data)
   }, [apiBaseUrl, requireSession])
 
   const getConfig = useCallback(async () => {

@@ -22,7 +22,9 @@ def test_session_lifecycle():
     # list files for fresh session
     r = client.get(f'/api/{client_id}/library/files')
     assert r.status_code == 200
-    files = r.json()
+    body = r.json()
+    assert 'files' in body and isinstance(body['files'], dict)
+    files = body['files']
     assert 'yaml_files' in files and 'csv_files' in files
 
     # end session
@@ -106,5 +108,7 @@ def test_run_simulation():
     # results file listing available
     r = client.get(f'/api/{client_id}/library/files')
     assert r.status_code == 200
-    files = r.json()
+    body = r.json()
+    assert 'files' in body and isinstance(body['files'], dict)
+    files = body['files']
     assert 'yaml_files' in files and 'csv_files' in files

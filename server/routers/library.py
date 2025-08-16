@@ -45,7 +45,8 @@ def get_config(client_id: str) -> Any:
 def list_library_files(client_id: str) -> dict:
     if not client_manager.get_client_project_dir(client_id):
         raise HTTPException(status_code=404, detail="Unknown client_id")
-    return scan_client_library_files(client_id)
+    files = scan_client_library_files(client_id)
+    return {"files": files}
 
 
 @router.get("/{client_id}/refresh", response_model=RefreshResponse)
