@@ -168,8 +168,25 @@ export default function SimulationManager() {
   };
 
   const handleSave = (data: JsonObject) => {
-    // Optional: persist settings via REST endpoint if available; otherwise keep in-state
+    // Persist via REST: use selected YAML file or fallback to base config
+    const sel = (selectedFile || '').toLowerCase();
+    const isYaml = sel.endsWith('.yaml') || sel.endsWith('.yml');
+    const targetPath = isYaml && selectedFile ? selectedFile : 'project\\config\\base.yaml';
+    const p = addOrReplaceFile(targetPath, data)
+      .then(() => {
+        setSelectedFile(targetPath);
+        // Refresh editor content from server to reflect canonical YAML dump
+        return readFile(targetPath, false).then(() => {
+          toast.success(`Saved ${targetPath}`);
+        });
+      })
+      .catch((err) => {
+        console.error('Save failed', err);
+        toast.error('Failed to save configuration');
+      });
+    // Provide immediate optimistic update as well
     setConfigData(prev => ({ ...prev, ...data }));
+    return p;
   };
 
   return (<>

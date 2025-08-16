@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import './FileSelector.css';
 
 interface FileSelectorProps {
@@ -92,9 +92,27 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     return root;
   }, [libraryFiles, rootLabel]);
 
-  // Initialize default expanded folders only once per mount or when root label changes.
+  // Track last applied root label to know when to re-initialize
+  const lastRootLabelRef = useRef<string>(rootLabel);
+
+  // Simple loading indicator: show while we have files but expansion hasn't been applied yet
+  const totalFiles = useMemo(() => {
+    const yaml = libraryFiles?.yaml_files?.length ?? 0;
+    const csv = libraryFiles?.csv_files?.length ?? 0;
+    const html = libraryFiles?.html_files?.length ?? 0;
+    const png = libraryFiles?.png_files?.length ?? 0;
+    return yaml + csv + html + png;
+  }, [libraryFiles]);
+  const isRefreshing = expandedFolders.size === 0 && totalFiles > 0;
+
+  // When the underlying file list changes (e.g., loading a saved project), reset expansion
+  // Removed to reduce rerenders; rely on rootLabel change and init effect
+
+  // Initialize default expanded folders once, or whenever the root label changes.
   useEffect(() => {
-    if (expandedFolders.size > 0) return; // respect user state once set
+    const rootChanged = lastRootLabelRef.current !== rootLabel;
+    const shouldInit = expandedFolders.size === 0 || rootChanged;
+    if (!shouldInit) return; // respect user state unless root changed
     const next = new Set<string>();
     next.add(rootLabel);
     const yaml = libraryFiles?.yaml_files ?? [];
@@ -113,8 +131,8 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
       if (hasFolder) next.add(`${rootLabel}/${folderName}`);
     }
     setExpandedFolders(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rootLabel]);
+    lastRootLabelRef.current = rootLabel;
+  }, [rootLabel, libraryFiles, defaultExpandFolders, expandedFolders.size]);
 
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders(prev => {
@@ -245,6 +263,13 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         <p className="file-count">
           {(libraryFiles?.yaml_files?.length ?? 0)} YAML, {(libraryFiles?.csv_files?.length ?? 0)} CSV, {(libraryFiles?.html_files?.length ?? 0)} HTML, {(libraryFiles?.png_files?.length ?? 0)} PNG
         </p>
+        {isRefreshing && (
+          <div className="inline-spinner" aria-live="polite" aria-busy="true" title="Refreshing file tree">
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
+          </div>
+        )}
       </div>
       <div className="file-tree">
         {renderTreeNode(buildTreeStructure)}

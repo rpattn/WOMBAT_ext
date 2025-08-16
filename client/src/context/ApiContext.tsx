@@ -223,8 +223,19 @@ export function ApiProvider({ children }: PropsWithChildren) {
     })
     if (!res.ok) throw new Error(await res.text())
     const data = await res.json()
+    // Apply new file list from server response (no extra round-trip)
     setLibraryFiles(data.files)
-  }, [apiBaseUrl, requireSession])
+    // Refresh saved libraries list only
+    await Promise.allSettled([fetchSavedLibraries()])
+    // Prefer base config; loading it will update configData and selectedFile
+    const basePath = 'project\\config\\base.yaml'
+    try {
+      setSelectedFile(basePath)
+      await readFile(basePath, false)
+    } catch {
+      // If base not available, leave selection as-is without extra clears to avoid flicker
+    }
+  }, [apiBaseUrl, requireSession, fetchSavedLibraries, readFile, setSelectedFile])
 
   const deleteSaved = useCallback(async (name: string) => {
     const res = await fetch(`${apiBaseUrl}/saved/${encodeURIComponent(name)}`, { method: 'DELETE' })
