@@ -172,7 +172,7 @@ def delete_client_library_file(client_id: str, file_path: str) -> bool:
 
         if not target_file.exists():
             # Try alternate normalization (backslashes) in case of oddities
-            alt_rel = safe_rel.replace('/', '\\')
+            alt_rel = str(file_path).replace('/', '\\')
             alt_target = (project_dir / alt_rel)
             exists_alt = alt_target.exists()
             logger.info(f"Delete requested for non-existent file: {target_file} | alt: {alt_target} exists={exists_alt}")
