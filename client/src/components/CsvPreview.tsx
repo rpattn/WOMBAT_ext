@@ -287,40 +287,38 @@ export default function CsvPreview({ preview, filePath }: Props) {
   if (!isCsv || text.trim() === '') return null;
 
   return (
-    <div className="csv-viewer" style={{ marginTop: '1rem' }}>
-      <div className="row" style={{ alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <h3 className="csv-preview-title" style={{ margin: 0 }}>CSV Viewer</h3>
-        <span style={{ fontSize: 12, opacity: 0.8 }}>Delimiter: {delimiter === '\t' ? 'Tab' : delimiter}</span>
-        <span style={{ fontSize: 12, opacity: 0.6 }}>
-          · parsed rows: {effectiveRows.length} · cols: {headers.length}
-        </span>
+    <div className="csv-viewer">
+      <div className="row csv-toolbar">
+        <h3 className="csv-title">CSV Viewer</h3>
+        <span className="csv-stat">Delimiter: {delimiter === '\t' ? 'Tab' : delimiter}</span>
+        <span className="csv-stat-dim">· parsed rows: {effectiveRows.length} · cols: {headers.length}</span>
       </div>
 
-      <div className="row" style={{ gap: 12, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+      <div className="row csv-controls">
         <input
+          className="csv-filter"
           type="text"
           value={query}
           onChange={e => { setQuery(e.target.value); setPage(1); }}
           placeholder="Filter rows..."
           aria-label="Filter rows"
-          style={{ padding: '6px 10px', minWidth: 240 }}
         />
-        <label style={{ fontSize: 12 }}>Rows per page</label>
-        <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}>
+        <label className="csv-label">Rows per page</label>
+        <select className="csv-page-size" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}>
           {[25, 50, 100, 200, 500].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="csv-pagination">
           <button className="btn" onClick={() => setPage(1)} disabled={currentPage === 1}>{'<<'}</button>
           <button className="btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>{'<'}</button>
-          <span style={{ fontSize: 12 }}>Page {currentPage} / {totalPages} · {total} rows</span>
+          <span className="csv-page-info">Page {currentPage} / {totalPages} · {total} rows</span>
           <button className="btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>{'>'}</button>
           <button className="btn" onClick={() => setPage(totalPages)} disabled={currentPage >= totalPages}>{'>>'}</button>
         </div>
       </div>
 
-      <div style={{ overflow: 'auto', border: '1px solid var(--border-color, #ddd)', borderRadius: 8, marginTop: 8, maxHeight: 480 }}>
-        <table className="csv-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-          <thead style={{ position: 'sticky', top: 0, background: 'var(--card-bg, #fff)', zIndex: 1 }}>
+      <div className="csv-table-wrap">
+        <table className="csv-table">
+          <thead>
             <tr>
               {headers.map((h, i) => {
                 const isSorted = sort?.index === i;
@@ -329,17 +327,7 @@ export default function CsvPreview({ preview, filePath }: Props) {
                   <th
                     key={i}
                     onClick={() => onHeaderClick(i)}
-                    style={{
-                      cursor: 'pointer',
-                      position: 'sticky',
-                      top: 0,
-                      background: 'inherit',
-                      color: '#111',
-                      borderBottom: '1px solid var(--border-color, #ddd)',
-                      padding: '6px 8px',
-                      textAlign: 'left',
-                      whiteSpace: 'nowrap'
-                    }}
+                    className="csv-th"
                     title="Click to sort"
                   >{h}{arrow}</th>
                 );
@@ -349,13 +337,13 @@ export default function CsvPreview({ preview, filePath }: Props) {
           <tbody>
             {pageRows.length === 0 ? (
               <tr>
-                <td colSpan={Math.max(1, headers.length)} style={{ padding: 12, textAlign: 'center', opacity: 0.7 }}>No rows</td>
+                <td className="csv-empty" colSpan={Math.max(1, headers.length)}>No rows</td>
               </tr>
             ) : (
               pageRows.map((r, ri) => (
                 <tr key={ri}>
                   {headers.map((_, ci) => (
-                    <td key={ci} style={{ borderBottom: '1px solid var(--border-color, #eee)', padding: '6px 8px', verticalAlign: 'top' }}>
+                    <td key={ci} className="csv-td">
                       {r[ci] ?? ''}
                     </td>
                   ))}
@@ -366,14 +354,14 @@ export default function CsvPreview({ preview, filePath }: Props) {
         </table>
       </div>
 
-      <div className="row" style={{ gap: 6, alignItems: 'center', marginTop: 8 }}>
+      <div className="row csv-controls csv-controls-bottom">
         <button className="btn" onClick={() => setPage(1)} disabled={currentPage === 1}>{'<<'}</button>
         <button className="btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>{'<'}</button>
-        <span style={{ fontSize: 12 }}>Page {currentPage} / {totalPages} · {total} rows</span>
+        <span className="csv-page-info">Page {currentPage} / {totalPages} · {total} rows</span>
         <button className="btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>{'>'}</button>
         <button className="btn" onClick={() => setPage(totalPages)} disabled={currentPage >= totalPages}>{'>>'}</button>
       </div>
-      <p className="csv-note" style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>Editing CSV is not supported yet. Use Replace to upload a modified file.</p>
+      <p className="csv-note">Editing CSV is not supported yet. Use Replace to upload a modified file.</p>
     </div>
   );
 }

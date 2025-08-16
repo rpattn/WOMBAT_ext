@@ -4,15 +4,15 @@ import { MemoryRouter } from 'react-router-dom';
 import type { MemoryRouterProps } from 'react-router-dom';
 import { render } from '@testing-library/react';
 import { ToastProvider } from '../components/ToastManager';
-import { WebSocketProvider } from '../context/WebSocketContext';
+import { ApiProvider } from '../context/ApiContext';
 
 export function Providers({ children, routerProps }: PropsWithChildren & { routerProps?: MemoryRouterProps }) {
   return (
     <MemoryRouter {...routerProps}>
       <ToastProvider>
-        <WebSocketProvider>
+        <ApiProvider>
           {children}
-        </WebSocketProvider>
+        </ApiProvider>
       </ToastProvider>
     </MemoryRouter>
   );

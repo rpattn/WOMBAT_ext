@@ -11,16 +11,70 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Neutral colors */
+  --color-bg: #ffffff;
+  --color-surface: #f8fafc;       /* slate-50 */
+  --color-text: #111827;          /* gray-900 */
+  --color-text-muted: #4b5563;    /* gray-600 */
+  --color-border: #e5e7eb;        /* gray-200 */
+
+  /* Links */
+  --color-link: #2563eb;          /* blue-600 */
+  --color-link-hover: #1d4ed8;    /* blue-700 */
+
+  /* Semantic palette (light) */
+  --primary:   #3a6ea5;  /* steel blue */
+  --primary-600: #3a6ea5;
+  --primary-700: #2f5a86;
+  --primary-100: #e7eef7;
+  --secondary: #6b7280;  /* neutral gray */
+  --secondary-700: #374151;
+  --secondary-100: #f3f4f6;
+  --success:   #2f8f5b;  /* desaturated green */
+  --success-700: #256f47;
+  --success-100: #e5f6ed;
+  --warning:   #b07a1b;  /* muted amber/brown */
+  --warning-700: #8c6116;
+  --warning-100: #fbf0d9;
+  --danger:    #c03636;  /* soft rust red */
+  --danger-700: #9a2c2c;
+  --danger-100: #fae6e6;
+  --info:      #2d88a9;  /* muted teal */
+  --info-700: #236c86;
+  --info-100: #e5f3f7;
+
+  /* Control defaults */
+  --btn-bg: #1a1a1a;              /* overridden in light */
+  --btn-fg: #ffffff;
+  --btn-border-color: transparent;
+
+  /* Spacing scale */
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+
+  /* Typography scale */
+  --fs-h1: 1.5rem;   /* ~24px */
+  --fs-h2: 1.25rem;  /* ~20px */
+  --fs-h3: 1.1rem;   /* ~17.6px */
+  --fs-control: 0.95rem; /* controls, buttons, inputs */
+
+  /* Controls */
+  --btn-height: 0.95rem;
+  --btn-padding-x: 8px;
+  --btn-padding-y: 4px;
+  --btn-radius: 0;
 }
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--color-link);
   text-decoration: inherit;
 }
-a:hover {
-  color: #535bf2;
-}
+a:hover { color: var(--color-link-hover); }
 
 body {
   margin: 0;
@@ -30,25 +84,28 @@ body {
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
+h1 { font-size: var(--fs-h1); line-height: 1.2; }
+h2 { font-size: var(--fs-h2); line-height: 1.25; }
+h3 { font-size: var(--fs-h3); line-height: 1.25; }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+/* Base button style; also applied to .btn class for components */
+button, .btn {
+  border-radius: var(--btn-radius);
+  border: 1px solid var(--btn-border-color);
+  min-height: var(--btn-height);
+  height: 1.7rem;
+  font-size: var(--fs-control);
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--btn-bg);
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  color: var(--btn-fg);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.25s, background-color 0.2s ease, color 0.2s ease;
+  text-align: center;
+  line-height: var(--btn-height);
 }
-button:hover {
-  border-color: #646cff;
-}
+button:hover { border-color: var(--color-link); }
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
@@ -56,26 +113,58 @@ button:focus-visible {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    --btn-bg: #f9f9f9;
+    --btn-fg: #111827;
+    --btn-border-color: var(--color-border);
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  a:hover { color: var(--color-link-hover); }
 }
 
 /* Class-based overrides for manual theme toggle */
 html.dark { color-scheme: dark; }
 html.dark, html.dark body, html.dark #root {
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: rgba(255, 255, 255, 0.9);
+  background-color: #121416;
+  /* Dark neutrals */
+  --color-bg: #121416;           /* neutral dark gray */
+  --color-surface: #1a1d21;      /* neutral surface */
+  --color-text: rgba(255,255,255,0.9);
+  --color-text-muted: #9ca3af;  /* gray-400 */
+  --color-border: #2a2e34;      /* neutral border */
+
+  --color-link: #60a5fa;        /* blue-400 */
+  --color-link-hover: #3b82f6;  /* blue-500 */
+
+  /* Semantic palette (dark) */
+  --primary:   #5a8ec5;
+  --primary-600: #4d7fb4;
+  --primary-700: #3b6a98;
+  --primary-100: #1c3047;
+  --secondary: #a3a8b2;
+  --secondary-700: #e5e7eb;
+  --secondary-100: #23262b;
+  --success:   #3aa271;
+  --success-700: #2d8059;
+  --success-100: #163429;
+  --warning:   #c9953e;
+  --warning-700: #a57531;
+  --warning-100: #372b14;
+  --danger:    #cc5a5a;
+  --danger-700: #aa4444;
+  --danger-100: #3a1f1f;
+  --info:      #4aa3bd;
+  --info-700: #3a8398;
+  --info-100: #132b33;
+
+  --btn-bg: #1f2937;            /* slate-800 */
+  --btn-fg: rgba(255,255,255,0.95);
+  --btn-border-color: #374151;  /* slate-700 */
 }
 
 html.light { color-scheme: light; }
 html.light, html.light body, html.light #root {
-  color: #213547;
-  background-color: #ffffff;
+  color: var(--color-text);
+  background-color: var(--color-bg);
 }

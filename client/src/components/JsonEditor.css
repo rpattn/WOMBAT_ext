@@ -1,22 +1,22 @@
 /* Stronger selector for selects in array rows */
 .json-editor .je-row-tight select,
 .json-editor .je-row select {
-  background-color: #ffffff;
-  color: #111827;
-  border: 1px solid #d1d5db;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 /* Minimal styles for the custom JSON editor to ensure good contrast */
 .json-editor {
-  color: #111827; /* Gray-900 */
+  color: var(--color-text);
 }
 
 .json-editor-container {
-  background-color: #ffffff;
-  color: #222;
-  border-radius: 8px;
-  padding: 16px;
-  border: 1px solid #e5e7eb;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 0;
+  padding: var(--space-10);
+  border: 1px solid var(--color-border);
 }
 
 .json-editor input[type="text"],
@@ -26,11 +26,12 @@
 .json-editor input[type="url"],
 .json-editor input[type="password"],
 .json-editor select {
-  background-color: #ffffff;
-  color: #111827;
-  border: 1px solid #d1d5db; /* Gray-300 */
-  border-radius: 6px;
-  padding: 8px 10px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: var(--space-6) var(--space-8);
+  font-size: var(--fs-control);
   -webkit-appearance: none;
   appearance: none;
   background-clip: padding-box;
@@ -39,24 +40,22 @@
 .json-editor input[type="text"]:focus,
 .json-editor input[type="number"]:focus,
 .json-editor select:focus {
-  outline: 2px solid #93c5fd; /* Blue-300 */
+  outline: 2px solid var(--color-link);
   outline-offset: 1px;
 }
 
 .json-editor summary {
-  color: #1f2937; /* Gray-800 */
+  color: var(--color-text);
   font-weight: 600;
 }
 
-.json-editor button {
-  color: #111827;
-}
+/* Buttons inherit global .btn styles */
 
 /* Labels */
 .je-label {
   font-size: 12px;
   font-weight: 600;
-  color: #374151; /* Gray-700 */
+  color: var(--color-text-muted);
   margin-bottom: 6px;
 }
 
@@ -66,34 +65,35 @@
 /* Inputs */
 .je-input {
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background-color: #fff;
-  color: #111827;
+  padding: var(--space-6) var(--space-8);
+  border-radius: 0;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
   box-sizing: border-box;
+  font-size: var(--fs-control);
 }
 
 /* Sections */
 .je-section {
-  border-top: 1px solid #e5e7eb;
-  margin-top: 12px;
-  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
 }
 
 /* Layout utilities */
 .je-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-8);
   text-align: justify;
 }
 
 .je-row-tight {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
 }
 
 /* Ensure inputs inside array rows use full available space */
@@ -117,178 +117,12 @@
   justify-self: left;
 }
 
-/* Buttons */
-.json-editor .btn {
-  padding: 6px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.json-editor .btn-primary {
-  border: 1px solid #007bff;
-  background: #007bff;
-  color: #fff;
-}
-
-.json-editor .btn-danger-soft {
-  border: 1px solid #dc3545;
-  background: #dc3545;
-  color: #ffffff;
-}
-
-.json-editor .btn-success-soft {
-  border: 1px solid #198754;
-  background: #198754;
-  color: #ffffff;
-}
-
-/* Dark mode overrides */
+/* Dark mode is handled by CSS variables; keep placeholder readable in dark */
 @media (prefers-color-scheme: dark) {
-  .json-editor {
-    color: #e5e7eb; /* slate-200 */
-  }
-
-  .json-editor-container {
-    background-color: #1f2937; /* gray-800 */
-    color: #e5e7eb;
-    border: 1px solid #374151; /* gray-700 */
-  }
-
-  .json-editor input[type="text"],
-  .json-editor input[type="number"],
-  .json-editor input[type="search"],
-  .json-editor input[type="email"],
-  .json-editor input[type="url"],
-  .json-editor input[type="password"],
-  .json-editor select {
-    background-color: #111827; /* gray-900 */
-    color: #e5e7eb;
-    border: 1px solid #374151; /* gray-700 */
-  }
-
-  .json-editor .je-row-tight select,
-  .json-editor .je-row select {
-    background-color: #111827;
-    color: #e5e7eb;
-    border: 1px solid #374151;
-  }
-
-  .json-editor input[type="text"]:focus,
-  .json-editor input[type="number"]:focus,
-  .json-editor select:focus {
-    outline: 2px solid #60a5fa; /* blue-400 */
-    outline-offset: 1px;
-  }
-
-  .json-editor summary {
-    color: #e5e7eb; /* slate-200 */
-  }
-
-  /* Labels */
-  .je-label {
-    color: #cbd5e1; /* slate-300 */
-  }
-
-  /* Sections */
-  .je-section {
-    border-top: 1px solid #374151; /* gray-700 */
-  }
-
-  /* Buttons */
-  .json-editor .btn-primary {
-    border: 1px solid #3b82f6; /* blue-500 */
-    background: #2563eb; /* blue-600 */
-    color: #ffffff;
-  }
-
-  .json-editor .btn-danger-soft {
-    border: 1px solid #ef4444; /* red-500 */
-    background: #b91c1c; /* red-700 */
-    color: #ffffff;
-  }
-
-  .json-editor .btn-success-soft {
-    border: 1px solid #10b981; /* emerald-500 */
-    background: #047857; /* emerald-700 */
-    color: #ffffff;
-  }
-
   .json-editor .je-input::placeholder { color: #9ca3af; }
 }
 
-/* Class-based theme overrides */
-.dark .json-editor {
-  color: #e5e7eb;
-}
-
-.dark .json-editor-container {
-  background-color: #1f2937;
-  color: #e5e7eb;
-  border: 1px solid #374151;
-}
-
-.dark .json-editor input[type="text"],
-.dark .json-editor input[type="number"],
-.dark .json-editor input[type="search"],
-.dark .json-editor input[type="email"],
-.dark .json-editor input[type="url"],
-.dark .json-editor input[type="password"],
-.dark .json-editor select {
-  background-color: #111827;
-  color: #e5e7eb;
-  border: 1px solid #374151;
-}
-
-.dark .json-editor .je-row-tight select,
-.dark .json-editor .je-row select {
-  background-color: #111827;
-  color: #e5e7eb;
-  border: 1px solid #374151;
-}
-
-/* Explicit .je-input override under .dark to beat base .je-input rule */
-.dark .json-editor .je-input {
-  background-color: #111827;
-  color: #e5e7eb;
-  border: 1px solid #374151;
-}
+/* Class-based theme uses variables too; keep placeholder readable */
 .dark .json-editor .je-input::placeholder { color: #9ca3af; }
 
-.dark .json-editor input[type="text"]:focus,
-.dark .json-editor input[type="number"]:focus,
-.dark .json-editor select:focus {
-  outline: 2px solid #60a5fa;
-  outline-offset: 1px;
-}
-
-.dark .json-editor summary { color: #e5e7eb; }
-.dark .je-label { color: #cbd5e1; }
-.dark .je-section { border-top: 1px solid #374151; }
-
-.dark .json-editor .btn-primary { border: 1px solid #3b82f6; background: #2563eb; color: #fff; }
-.dark .json-editor .btn-danger-soft { border: 1px solid #ef4444; background: #b91c1c; color: #fff; }
-.dark .json-editor .btn-success-soft { border: 1px solid #10b981; background: #047857; color: #fff; }
-
-/* Force light when .light is present */
-.light .json-editor { color: #111827; }
-.light .json-editor-container { background-color: #ffffff; color: #222; border: 1px solid #e5e7eb; }
-.light .json-editor input[type="text"],
-.light .json-editor input[type="number"],
-.light .json-editor input[type="search"],
-.light .json-editor input[type="email"],
-.light .json-editor input[type="url"],
-.light .json-editor input[type="password"],
-.light .json-editor select { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
-.light .json-editor .je-row-tight select,
-.light .json-editor .je-row select { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
-.light .json-editor input[type="text"]:focus,
-.light .json-editor input[type="number"]:focus,
-.light .json-editor select:focus { outline: 2px solid #93c5fd; outline-offset: 1px; }
-.light .json-editor summary { color: #1f2937; }
-.light .je-label { color: #374151; }
-.light .je-section { border-top: 1px solid #e5e7eb; }
-.light .json-editor .btn-primary { border: 1px solid #007bff; background: #007bff; color: #fff; }
-.light .json-editor .btn-danger-soft { border: 1px solid #dc3545; background: #dc3545; color: #fff; }
-.light .json-editor .btn-success-soft { border: 1px solid #198754; background: #198754; color: #fff; }
+/* Force light theme also uses variables; no color overrides needed */

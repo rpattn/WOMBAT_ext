@@ -25,7 +25,7 @@ describe('App', () => {
     renderWithProviders(<App />, { routerProps: { initialEntries: ['/'] } });
 
     // Navbar brand
-    expect(screen.getByText('WOMBAT')).toBeInTheDocument();
+    expect(screen.getByText('WOMBAT_ext')).toBeInTheDocument();
 
     // Simulation Manager link should be active on root
     const simLink = screen.getByRole('link', { name: /simulation manager/i });
@@ -35,10 +35,10 @@ describe('App', () => {
     await user.click(screen.getByRole('link', { name: /results/i }));
     expect(screen.getByRole('heading', { level: 2, name: /results/i })).toBeInTheDocument();
 
-    // Navigate to WebSocket Client
-    await user.click(screen.getByRole('link', { name: /websocket client/i }));
-    // The details element summary should be present on /connect
-    const matches = screen.getAllByText(/websocket client/i);
+    // Navigate to Connection Manager
+    await user.click(screen.getByRole('link', { name: /connection manager/i }));
+    // The details element summary shows REST Client
+    const matches = screen.getAllByText(/rest client/i);
     const summaryEl = matches.find((el) => el.tagName.toLowerCase() === 'summary');
     expect(summaryEl).toBeTruthy();
   });

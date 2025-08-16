@@ -1,0 +1,597 @@
+openapi: 3.0.3
+info:
+  title: WOMBAT Simulation Server API
+  version: "1.0.0"
+  description: |
+    OpenAPI 3.0 specification for the WOMBAT Simulation Server REST API.
+    All routes under `/api` are mounted by `server/rest_api.py`. A health check is exposed at `/healthz`.
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local development server
+  - url: http://localhost:8000
+    description: Localhost
+
+paths:
+  /healthz:
+    get:
+      tags: [wombat-rest]
+      summary: Health check
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/session:
+    post:
+      tags: [session]
+      summary: Create a new client session
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCreate'
+
+  /api/session/{client_id}:
+    delete:
+      tags: [session]
+      summary: End a client session and clean up resources
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Session ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEnd'
+        '404':
+          description: Unknown client_id
+
+  /api/{client_id}/config:
+    get:
+      tags: [library]
+      summary: Get current configuration for client
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Configuration object (shape depends on simulation)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /api/{client_id}/library/files:
+    get:
+      tags: [library]
+      summary: List files in the client's working library
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: File listing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilesScan'
+        '404':
+          description: Unknown client_id
+
+  /api/{client_id}/refresh:
+    get:
+      tags: [library]
+      summary: Refresh state, returning files, config, and list of saved libraries
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Refreshed state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '404':
+          description: Unknown client_id
+
+  /api/{client_id}/library/file:
+    get:
+      tags: [library]
+      summary: Read a file from the client's library
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - in: query
+          name: path
+          schema:
+            type: string
+          required: true
+          description: Relative path within client project
+        - in: query
+          name: raw
+          schema:
+            type: boolean
+            default: false
+          required: false
+          description: If true, returns raw file (base64 if binary) with detected MIME
+      responses:
+        '200':
+          description: File content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadFileResponse'
+        '404':
+          description: Unknown client_id or file not found
+    post:
+      tags: [library]
+      summary: Add a new file to the client's library
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrReplacePayload'
+      responses:
+        '200':
+          description: File added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkWithFiles'
+        '404':
+          description: Unknown client_id
+    put:
+      tags: [library]
+      summary: Replace or create a file in the client's library
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrReplacePayload'
+      responses:
+        '200':
+          description: File replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkWithFiles'
+        '404':
+          description: Unknown client_id
+    delete:
+      tags: [library]
+      summary: Delete a file from the client's library
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - in: query
+          name: file_path
+          schema:
+            type: string
+          required: true
+          description: Relative path to the file to delete
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkWithFiles'
+        '404':
+          description: Unknown client_id or file not found
+
+  /api/{client_id}/library/save:
+    post:
+      tags: [library]
+      summary: Save the client's library to the server archive
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveLibraryPayload'
+      responses:
+        '200':
+          description: Save result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkMessage'
+        '400':
+          description: Missing project_name
+
+  /api/saved:
+    get:
+      tags: [saved]
+      summary: List saved libraries on server
+      responses:
+        '200':
+          description: List of saved libraries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedList'
+
+  /api/{client_id}/saved/load:
+    post:
+      tags: [saved]
+      summary: Load a saved library into a client's working directory
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoadSavedPayload'
+      responses:
+        '200':
+          description: Load result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkWithFilesAndMessage'
+
+  /api/saved/{name}:
+    delete:
+      tags: [saved]
+      summary: Delete a saved library by name
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delete result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkMessage'
+
+  /api/{client_id}/simulate:
+    post:
+      tags: [simulation]
+      summary: Run a WOMBAT simulation for the client
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Simulation finished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResult'
+        '404':
+          description: Unknown client_id
+
+  /api/{client_id}/simulate/trigger:
+    post:
+      tags: [simulation]
+      summary: Trigger an asynchronous WOMBAT simulation for the client
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Simulation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationTrigger'
+        '404':
+          description: Unknown client_id
+
+  /api/simulate/status/{task_id}:
+    get:
+      tags: [simulation]
+      summary: Get status/result for a background simulation task
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationStatus'
+
+  /api/{client_id}/temp:
+    delete:
+      tags: [temp]
+      summary: Force-clear the temp directory for a client
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Clear result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkOnly'
+
+  /api/temp/sweep:
+    post:
+      tags: [temp]
+      summary: Remove temp client dirs not associated with active sessions
+      responses:
+        '200':
+          description: Sweep result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemovedList'
+
+  /api/temp/sweep_all:
+    post:
+      tags: [temp]
+      summary: Remove all temp client directories
+      responses:
+        '200':
+          description: Sweep-all result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemovedList'
+
+components:
+  parameters:
+    ClientId:
+      in: path
+      name: client_id
+      required: true
+      schema:
+        type: string
+      description: Client session identifier returned by /api/session
+
+  schemas:
+    SessionCreate:
+      type: object
+      properties:
+        client_id:
+          type: string
+      required: [client_id]
+
+    SessionEnd:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ended
+      required: [status]
+
+    AddOrReplacePayload:
+      type: object
+      properties:
+        file_path:
+          type: string
+        content:
+          description: For YAML files, may be object or string; for other files, string content
+          nullable: true
+      required: [file_path]
+
+    SaveLibraryPayload:
+      type: object
+      properties:
+        project_name:
+          type: string
+      required: [project_name]
+
+    LoadSavedPayload:
+      type: object
+      properties:
+        name:
+          type: string
+      required: [name]
+
+    FilesScan:
+      type: object
+      properties:
+        yaml_files:
+          type: array
+          items:
+            type: string
+        csv_files:
+          type: array
+          items:
+            type: string
+        html_files:
+          type: array
+          items:
+            type: string
+        png_files:
+          type: array
+          items:
+            type: string
+        total_files:
+          type: integer
+      required: [yaml_files, csv_files, total_files]
+
+    OkWithFiles:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        files:
+          $ref: '#/components/schemas/FilesScan'
+      required: [ok, files]
+
+    OkOnly:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
+
+    OkMessage:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+      required: [ok, message]
+
+    OkWithFilesAndMessage:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        files:
+          $ref: '#/components/schemas/FilesScan'
+      required: [ok, message, files]
+
+    SavedList:
+      type: object
+      properties:
+        dirs:
+          type: array
+          items:
+            type: string
+      required: [dirs]
+
+    RemovedList:
+      type: object
+      properties:
+        removed:
+          type: array
+          items:
+            type: string
+      required: [removed]
+
+    RawBinaryFile:
+      type: object
+      properties:
+        file:
+          type: string
+        data_b64:
+          type: string
+          description: Base64-encoded data
+        mime:
+          type: string
+          example: image/png
+        raw:
+          type: boolean
+          example: true
+      required: [file, data_b64, mime, raw]
+
+    RawTextFile:
+      type: object
+      properties:
+        file:
+          type: string
+        data:
+          type: string
+        mime:
+          type: string
+          example: text/plain
+        raw:
+          type: boolean
+          example: true
+      required: [file, data, mime, raw]
+
+    ParsedFile:
+      type: object
+      properties:
+        file:
+          type: string
+        data:
+          description: Parsed YAML (object) or text content
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: string
+      required: [file, data]
+
+    ReadFileResponse:
+      oneOf:
+        - $ref: '#/components/schemas/RawBinaryFile'
+        - $ref: '#/components/schemas/RawTextFile'
+        - $ref: '#/components/schemas/ParsedFile'
+
+    RefreshResponse:
+      type: object
+      properties:
+        files:
+          $ref: '#/components/schemas/FilesScan'
+        config:
+          type: object
+          additionalProperties: true
+        saved:
+          type: array
+          items:
+            type: string
+      required: [files, config, saved]
+
+    SimulationResult:
+      type: object
+      properties:
+        status:
+          type: string
+          example: finished
+        results:
+          type: object
+          additionalProperties: true
+        files:
+          $ref: '#/components/schemas/FilesScan'
+      required: [status, results, files]
+
+    SimulationTrigger:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          example: running
+      required: [task_id, status]
+
+    SimulationStatus:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          example: finished
+        result:
+          type: object
+          nullable: true
+          additionalProperties: true
+        files:
+          $ref: '#/components/schemas/FilesScan'
+      required: [task_id, status]
+
+tags:
+  - name: wombat-rest
+    description: API router root
+  - name: session
+    description: Session management
+  - name: library
+    description: Client library management
+  - name: saved
+    description: Manage saved libraries on server
+  - name: simulation
+    description: Run simulations
+  - name: temp
+    description: Temporary directory maintenance

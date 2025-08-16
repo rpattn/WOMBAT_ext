@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import './FileSelector.css';
 
 interface FileSelectorProps {
@@ -92,8 +92,27 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     return root;
   }, [libraryFiles, rootLabel]);
 
-  // Expand root and some common folders (like "project") by default when present.
+  // Track last applied root label to know when to re-initialize
+  const lastRootLabelRef = useRef<string>(rootLabel);
+
+  // Simple loading indicator: show while we have files but expansion hasn't been applied yet
+  const totalFiles = useMemo(() => {
+    const yaml = libraryFiles?.yaml_files?.length ?? 0;
+    const csv = libraryFiles?.csv_files?.length ?? 0;
+    const html = libraryFiles?.html_files?.length ?? 0;
+    const png = libraryFiles?.png_files?.length ?? 0;
+    return yaml + csv + html + png;
+  }, [libraryFiles]);
+  const isRefreshing = expandedFolders.size === 0 && totalFiles > 0;
+
+  // When the underlying file list changes (e.g., loading a saved project), reset expansion
+  // Removed to reduce rerenders; rely on rootLabel change and init effect
+
+  // Initialize default expanded folders once, or whenever the root label changes.
   useEffect(() => {
+    const rootChanged = lastRootLabelRef.current !== rootLabel;
+    const shouldInit = expandedFolders.size === 0 || rootChanged;
+    if (!shouldInit) return; // respect user state unless root changed
     const next = new Set<string>();
     next.add(rootLabel);
     const yaml = libraryFiles?.yaml_files ?? [];
@@ -104,26 +123,16 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     const parts = allFiles.map(p => (p || '').split('\\'));
     const hasProject = parts.some(seg => seg[0] === 'project');
     const hasProjectConfig = parts.some(seg => seg[0] === 'project' && seg[1] === 'config');
-    if (hasProject) {
-      next.add(`${rootLabel}/project`);
-    }
-    if (hasProjectConfig) {
-      next.add(`${rootLabel}/project/config`);
-    }
-    // Expand any requested default top-level folders if they are present
+    if (hasProject) next.add(`${rootLabel}/project`);
+    if (hasProjectConfig) next.add(`${rootLabel}/project/config`);
     for (const folderName of defaultExpandFolders) {
       if (!folderName) continue;
       const hasFolder = parts.some(seg => seg[0] === folderName);
-      if (hasFolder) {
-        next.add(`${rootLabel}/${folderName}`);
-      }
+      if (hasFolder) next.add(`${rootLabel}/${folderName}`);
     }
-    // Only update state if changed to avoid triggering re-renders unnecessarily
-    const isSame = expandedFolders.size === next.size && Array.from(next).every(v => expandedFolders.has(v));
-    if (!isSame) {
-      setExpandedFolders(next);
-    }
-  }, [rootLabel, libraryFiles, JSON.stringify(defaultExpandFolders), expandedFolders]);
+    setExpandedFolders(next);
+    lastRootLabelRef.current = rootLabel;
+  }, [rootLabel, libraryFiles, defaultExpandFolders, expandedFolders.size]);
 
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders(prev => {
@@ -172,12 +181,12 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               <span className="actions folder-actions" onClick={(e) => e.stopPropagation()}>
                 <button
                   title="Add YAML file here"
-                  className="btn btn-outline-violet"
+                  className="btn btn-success"
                   onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'yaml')}
                 >+ YAML</button>
                 <button
                   title="Add CSV file here"
-                  className="btn btn-outline-emerald"
+                  className="btn btn-success"
                   onClick={() => promptAndAddFile(node.folderFullPath ?? '', 'csv')}
                 >+ CSV</button>
               </span>
@@ -208,7 +217,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               <button
                 title="Download file"
                 aria-label="Download file"
-                className="btn btn-outline-primary"
+                className="btn btn-primary"
                 style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -219,7 +228,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               <button
                 title="Delete file"
                 aria-label="Delete file"
-                className="btn btn-outline-danger"
+                className="btn btn-danger"
                 style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -232,7 +241,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
               <button
                 title="Replace file (upload)"
                 aria-label="Replace file"
-                className="btn btn-outline-primary"
+                className="btn btn-primary"
                 style={{ padding: '2px 6px', minWidth: 0, lineHeight: 1.2 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -254,6 +263,13 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         <p className="file-count">
           {(libraryFiles?.yaml_files?.length ?? 0)} YAML, {(libraryFiles?.csv_files?.length ?? 0)} CSV, {(libraryFiles?.html_files?.length ?? 0)} HTML, {(libraryFiles?.png_files?.length ?? 0)} PNG
         </p>
+        {isRefreshing && (
+          <div className="inline-spinner" aria-live="polite" aria-busy="true" title="Refreshing file tree">
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
+          </div>
+        )}
       </div>
       <div className="file-tree">
         {renderTreeNode(buildTreeStructure)}

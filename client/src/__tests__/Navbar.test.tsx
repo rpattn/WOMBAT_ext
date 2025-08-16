@@ -10,7 +10,7 @@ describe('Navbar', () => {
     renderWithProviders(<Navbar />, { routerProps: { initialEntries: ['/results'] } });
 
     // Links present
-    const linkConnect = screen.getByRole('link', { name: /websocket client/i });
+    const linkConnect = screen.getByRole('link', { name: /connection manager/i });
     const linkSim = screen.getByRole('link', { name: /simulation manager/i });
     const linkResults = screen.getByRole('link', { name: /results/i });
 

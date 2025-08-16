@@ -1,15 +1,14 @@
 import { useEffect } from 'react';
 import FileSelector from '../components/FileSelector';
 import SelectedFileInfo from '../components/SelectedFileInfo';
-import { useWebSocketContext } from '../context/WebSocketContext';
 import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown';
 import YamlJsonViewer from '../components/YamlJsonViewer';
 import CsvPreview from '../components/CsvPreview';
 import ResultsSummary from '../components/ResultsSummary';
+import { useApiContext } from '../context/ApiContext';
 
 export default function Results() {
   const {
-    send: sendWebSocketMessage,
     libraryFiles,
     selectedFile, setSelectedFile,
     pendingDownloadRef,
@@ -18,34 +17,31 @@ export default function Results() {
     configData,
     csvPreview,
     binaryPreviewUrl,
-  } = useWebSocketContext();
+    // REST methods
+    fetchLibraryFiles,
+    readFile,
+    loadSaved,
+  } = useApiContext();
   // Shared toasts are handled in App.tsx; this page reads shared state
 
   // Ensure files are populated when arriving on this page
   useEffect(() => {
-    if (!libraryFiles && sendWebSocketMessage) {
-      sendWebSocketMessage('get_library_files');
+    if (!libraryFiles) {
+      fetchLibraryFiles().catch(() => {});
     }
-  }, [libraryFiles, sendWebSocketMessage]);
+  }, [libraryFiles, fetchLibraryFiles]);
 
   const handleFileSelect = (filePath: string) => {
     setSelectedFile(filePath);
-    if (sendWebSocketMessage) {
-      const lf = filePath.toLowerCase();
-      const isHtml = lf.endsWith('.html');
-      const isPng = lf.endsWith('.png');
-      const payload = (isHtml || isPng)
-        ? { event: 'file_select', data: filePath, raw: true }
-        : { event: 'file_select', data: filePath };
-      sendWebSocketMessage(JSON.stringify(payload));
-    }
+    const lf = filePath.toLowerCase();
+    const isHtml = lf.endsWith('.html');
+    const isPng = lf.endsWith('.png');
+    readFile(filePath, isHtml || isPng).catch(() => {});
   };
 
   const handleDownloadFile = (filePath: string) => {
-    if (!sendWebSocketMessage) return;
     pendingDownloadRef.current = filePath;
-    const message = JSON.stringify({ event: 'file_select', data: filePath, raw: true });
-    sendWebSocketMessage(message);
+    readFile(filePath, true).catch(() => { pendingDownloadRef.current = null; });
   };
 
   const handleAddFile = (_filePath: string, _content: any) => {
@@ -78,9 +74,8 @@ export default function Results() {
                     try {
                       window.localStorage.setItem('lastSavedLibraryName', val || '');
                     } catch { /* ignore */ }
-                    if (val && sendWebSocketMessage) {
-                      const msg = JSON.stringify({ event: 'load_saved_library', data: { name: val } });
-                      sendWebSocketMessage(msg);
+                    if (val) {
+                      loadSaved(val).catch(() => {});
                     }
                   }}
                 >
@@ -102,7 +97,7 @@ export default function Results() {
               <div style={{ marginTop: 12 }}>
                 <button
                   className="btn-app btn-secondary"
-                  onClick={() => sendWebSocketMessage?.('get_library_files')}
+                  onClick={() => fetchLibraryFiles().catch(() => {})}
                 >Refresh Files</button>
               </div>
             </div>

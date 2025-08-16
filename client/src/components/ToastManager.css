@@ -8,15 +8,15 @@
 
 /* Base toast */
 .wombat-toast {
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.16);
-  border: 1px solid rgba(16, 24, 40, 0.08);
-  padding: 10px 12px;
+  border-radius: 0;
+  box-shadow: none;
+  border: 1px solid rgba(16, 24, 40, 0.12);
+  padding: var(--space-8) var(--space-10);
 }
 
 /* Body text */
 .wombat-toast .Toastify__toast-body {
-  font-size: 0.95rem;
+  font-size: var(--fs-control);
   line-height: 1.35;
   color: #0b1220;
 }
@@ -95,7 +95,7 @@ html.light .Toastify__toast-theme--colored.Toastify__toast--error.wombat-toast {
 
 /* Reduce vertical spacing between stacked toasts */
 .wombat-toast + .wombat-toast {
-  margin-top: 10px;
+  margin-top: var(--space-10);
 }
 
 /* ===================== */
@@ -110,7 +110,7 @@ html.light .Toastify__toast-theme--colored.Toastify__toast--error.wombat-toast {
   .wombat-toast {
     background: #101828; /* base fallback if type class missing */
     border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: none;
   }
   .wombat-toast .Toastify__toast-body {
     color: rgba(255, 255, 255, 0.9);
@@ -172,7 +172,7 @@ html.light .Toastify__toast-theme--colored.wombat-toast .Toastify__toast-body { 
 html.dark .wombat-toast {
   background: #101828;
   border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
 }
 html.dark .wombat-toast .Toastify__toast-body { color: rgba(255, 255, 255, 0.9); }
 html.dark .wombat-toast-progress { background: linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0)); }
