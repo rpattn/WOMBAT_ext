@@ -5,7 +5,6 @@ import shutil
 import logging
 from pathlib import Path
 from typing import Dict
-from fastapi import WebSocket
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -14,7 +13,7 @@ class ClientManager:
     """Manages WebSocket client connections and their simulation states."""
     
     def __init__(self):
-        self.clients: Dict[str, WebSocket] = {}
+        # WebSocket support removed; no clients map maintained
         self.client_simulations: Dict[str, Dict] = {}  # Track which client is running which simulation
         self.client_projects: Dict[str, str] = {}  # Track client project directories
         self.temp_base_dir = Path("server/temp")
@@ -22,21 +21,7 @@ class ClientManager:
         # Track the last selected file per client for saving edits to the correct file
         self.client_last_selected_file: Dict[str, str] = {}
     
-    def add_client(self, client_id: str, websocket: WebSocket) -> None:
-        """Add a new client to the manager."""
-        self.clients[client_id] = websocket
-        self.client_simulations[client_id] = {
-            "running": False,
-            "done_event": None,
-            "ticker_task": None
-        }
-        
-        # Create per-client project directory
-        project_dir = self._create_client_project(client_id)
-        self.client_projects[client_id] = project_dir
-        
-        logger.info(f"Client {client_id} connected. Total clients: {len(self.clients)}")
-        logger.info(f"Created project directory: {project_dir}")
+    # WebSocket add_client removed as part of REST-only migration
     
     # --- REST session support ---
     def create_session(self) -> str:
@@ -87,28 +72,7 @@ class ClientManager:
             del self.client_last_selected_file[client_id]
         logger.info(f"REST session {client_id} ended.")
     
-    def remove_client(self, client_id: str) -> None:
-        """Remove a client and clean up any running simulations."""
-        if client_id in self.clients:
-            # Clean up any running simulation for this client
-            sim_state = self.client_simulations.get(client_id, {})
-            if sim_state.get("done_event"):
-                sim_state["done_event"].set()
-            if sim_state.get("ticker_task"):
-                sim_state["ticker_task"].cancel()
-            
-            del self.clients[client_id]
-            del self.client_simulations[client_id]
-            
-            # Clean up client project directory
-            if client_id in self.client_projects:
-                self._cleanup_client_project(client_id)
-                del self.client_projects[client_id]
-            # Remove any stored state
-            if client_id in self.client_last_selected_file:
-                del self.client_last_selected_file[client_id]
-            
-            logger.info(f"Client {client_id} disconnected. Total clients: {len(self.clients)}")
+    # WebSocket remove_client removed as part of REST-only migration
     
     def get_client_simulation_state(self, client_id: str) -> Dict:
         """Get the simulation state for a specific client."""

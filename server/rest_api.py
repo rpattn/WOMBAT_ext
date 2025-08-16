@@ -15,7 +15,6 @@ from server.library_manager import (
     load_saved_library,
     delete_saved_library,
 )
-from server.event_handlers import handle_get_config  # for fallback logic if needed
 from server.simulations import run_wombat_simulation
 
 router = APIRouter(prefix="/api", tags=["wombat-rest"])
