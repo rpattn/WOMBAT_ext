@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""Temp maintenance routes: clear per-client temp and sweep temp directories.
+
+Routes are included under the `/api` prefix from `server/rest_api.py`.
+"""
+
 from fastapi import APIRouter
 
 from server.client_manager import client_manager

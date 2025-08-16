@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+"""Saved libraries routes: list, load into client, and delete saved libraries.
+
+Routes are included under the `/api` prefix from `server/rest_api.py`.
+"""
+
 from fastapi import APIRouter
-from pydantic import BaseModel
 
 from server.client_manager import client_manager
+from server.models import LoadSavedPayload
 from server.services.libraries import scan_client_library_files
 from server.services.saved_libraries import (
     load_saved_library,
@@ -11,10 +16,6 @@ from server.services.saved_libraries import (
 )
 
 router = APIRouter(prefix="", tags=["saved"])
-
-
-class LoadSavedPayload(BaseModel):
-    name: str
 
 
 @router.get("/saved")

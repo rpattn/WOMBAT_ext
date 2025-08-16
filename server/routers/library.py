@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+"""Library-related routes: file CRUD, listing, config, and saving client library.
+
+Routes are included under the `/api` prefix from `server/rest_api.py`.
+"""
+
 from typing import Any
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
 
 from server.client_manager import client_manager
+from server.models import AddOrReplacePayload, SaveLibraryPayload
 from server.services.libraries import (
     get_client_library_file,
     scan_client_library_files,
@@ -14,15 +19,6 @@ from server.services.libraries import (
 from server.services.saved_libraries import save_client_library
 
 router = APIRouter(prefix="", tags=["library"])
-
-
-class AddOrReplacePayload(BaseModel):
-    file_path: str
-    content: Any | None = None
-
-
-class SaveLibraryPayload(BaseModel):
-    project_name: str
 
 
 @router.get("/{client_id}/config")

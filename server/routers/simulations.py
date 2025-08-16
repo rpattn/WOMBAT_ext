@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""Simulation routes: run simulations for a given client.
+
+Routes are included under the `/api` prefix from `server/rest_api.py`.
+"""
+
 from fastapi import APIRouter, HTTPException
 
 from server.client_manager import client_manager

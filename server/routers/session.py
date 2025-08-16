@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""Session routes: create and end client sessions.
+
+Routes are included under the `/api` prefix from `server/rest_api.py`.
+"""
+
 from fastapi import APIRouter, HTTPException
 
 from server.client_manager import client_manager
