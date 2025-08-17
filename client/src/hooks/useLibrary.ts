@@ -89,7 +89,7 @@ export function useLibrary(deps: UseLibraryDeps) {
         setLibraryFiles(wr.json?.files ?? wr.json)
         if (!workerFallbackWarned_library) {
           workerFallbackWarned_library = true
-          warning('Server unavailable. Using mock Web Worker. Some behavior may be unexpected.')
+          //warning('Server unavailable. Using mock Web Worker. Some behavior may be unexpected.')
         }
       }
     }

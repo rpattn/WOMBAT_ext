@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { mockApiRequest } from '../workers/mockApiClient'
 import { useToasts } from './useToasts'
 
@@ -16,12 +16,19 @@ export type UseSessionReturn = {
 export function useSession(initialApiBase?: string): UseSessionReturn {
   const [apiBaseUrl, setApiBaseUrl] = useState<string>(initialApiBase ?? ((import.meta as any).env?.VITE_API_URL ?? 'http://127.0.0.1:8000/api'))
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const { warning } = useToasts()
 
-  const requireSession = useCallback(() => {
-    if (!sessionId) throw new Error('No REST session. Initialize first.')
-    return sessionId
+  // Keep a ref in sync so stable callbacks can access the latest sessionId
+  useEffect(() => {
+    sessionIdRef.current = sessionId
   }, [sessionId])
+
+  const requireSession = useCallback(() => {
+    const id = sessionIdRef.current
+    if (!id) throw new Error('No REST session. Initialize first.')
+    return id
+  }, [])
 
   const initSession = useCallback(async () => {
     // Try real server first
@@ -30,6 +37,7 @@ export function useSession(initialApiBase?: string): UseSessionReturn {
       if (res.ok) {
         const data = await res.json()
         setSessionId(data.client_id)
+        sessionIdRef.current = data.client_id
         return data.client_id as string
       }
       // Non-OK -> fall through to mock
@@ -41,6 +49,7 @@ export function useSession(initialApiBase?: string): UseSessionReturn {
         if (wr.ok && wr.json?.client_id) {
           const cid = String(wr.json.client_id)
           setSessionId(cid)
+          sessionIdRef.current = cid
           if (!workerFallbackWarned_session) {
             workerFallbackWarned_session = true
             warning('Server unavailable. Using mock Web Worker. Some behavior may be unexpected.')
@@ -51,6 +60,7 @@ export function useSession(initialApiBase?: string): UseSessionReturn {
         console.error('mock initSession error', e2)
       }
       setSessionId(null)
+      sessionIdRef.current = null
       return null
     }
   }, [apiBaseUrl])
@@ -76,6 +86,7 @@ export function useSession(initialApiBase?: string): UseSessionReturn {
       }
     } finally {
       setSessionId(null)
+      sessionIdRef.current = null
     }
   }, [apiBaseUrl, sessionId])
 

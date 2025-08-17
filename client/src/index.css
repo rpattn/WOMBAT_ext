@@ -168,3 +168,9 @@ html.light, html.light body, html.light #root {
   color: var(--color-text);
   background-color: var(--color-bg);
 }
+/* Ensure buttons adopt light colors when manual light mode is active */
+html.light {
+  --btn-bg: #f9f9f9;
+  --btn-fg: #111827;
+  --btn-border-color: var(--color-border);
+}

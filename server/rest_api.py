@@ -7,6 +7,7 @@ from server.routers import library as library_router
 from server.routers import saved as saved_router
 from server.routers import temp as temp_router
 from server.routers import simulations as simulations_router
+from server.routers import schemas as schemas_router
 
 
 router = APIRouter(prefix="/api", tags=["wombat-rest"])
@@ -17,3 +18,4 @@ router.include_router(library_router.router)
 router.include_router(saved_router.router)
 router.include_router(temp_router.router)
 router.include_router(simulations_router.router)
+router.include_router(schemas_router.router)

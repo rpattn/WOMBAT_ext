@@ -117,6 +117,18 @@
   justify-self: left;
 }
 
+/* Minimal type badge for inline schema type hints */
+.je-type-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: 9999px;
+}
+
 /* Dark mode is handled by CSS variables; keep placeholder readable in dark */
 @media (prefers-color-scheme: dark) {
   .json-editor .je-input::placeholder { color: #9ca3af; }
@@ -126,3 +138,20 @@
 .dark .json-editor .je-input::placeholder { color: #9ca3af; }
 
 /* Force light theme also uses variables; no color overrides needed */
+
+/* Error states */
+.je-input-error {
+  border-color: var(--color-danger, #dc2626);
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
+}
+
+.je-error-text {
+  color: var(--color-danger, #dc2626);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.je-valid-note {
+  color: var(--color-success, #16a34a);
+  font-size: 12px;
+}

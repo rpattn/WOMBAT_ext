@@ -8,7 +8,7 @@ import ThemeSelector from './components/ThemeSelector';
 import { ApiProvider, useApiContext } from './context/ApiContext';
 import RestClient from './components/RestClient';
 
-function DownloadWatcher() {
+export function DownloadWatcher() {
   const { pendingDownloadRef, binaryPreviewUrl, csvPreview } = useApiContext();
 
   useEffect(() => {
