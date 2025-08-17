@@ -408,7 +408,11 @@ def schema_by_name(name: str) -> dict[str, Any]:
         return schema_service_equipment_variants()["scheduled"]
     if name in ("service_equipment_unscheduled", "vessel_unscheduled"):
         return schema_service_equipment_variants()["unscheduled"]
+    if name in ("project_port", "port"):
+        # Port configuration schema
+        from wombat.core.data_classes import PortConfig
+        return build_schema_for_attrs_class(PortConfig, title="ProjectPort")
     raise KeyError(
         "Unknown schema name. Use one of: configuration, service_equipment, "
-        "service_equipment_scheduled, service_equipment_unscheduled"
+        "service_equipment_scheduled, service_equipment_unscheduled, project_port"
     )

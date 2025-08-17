@@ -18,8 +18,8 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
     // minimally: fetch configuration schema for YAML files
     if (file.endsWith('.yaml') || file.endsWith('.yml')) {
       const isVessel = file.includes('vessels') || file.includes('vessel') || file.includes('service_equipment')
+      const isPort = file.includes('project/port') || (file.includes('project') && file.includes('port'))
       if (isVessel) {
-        console.log(data)
         const strategy = (data as any)?.strategy
         const strat = typeof strategy === 'string' ? strategy.toLowerCase() : ''
         const isUnscheduled = strat === 'unscheduled' || strat === 'requests' || strat === 'downtime'
@@ -29,6 +29,10 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
             ? 'service_equipment_unscheduled'
             : 'service_equipment'
         getSchema(schemaName)
+          .then((s) => { if (active) setSchema(s) })
+          .catch(() => { if (active) setSchema(null) })
+      } else if (isPort) {
+        getSchema('project_port')
           .then((s) => { if (active) setSchema(s) })
           .catch(() => { if (active) setSchema(null) })
       } else {
