@@ -1,10 +1,10 @@
 import React from 'react';
 import './JsonEditor.css';
-
-type JsonPrimitive = string | number | boolean | null;
-type JsonArray = JsonValue[];
-export type JsonObject = { [key: string]: JsonValue };
-type JsonValue = JsonPrimitive | JsonArray | JsonObject;
+import { setDeepValue, type JsonObject, type JsonValue } from './json-editor/utils/path';
+import { createCachedGetSchemaForPath } from './json-editor/utils/schemaCache';
+import ObjectField from './json-editor/ObjectField';
+import ArrayField from './json-editor/ArrayField';
+import PrimitiveField from './json-editor/PrimitiveField';
 
 // Lightweight JSON editor without external UI libraries
 
@@ -189,277 +189,78 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
         setErrors(out);
     }, []);
 
-    // Revalidate when data or schema changes
+    // Debounced revalidation when data or schema changes
+    const validateTimerRef = React.useRef<number | null>(null);
     React.useEffect(() => {
-        validateForm(formData, schema);
+        if (validateTimerRef.current) {
+            window.clearTimeout(validateTimerRef.current);
+        }
+        validateTimerRef.current = window.setTimeout(() => {
+            validateForm(formData, schema);
+        }, 200);
+        return () => {
+            if (validateTimerRef.current) {
+                window.clearTimeout(validateTimerRef.current);
+                validateTimerRef.current = null;
+            }
+        };
     }, [formData, schema, validateForm]);
 
-    // Utilities to update deep values immutably
-    const setDeepValue = (obj: JsonObject, path: (string | number)[], value: JsonValue): JsonObject => {
-        if (path.length === 0) return obj;
-        const [head, ...rest] = path;
-        const clone: any = Array.isArray(obj) ? [...(obj as any)] : { ...obj };
-        if (rest.length === 0) {
-            (clone as any)[head as any] = value as any;
-            return clone;
-        }
-        const next = (clone as any)[head as any];
-        (clone as any)[head as any] = setDeepValue(
-            (typeof next === 'object' && next !== null ? next : {} as any) as JsonObject,
-            rest,
-            value
-        );
-        return clone;
-    };
+    // setDeepValue imported from utils
 
     const handleChangeAtPath = (path: (string | number)[], value: JsonValue) => {
         setFormData(prev => setDeepValue(prev, path, value));
     };
 
-    const typeLabelFromSchema = (sch: any | undefined): string | undefined => {
-        if (!sch) return undefined;
-        const t = sch.type;
-        if (typeof t === 'string') {
-            if (t === 'string') return 'str';
-            if (t === 'integer') return 'int';
-            if (t === 'number') return 'float';
-            if (t === 'boolean') return 'bool';
-            if (t === 'array') return 'arr';
-            if (t === 'object') return 'obj';
-            if (t === 'hinst') return 'hinst';
-        }
-        if (Array.isArray(t)) return t.map((x) => String(x)).join('|');
-        if (sch.oneOf) return 'union';
-        return undefined;
-    };
+    // typeLabelFromSchema imported from utils
 
-    const getSchemaForPath = (path: (string | number)[]): any | undefined => {
-        if (!schema) return undefined;
-        let node: any = schema;
-        for (const seg of path) {
-            // If node is union, try to pick an object/array branch preferentially
-            if (node && node.oneOf && Array.isArray(node.oneOf)) {
-                const objBranch = node.oneOf.find((b: any) => b && (b.type === 'object' || b.properties))
-                    ?? node.oneOf.find((b: any) => b && (b.type === 'array' || b.items))
-                    ?? node.oneOf[0];
-                node = objBranch;
-            }
-            const t = node?.type;
-            if ((t === 'object' || node?.properties) && node.properties) {
-                const keyStr = String(seg);
-                node = node.properties[keyStr];
-            } else if (t === 'array' || node?.items) {
-                // For arrays, descend into items regardless of index value
-                node = node.items;
-                // do not attempt to index properties by numeric index here; next loop segment will handle nested keys
-            } else {
-                // unknown structure
-                return undefined;
-            }
-            if (!node) return undefined;
-        }
-        return node;
-    };
+    // getSchemaForPath imported from utils; cache per-schema for performance
+    const cachedGetSchema = React.useMemo(() => createCachedGetSchemaForPath(schema), [schema]);
+    const getSchemaNode = React.useCallback((path: (string | number)[]) => cachedGetSchema(path), [cachedGetSchema]);
 
     const renderField = (name: (string | number)[], value: JsonValue) => {
         if (value === null) return null;
-        const label = name[name.length - 1];
         const fieldKey = name.join('.');
-        // derive schema at any depth (still displayed minimally)
-        const nodeSchema = getSchemaForPath(name);
-        const typeLabel = typeLabelFromSchema(nodeSchema);
-        const desc = nodeSchema?.description as string | undefined;
-        const fieldErrors = errors[fieldKey] || [];
+        const nodeSchema = getSchemaNode(name);
 
         // Array handling
         if (Array.isArray(value)) {
             return (
-                <div key={fieldKey} className="je-section">
-                    <details open>
-                        <summary className="je-label je-summary" title={desc || ''}>
-                            {String(label)}{typeLabel ? <span className="je-type-badge">{typeLabel}</span> : null}
-                        </summary>
-                        <div className="je-pl-12 je-mt-8">
-                            {value.map((item, index) => (
-                                <div key={`${fieldKey}.${index}`} className="je-row-tight je-mb-8">
-                                    <div className="je-grow">
-                                        {typeof item === 'object' && item !== null ? (
-                                            renderField([...name, index], item)
-                                        ) : (
-                                            (() => {
-                                                const itemKey = `${fieldKey}.${index}`;
-                                                const itemErrors = errors[itemKey] || [];
-                                                // If items schema has enum, render a select for valid options
-                                                const itemSchema = nodeSchema?.items;
-                                                const enumOpts: any[] | undefined = Array.isArray(itemSchema?.enum) ? itemSchema.enum : undefined;
-                                                if (enumOpts && enumOpts.length > 0) {
-                                                    return (
-                                                        <>
-                                                            <select
-                                                                className={`je-input ${itemErrors.length ? 'je-input-error' : ''}`}
-                                                                value={String(item ?? '')}
-                                                                onChange={(e) => {
-                                                                    const newArr = [...value];
-                                                                    newArr[index] = e.target.value;
-                                                                    handleChangeAtPath(name, newArr);
-                                                                }}
-                                                            >
-                                                                {enumOpts.map((opt, oi) => (
-                                                                    <option key={oi} value={String(opt)}>{String(opt)}</option>
-                                                                ))}
-                                                            </select>
-                                                            {itemErrors.length > 0 && (
-                                                                <div className="je-error-text">
-                                                                    {itemErrors.map((m, i) => (<div key={i}>{m}</div>))}
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    );
-                                                }
-                                                // Fallback: plain text input
-                                                return (
-                                                    <>
-                                                        <input
-                                                            className={`je-input ${itemErrors.length ? 'je-input-error' : ''}`}
-                                                            value={String(item ?? '')}
-                                                            onChange={(e) => {
-                                                                const newArr = [...value];
-                                                                newArr[index] = e.target.value;
-                                                                handleChangeAtPath(name, newArr);
-                                                            }}
-                                                        />
-                                                        {itemErrors.length > 0 && (
-                                                            <div className="je-error-text">
-                                                                {itemErrors.map((m, i) => (<div key={i}>{m}</div>))}
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                );
-                                            })()
-                                        )}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="btn btn-danger"
-                                        onClick={() => {
-                                            const newArr = value.slice();
-                                            newArr.splice(index, 1);
-                                            handleChangeAtPath(name, newArr);
-                                        }}
-                                    >
-                                        X
-                                    </button>
-                                </div>
-                            ))}
-                            <button
-                                type="button"
-                                className="btn btn-success je-mt-4"
-                                onClick={() => {
-                                    const newArr = [...value];
-                                    // Prefer first enum option if available
-                                    const itemSchema = nodeSchema?.items;
-                                    const enumOpts: any[] | undefined = Array.isArray(itemSchema?.enum) ? itemSchema.enum : undefined;
-                                    const newItem = enumOpts && enumOpts.length > 0
-                                        ? String(enumOpts[0])
-                                        : (value.length > 0
-                                            ? JSON.parse(JSON.stringify(value[value.length - 1]))
-                                            : '');
-                                    newArr.push(newItem as any);
-                                    handleChangeAtPath(name, newArr);
-                                }}
-                            >
-                                +
-                            </button>
-                            {fieldErrors.length > 0 && (
-                                <div className="je-error-text">
-                                    {fieldErrors.map((m, i) => (<div key={i}>{m}</div>))}
-                                </div>
-                            )}
-                        </div>
-                    </details>
-                </div>
+                <ArrayField
+                    key={fieldKey}
+                    name={name}
+                    value={value as any}
+                    schemaNode={nodeSchema}
+                    errors={errors}
+                    onChangeAtPath={handleChangeAtPath}
+                    renderField={renderField}
+                />
             );
         }
 
         // Object handling
         if (typeof value === 'object' && value !== null) {
             return (
-                <div key={fieldKey} className="je-section">
-                    <details open>
-                        <summary className="je-label je-summary" title={desc || ''}>
-                            {String(label)}{typeLabel ? <span className="je-type-badge">{typeLabel}</span> : null}
-                        </summary>
-                        <div className="je-pl-12 je-mt-8">
-                            {Object.entries(value as JsonObject).map(([k, v]) => (
-                                <div key={`${fieldKey}.${k}`} className="je-mb-8">
-                                    {renderField([...name, k], v)}
-                                </div>
-                            ))}
-                        </div>
-                    </details>
-                </div>
+                <ObjectField
+                    key={fieldKey}
+                    name={name}
+                    value={value as any}
+                    schemaNode={nodeSchema}
+                    renderField={renderField}
+                />
             );
         }
 
         // Primitive handling
         return (
-            <div key={fieldKey} className="je-row">
-                <label className="je-label je-label-inline je-min-150" title={desc || ''}>
-                    {String(label)}{typeLabel ? <span className="je-type-badge">{typeLabel}</span> : null}
-                </label>
-                {typeof value === 'boolean' ? (
-                    <div>
-                        <input
-                            type="checkbox"
-                            checked={Boolean(value)}
-                            onChange={(e) => handleChangeAtPath(name, e.target.checked)}
-                        />
-                    </div>
-                ) : typeof value === 'number' ? (
-                    <div className="je-grow">
-                        <input
-                            type="number"
-                            className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
-                            value={Number.isFinite(value) ? String(value) : ''}
-                            onChange={(e) => {
-                                const num = e.target.value === '' ? 0 : Number(e.target.value);
-                                handleChangeAtPath(name, isNaN(num) ? 0 : num);
-                            }}
-                        />
-                        {fieldErrors.length > 0 && (
-                            <div className="je-error-text">
-                                {fieldErrors.map((m, i) => (<div key={i}>{m}</div>))}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="je-grow">
-                        {Array.isArray(nodeSchema?.enum) && nodeSchema.enum.length > 0 ? (
-                            <select
-                                className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
-                                value={String(value ?? '')}
-                                onChange={(e) => handleChangeAtPath(name, e.target.value)}
-                            >
-                                {nodeSchema.enum.map((opt: any, oi: number) => (
-                                    <option key={oi} value={String(opt)}>{String(opt)}</option>
-                                ))}
-                            </select>
-                        ) : (
-                            <input
-                                type="text"
-                                className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
-                                value={String(value ?? '')}
-                                onChange={(e) => handleChangeAtPath(name, e.target.value)}
-                            />
-                        )}
-                        {fieldErrors.length > 0 && (
-                            <div className="je-error-text">
-                                {fieldErrors.map((m, i) => (<div key={i}>{m}</div>))}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+            <PrimitiveField
+                key={fieldKey}
+                name={name}
+                value={value as any}
+                schemaNode={nodeSchema}
+                errors={errors}
+                onChangeAtPath={handleChangeAtPath}
+            />
         );
     };
 
@@ -510,3 +311,4 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
 };
 
 export default JsonEditor;
+export type { JsonObject, JsonValue } from './json-editor/utils/path';

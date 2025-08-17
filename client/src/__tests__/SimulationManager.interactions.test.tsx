@@ -107,6 +107,15 @@ vi.mock('../context/ApiContext', async (importOriginal) => {
       clearClientTemp: vi.fn(async () => true),
       sweepTemp: spies.sweepTemp,
       sweepTempAll: vi.fn(async () => 0),
+
+      // Schemas used by EditorPanel
+      getSchema: vi.fn(async (name: string) => {
+        // Minimal schemas per name used in this suite
+        if (name === 'configuration') {
+          return { $schema: 'https://json-schema.org/draft/2020-12/schema', type: 'object', properties: {} }
+        }
+        return { type: 'object' }
+      }),
     })
   }
 })

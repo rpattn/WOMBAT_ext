@@ -98,6 +98,31 @@ html {
   min-height: 360px; /* reserve editor space prior to data load */
 }
 
+/* Panels (match look and feel of Saved Libraries manager) */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-8);
+}
+.panel-title {
+  margin: 0 0 var(--space-8) 0;
+  color: var(--color-text);
+  font-size: var(--fs-h3);
+}
+.panel-body { display: block; }
+
+/* Unstyled list with subtle item rows */
+.list-unstyled { list-style: none; padding-left: 0; margin: 0; }
+.item-row { display: flex; align-items: center; gap: var(--space-8); padding: 6px 8px; border-bottom: 1px solid var(--color-border); }
+.item-row:last-child { border-bottom: none; }
+.item-row:hover { background: rgba(0,0,0,0.03); }
+@media (prefers-color-scheme: dark) {
+  .item-row:hover { background: rgba(255,255,255,0.04); }
+}
+
+/* Scroll area for lists */
+.scroll-240 { max-height: 240px; overflow: auto; }
+
 /* Buttons */
 .btn-app {
   padding: var(--btn-padding-y) var(--btn-padding-x);

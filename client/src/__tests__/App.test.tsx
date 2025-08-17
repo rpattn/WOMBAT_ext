@@ -33,7 +33,7 @@ describe('App', () => {
 
     // Navigate to Results
     await user.click(screen.getByRole('link', { name: /results/i }));
-    expect(screen.getByRole('heading', { level: 2, name: /results/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: /results/i })).toBeInTheDocument();
 
     // Navigate to Connection Manager
     await user.click(screen.getByRole('link', { name: /connection manager/i }));

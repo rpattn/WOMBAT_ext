@@ -12,7 +12,7 @@ describe('Results page', () => {
     renderWithProviders(<App />, { routerProps: { initialEntries: ['/results'] } });
 
     // Files section summary is rendered as a <summary>, not a heading
-    const filesSummary = screen.getByText(/^files$/i);
+    const filesSummary = await screen.findByText(/^files$/i);
     expect(filesSummary).toBeInTheDocument();
     const filesDetails = filesSummary.closest('details') as HTMLDetailsElement | null;
     expect(filesDetails).toBeTruthy();
