@@ -19,6 +19,7 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
     if (file.endsWith('.yaml') || file.endsWith('.yml')) {
       const isVessel = file.includes('vessels') || file.includes('vessel') || file.includes('service_equipment')
       const isSubstation = file.includes('substation')
+      const isTurbine = file.includes('turbine')
       const isPort = (
         file.includes('project/port') ||
         file.includes('project\\port') ||
@@ -43,6 +44,22 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
           .catch(() => {
             // Fallback: use combined service_equipment schema
             getSchema('service_equipment')
+              .then((s) => { if (active) setSchema(s) })
+              .catch(() => { if (active) setSchema(null) })
+          })
+      } else if (isTurbine) {
+        // Turbine schema support; prefer wrapper when YAML has top-level capacity/capex or nested turbine object
+        const hasWrapper = !!data && typeof data === 'object' && (
+          Object.prototype.hasOwnProperty.call(data as any, 'turbine') ||
+          Object.prototype.hasOwnProperty.call(data as any, 'capacity_kw') ||
+          Object.prototype.hasOwnProperty.call(data as any, 'capex_kw')
+        )
+        const name = hasWrapper ? 'equipment_turbine' : 'turbine'
+        getSchema(name)
+          .then((s) => { if (active) setSchema(s) })
+          .catch(() => {
+            const fallback = hasWrapper ? 'turbine' : 'configuration'
+            getSchema(fallback)
               .then((s) => { if (active) setSchema(s) })
               .catch(() => { if (active) setSchema(null) })
           })

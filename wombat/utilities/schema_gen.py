@@ -483,6 +483,114 @@ def schema_substation() -> dict[str, Any]:
     return schema
 
 
+def schema_turbine() -> dict[str, Any]:
+    """JSON Schema for turbine YAML configuration files.
+
+    This is a pragmatic schema capturing common turbine attributes and the
+    maintenance/failure structures aligned with service equipment capabilities.
+    """
+    capability_enum = [
+        "RMT", "DRN", "CTV", "SCN", "MCN", "LCN", "CAB", "DSV", "TOW", "AHV", "VSG", "OFS",
+    ]
+
+    def service_equipment_prop():
+        return {
+            "oneOf": [
+                {"type": "string", "enum": capability_enum},
+                {"type": "array", "items": {"type": "string", "enum": capability_enum}},
+            ]
+        }
+
+    maintenance_item = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "description": {"type": "string"},
+            "time": {"type": ["integer", "number"], "minimum": 0},
+            "materials": {"type": ["integer", "number"], "minimum": 0},
+            "service_equipment": service_equipment_prop(),
+            "frequency": {"type": ["integer", "number"], "minimum": 0},
+            "level": {"type": "integer", "minimum": 0},
+        },
+    }
+
+    failure_item = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "description": {"type": "string"},
+            "scale": {"type": ["integer", "number"], "minimum": 0},
+            "shape": {"type": ["integer", "number"], "minimum": 0},
+            "time": {"type": ["integer", "number"], "minimum": 0},
+            "materials": {"type": ["integer", "number"], "minimum": 0},
+            "service_equipment": service_equipment_prop(),
+            "operation_reduction": {"type": ["integer", "number"], "minimum": 0, "maximum": 1},
+            "level": {"type": "integer", "minimum": 0},
+        },
+    }
+
+    power_curve_point = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "wind_speed_mps": {"type": ["integer", "number"], "minimum": 0},
+            "power_kw": {"type": ["integer", "number"], "minimum": 0},
+        },
+        "required": ["wind_speed_mps", "power_kw"],
+    }
+
+    schema: dict[str, Any] = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Turbine",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "model": {"type": "string"},
+            "rated_power_kw": {"type": ["integer", "number"], "minimum": 0},
+            "rotor_diameter_m": {"type": ["integer", "number"], "minimum": 0},
+            "hub_height_m": {"type": ["integer", "number"], "minimum": 0},
+            "cut_in_wind_speed_mps": {"type": ["integer", "number"], "minimum": 0},
+            "cut_out_wind_speed_mps": {"type": ["integer", "number"]},
+            "power_curve": {
+                "oneOf": [
+                    {"type": "array", "items": power_curve_point},
+                    {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "file": {"type": "string"},
+                            "bin_width": {"type": ["integer", "number"], "minimum": 0},
+                        },
+                        "required": ["file", "bin_width"],
+                    },
+                ]
+            },
+            "maintenance": {"type": "array", "items": maintenance_item},
+            "failures": {"type": "array", "items": failure_item},
+        },
+    }
+    return schema
+
+
+def schema_equipment_turbine() -> dict[str, Any]:
+    """Wrapper schema for a turbine as part of a larger equipment object.
+
+    Top-level includes capacity and capex fields, with a nested `turbine` object
+    validated by the turbine schema.
+    """
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "EquipmentTurbine",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "capacity_kw": {"type": ["integer", "number"], "minimum": 0},
+            "capex_kw": {"type": ["integer", "number"], "minimum": 0},
+            "turbine": schema_turbine(),
+        },
+    }
+
+
 def schema_by_name(name: str) -> dict[str, Any]:
     name = name.lower()
     if name in ("configuration", "config"):
@@ -499,7 +607,11 @@ def schema_by_name(name: str) -> dict[str, Any]:
         return build_schema_for_attrs_class(PortConfig, title="ProjectPort")
     if name in ("substation", "substations"):
         return schema_substation()
+    if name in ("turbine", "turbines"):
+        return schema_turbine()
+    if name in ("equipment_turbine", "turbine_equipment"):
+        return schema_equipment_turbine()
     raise KeyError(
         "Unknown schema name. Use one of: configuration, service_equipment, "
-        "service_equipment_scheduled, service_equipment_unscheduled, project_port, substation"
+        "service_equipment_scheduled, service_equipment_unscheduled, project_port, substation, turbine, equipment_turbine"
     )
