@@ -154,29 +154,25 @@ __Scope__: `client/src/components/JsonEditor.tsx` (~500 LOC), `client/src/compon
 5) Add path normalization + optional search.
 6) Replace prompt/confirm with modal-driven UX hooks.
 
-### Bundle Size & Code Splitting — TODOs
+### Bundle Size & Code Splitting — TODOs (status)
 
-- [ ] Route-level code splitting in `client/src/App.tsx`:
-  - Use `React.lazy` + `Suspense` to lazy-load pages and heavy panels.
-  - Targets: `pages/SimulationManager`, `pages/Results`, `components/RestClient`, `components/ThemeSelector`.
-- [ ] Defer editor-heavy code until needed:
-  - Lazy-load `components/EditorPanel` and `components/JsonEditor` only when a YAML file is selected or when base config loads.
-  - Inside `JsonEditor`, lazy-load field subcomponents under `components/json-editor/` if not already split by Vite chunks.
-- [ ] Memoization to reduce re-renders:
-  - Wrap `LibraryPanel`, `FileSelector`, and json-editor fields with `React.memo`.
-  - Use `useCallback`/`useMemo` for handlers and derived data in `SimulationManager.tsx`, `FileSelector.tsx`.
+- [x] Route-level code splitting in `client/src/App.tsx`:
+  - Implemented `React.lazy` + `Suspense` for pages/panels: `SimulationManager`, `Results`, `RestClient`, `ThemeSelector`.
+- [x] Defer editor-heavy code until needed:
+  - `EditorPanel` is lazy-loaded in `pages/SimulationManager.tsx` and rendered only when configuration data is present.
+  - Note: Further splitting inside `JsonEditor` is optional; current deferral yields the main win.
+- [x] Memoization to reduce re-renders:
+  - `LibraryPanel` and `FileSelector` wrapped with `React.memo`. Handlers/derived data stabilized with `useCallback`/`useMemo`.
 - [ ] Split utilities used only at runtime interaction:
-  - Move rarely-used helpers to dynamic imports (e.g., schema helpers) and load on demand.
+  - Consider dynamic import for rarely-used schema helpers if further reduction needed.
 - [ ] Audit external deps loaded in the client bundle:
-  - Ensure no heavyweight libs (charts, monaco, yaml parsers) are eagerly imported. Prefer dynamic import when needed.
+  - Verify no heavyweight libs are eagerly imported (charts, monaco, yaml). Prefer dynamic import.
 - [ ] Create a lightweight Results view shell:
-  - Lazy-load detailed results panels and heavy tables when user expands sections.
+  - Lazy-load detailed results panels/tables on demand (expand/click).
 - [ ] Asset/code hygiene:
-  - Remove unused exports and dead code paths flagged by build analyzer.
-  - Convert large static JSON fixtures in tests to be excluded from prod builds.
+  - Remove unused exports/dead code. Exclude large test fixtures from prod builds.
 - [ ] Build-time verification:
-  - Add `vite-bundle-visualizer` (or `rollup-plugin-visualizer`) script to inspect chunks.
-  - Add CI check to report bundle size deltas on PRs.
+  - Add `rollup-plugin-visualizer` to inspect chunks and CI check for bundle deltas.
 
 #### Pseudocode examples (for future PRs)
 
@@ -211,3 +207,11 @@ __Scope__: `client/src/components/JsonEditor.tsx` (~500 LOC), `client/src/compon
     </Suspense>
   )}
   ```
+
+#### Build snapshot (post-splitting)
+
+- Notable output from `npm run build`:
+  - Main app chunk `dist/assets/index-*.js`: 271.69 kB (gzip ~85.56 kB)
+  - Split chunks present: `SimulationManager-*.js` (~10.16 kB), `Results-*.js` (~9.70 kB), `EditorPanel-*.js` (~7.04 kB), `RestClient-*.js` (~4.16 kB), `ThemeSelector-*.js` (~1.16 kB).
+  - CSS split accordingly.
+  - Conclusion: initial route payload reduced; heavy editor now deferred.
