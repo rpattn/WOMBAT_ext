@@ -140,7 +140,8 @@ export default function Gantt() {
   useEffect(() => {
     let mounted = true
     ;(async () => {
-      if (!plotRef.current) return
+      // Do not import/initialize Plotly when there is nothing to render (e.g., in tests with no data)
+      if (!plotRef.current || segments.length === 0) return
       const Plotly = (await import('plotly.js-dist-min')).default
       const plotDiv = plotRef.current
 
