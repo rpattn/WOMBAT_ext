@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { ToastProvider } from '../components/ToastManager'
 import { ApiProvider, useApiContext } from '../context/ApiContext'
-import React from 'react'
 
 function Harness() {
   const api = useApiContext()
