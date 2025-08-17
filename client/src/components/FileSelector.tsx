@@ -114,11 +114,14 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
   // When the underlying file list changes (e.g., loading a saved project), reset expansion
   // Removed to reduce rerenders; rely on rootLabel change and init effect
 
-  // Initialize default expanded folders once, or whenever the root label changes.
+  // Initialize default expanded folders once, whenever the root label changes,
+  // or when files are first loaded after an empty state (initial navigation).
   useEffect(() => {
     const rootChanged = lastRootLabelRef.current !== rootLabel;
-    const shouldInit = expandedFolders.size === 0 || rootChanged;
-    if (!shouldInit) return; // respect user state unless root changed
+    // If we only have the root expanded (or nothing), and files just arrived, re-apply expansion.
+    const filesArrived = totalFiles > 0 && expandedFolders.size <= 1;
+    const shouldInit = expandedFolders.size === 0 || rootChanged || filesArrived;
+    if (!shouldInit) return; // respect user state unless root changed or initial files appeared
     const next = new Set<string>();
     next.add(rootLabel);
     const yaml = libraryFiles?.yaml_files ?? [];
@@ -147,7 +150,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     }
     setExpandedFolders(next);
     lastRootLabelRef.current = rootLabel;
-  }, [rootLabel, libraryFiles, defaultExpandFolders, expandedFolders.size, normalizeParts]);
+  }, [rootLabel, libraryFiles, totalFiles, defaultExpandFolders, expandedFolders.size, normalizeParts]);
 
   const toggleFolder = useCallback((folderPath: string) => {
     setExpandedFolders(prev => {
