@@ -4,7 +4,7 @@ charter_days: 28
 strategy: requests
 strategy_threshold: 3
 onsite: false
-capability: SCN
+capability: ["SCN"]
 mobilization_cost: 0
 mobilization_days: 21
 speed: 22.22

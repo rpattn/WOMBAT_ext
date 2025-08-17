@@ -6,7 +6,7 @@ strategy_threshold: 3
 start_year: 2002
 end_year: 2014
 onsite: false
-capability: LCN
+capability: ["LCN"]
 mobilization_cost: 500000
 mobilization_days: 60
 speed: 12.66
