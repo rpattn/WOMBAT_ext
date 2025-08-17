@@ -17,12 +17,23 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
     const file = (selectedFile || '').toLowerCase()
     // minimally: fetch configuration schema for YAML files
     if (file.endsWith('.yaml') || file.endsWith('.yml')) {
-      const schemaName = (file.includes('vessel') || file.includes('service_equipment'))
-        ? 'service_equipment'
-        : 'configuration'
-      getSchema(schemaName)
-        .then((s) => { if (active) setSchema(s) })
-        .catch(() => { if (active) setSchema(null) })
+      const isVessel = file.includes('vessels') || file.includes('vessel') || file.includes('service_equipment')
+      if (isVessel) {
+        const strategy = (data as any)?.strategy
+        const strat = typeof strategy === 'string' ? strategy.toLowerCase() : ''
+        const schemaName = strat === 'scheduled'
+          ? 'service_equipment_scheduled'
+          : strat === 'unscheduled'
+            ? 'service_equipment_unscheduled'
+            : 'service_equipment'
+        getSchema(schemaName)
+          .then((s) => { if (active) setSchema(s) })
+          .catch(() => { if (active) setSchema(null) })
+      } else {
+        getSchema('configuration')
+          .then((s) => { if (active) setSchema(s) })
+          .catch(() => { if (active) setSchema(null) })
+      }
     } else {
       // If no selectedFile yet but data is present (autoloaded base config), fetch configuration schema
       if (data && Object.keys(data || {}).length > 0) {

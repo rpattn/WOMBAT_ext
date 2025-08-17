@@ -289,6 +289,34 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
                                             (() => {
                                                 const itemKey = `${fieldKey}.${index}`;
                                                 const itemErrors = errors[itemKey] || [];
+                                                // If items schema has enum, render a select for valid options
+                                                const itemSchema = nodeSchema?.items;
+                                                const enumOpts: any[] | undefined = Array.isArray(itemSchema?.enum) ? itemSchema.enum : undefined;
+                                                if (enumOpts && enumOpts.length > 0) {
+                                                    return (
+                                                        <>
+                                                            <select
+                                                                className={`je-input ${itemErrors.length ? 'je-input-error' : ''}`}
+                                                                value={String(item ?? '')}
+                                                                onChange={(e) => {
+                                                                    const newArr = [...value];
+                                                                    newArr[index] = e.target.value;
+                                                                    handleChangeAtPath(name, newArr);
+                                                                }}
+                                                            >
+                                                                {enumOpts.map((opt, oi) => (
+                                                                    <option key={oi} value={String(opt)}>{String(opt)}</option>
+                                                                ))}
+                                                            </select>
+                                                            {itemErrors.length > 0 && (
+                                                                <div className="je-error-text">
+                                                                    {itemErrors.map((m, i) => (<div key={i}>{m}</div>))}
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                }
+                                                // Fallback: plain text input
                                                 return (
                                                     <>
                                                         <input
@@ -328,9 +356,14 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
                                 className="btn btn-success je-mt-4"
                                 onClick={() => {
                                     const newArr = [...value];
-                                    const newItem = value.length > 0
-                                        ? JSON.parse(JSON.stringify(value[value.length - 1]))
-                                        : '';
+                                    // Prefer first enum option if available
+                                    const itemSchema = nodeSchema?.items;
+                                    const enumOpts: any[] | undefined = Array.isArray(itemSchema?.enum) ? itemSchema.enum : undefined;
+                                    const newItem = enumOpts && enumOpts.length > 0
+                                        ? String(enumOpts[0])
+                                        : (value.length > 0
+                                            ? JSON.parse(JSON.stringify(value[value.length - 1]))
+                                            : '');
                                     newArr.push(newItem as any);
                                     handleChangeAtPath(name, newArr);
                                 }}
@@ -401,12 +434,24 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
                     </div>
                 ) : (
                     <div className="je-grow">
-                        <input
-                            type="text"
-                            className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
-                            value={String(value ?? '')}
-                            onChange={(e) => handleChangeAtPath(name, e.target.value)}
-                        />
+                        {Array.isArray(nodeSchema?.enum) && nodeSchema.enum.length > 0 ? (
+                            <select
+                                className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
+                                value={String(value ?? '')}
+                                onChange={(e) => handleChangeAtPath(name, e.target.value)}
+                            >
+                                {nodeSchema.enum.map((opt: any, oi: number) => (
+                                    <option key={oi} value={String(opt)}>{String(opt)}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <input
+                                type="text"
+                                className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
+                                value={String(value ?? '')}
+                                onChange={(e) => handleChangeAtPath(name, e.target.value)}
+                            />
+                        )}
                         {fieldErrors.length > 0 && (
                             <div className="je-error-text">
                                 {fieldErrors.map((m, i) => (<div key={i}>{m}</div>))}
