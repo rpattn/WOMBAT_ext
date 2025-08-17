@@ -1,5 +1,7 @@
 import React from 'react';
 import './JsonEditor.css';
+import { setDeepValue } from './json-editor/utils/path';
+import { getSchemaForPath, typeLabelFromSchema } from './json-editor/utils/schema';
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonArray = JsonValue[];
@@ -194,82 +196,28 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
         validateForm(formData, schema);
     }, [formData, schema, validateForm]);
 
-    // Utilities to update deep values immutably
-    const setDeepValue = (obj: JsonObject, path: (string | number)[], value: JsonValue): JsonObject => {
-        if (path.length === 0) return obj;
-        const [head, ...rest] = path;
-        const clone: any = Array.isArray(obj) ? [...(obj as any)] : { ...obj };
-        if (rest.length === 0) {
-            (clone as any)[head as any] = value as any;
-            return clone;
-        }
-        const next = (clone as any)[head as any];
-        (clone as any)[head as any] = setDeepValue(
-            (typeof next === 'object' && next !== null ? next : {} as any) as JsonObject,
-            rest,
-            value
-        );
-        return clone;
-    };
+    // setDeepValue imported from utils
 
     const handleChangeAtPath = (path: (string | number)[], value: JsonValue) => {
         setFormData(prev => setDeepValue(prev, path, value));
     };
 
-    const typeLabelFromSchema = (sch: any | undefined): string | undefined => {
-        if (!sch) return undefined;
-        const t = sch.type;
-        if (typeof t === 'string') {
-            if (t === 'string') return 'str';
-            if (t === 'integer') return 'int';
-            if (t === 'number') return 'float';
-            if (t === 'boolean') return 'bool';
-            if (t === 'array') return 'arr';
-            if (t === 'object') return 'obj';
-            if (t === 'hinst') return 'hinst';
-        }
-        if (Array.isArray(t)) return t.map((x) => String(x)).join('|');
-        if (sch.oneOf) return 'union';
-        return undefined;
-    };
+    // typeLabelFromSchema imported from utils
 
-    const getSchemaForPath = (path: (string | number)[]): any | undefined => {
-        if (!schema) return undefined;
-        let node: any = schema;
-        for (const seg of path) {
-            // If node is union, try to pick an object/array branch preferentially
-            if (node && node.oneOf && Array.isArray(node.oneOf)) {
-                const objBranch = node.oneOf.find((b: any) => b && (b.type === 'object' || b.properties))
-                    ?? node.oneOf.find((b: any) => b && (b.type === 'array' || b.items))
-                    ?? node.oneOf[0];
-                node = objBranch;
-            }
-            const t = node?.type;
-            if ((t === 'object' || node?.properties) && node.properties) {
-                const keyStr = String(seg);
-                node = node.properties[keyStr];
-            } else if (t === 'array' || node?.items) {
-                // For arrays, descend into items regardless of index value
-                node = node.items;
-                // do not attempt to index properties by numeric index here; next loop segment will handle nested keys
-            } else {
-                // unknown structure
-                return undefined;
-            }
-            if (!node) return undefined;
-        }
-        return node;
-    };
+    // getSchemaForPath imported from utils; wrap to bind current schema
+    const getSchemaNode = React.useCallback((path: (string | number)[]) => getSchemaForPath(schema, path), [schema]);
 
     const renderField = (name: (string | number)[], value: JsonValue) => {
         if (value === null) return null;
         const label = name[name.length - 1];
         const fieldKey = name.join('.');
         // derive schema at any depth (still displayed minimally)
-        const nodeSchema = getSchemaForPath(name);
+        const nodeSchema = getSchemaNode(name);
         const typeLabel = typeLabelFromSchema(nodeSchema);
         const desc = nodeSchema?.description as string | undefined;
         const fieldErrors = errors[fieldKey] || [];
+        const inputId = `je-${fieldKey.replace(/\./g, '-')}`;
+        const errorId = fieldErrors.length ? `${inputId}-errors` : undefined;
 
         // Array handling
         if (Array.isArray(value)) {
@@ -322,6 +270,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
                                                         <input
                                                             className={`je-input ${itemErrors.length ? 'je-input-error' : ''}`}
                                                             value={String(item ?? '')}
+                                                            aria-invalid={itemErrors.length > 0}
+                                                            aria-describedby={itemErrors.length ? `${itemKey.replace(/\./g, '-')}-errors` : undefined}
                                                             onChange={(e) => {
                                                                 const newArr = [...value];
                                                                 newArr[index] = e.target.value;
@@ -329,7 +279,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
                                                             }}
                                                         />
                                                         {itemErrors.length > 0 && (
-                                                            <div className="je-error-text">
+                                                            <div className="je-error-text" id={`${itemKey.replace(/\./g, '-')}-errors`}>
                                                                 {itemErrors.map((m, i) => (<div key={i}>{m}</div>))}
                                                             </div>
                                                         )}
@@ -404,13 +354,14 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
         // Primitive handling
         return (
             <div key={fieldKey} className="je-row">
-                <label className="je-label je-label-inline je-min-150" title={desc || ''}>
+                <label className="je-label je-label-inline je-min-150" title={desc || ''} htmlFor={inputId}>
                     {String(label)}{typeLabel ? <span className="je-type-badge">{typeLabel}</span> : null}
                 </label>
                 {typeof value === 'boolean' ? (
                     <div>
                         <input
                             type="checkbox"
+                            id={inputId}
                             checked={Boolean(value)}
                             onChange={(e) => handleChangeAtPath(name, e.target.checked)}
                         />
@@ -421,13 +372,16 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
                             type="number"
                             className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
                             value={Number.isFinite(value) ? String(value) : ''}
+                            id={inputId}
+                            aria-invalid={fieldErrors.length > 0}
+                            aria-describedby={errorId}
                             onChange={(e) => {
                                 const num = e.target.value === '' ? 0 : Number(e.target.value);
                                 handleChangeAtPath(name, isNaN(num) ? 0 : num);
                             }}
                         />
                         {fieldErrors.length > 0 && (
-                            <div className="je-error-text">
+                            <div className="je-error-text" id={errorId}>
                                 {fieldErrors.map((m, i) => (<div key={i}>{m}</div>))}
                             </div>
                         )}
@@ -438,6 +392,9 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
                             <select
                                 className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
                                 value={String(value ?? '')}
+                                id={inputId}
+                                aria-invalid={fieldErrors.length > 0}
+                                aria-describedby={errorId}
                                 onChange={(e) => handleChangeAtPath(name, e.target.value)}
                             >
                                 {nodeSchema.enum.map((opt: any, oi: number) => (
@@ -449,11 +406,14 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
                                 type="text"
                                 className={`je-input ${fieldErrors.length ? 'je-input-error' : ''}`}
                                 value={String(value ?? '')}
+                                id={inputId}
+                                aria-invalid={fieldErrors.length > 0}
+                                aria-describedby={errorId}
                                 onChange={(e) => handleChangeAtPath(name, e.target.value)}
                             />
                         )}
                         {fieldErrors.length > 0 && (
-                            <div className="je-error-text">
+                            <div className="je-error-text" id={errorId}>
                                 {fieldErrors.map((m, i) => (<div key={i}>{m}</div>))}
                             </div>
                         )}

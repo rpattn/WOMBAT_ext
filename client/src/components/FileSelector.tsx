@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import './FileSelector.css';
 
 interface FileSelectorProps {
@@ -20,7 +20,6 @@ interface TreeNode {
   type: 'folder' | 'file';
   children?: TreeNode[];
   fullPath?: string;
-  isExpanded?: boolean;
   folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
@@ -28,6 +27,12 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const rootLabel = useMemo(() => (projectName && projectName.trim().length > 0 ? projectName : 'Library Files'), [projectName]);
+
+  // Normalize a file path to parts in a cross-platform way
+  const normalizeParts = useCallback((filePath: string): string[] => {
+    if (!filePath) return [];
+    return filePath.replace(/\\/g, '/').split('/').filter(Boolean);
+  }, []);
 
   const buildTreeStructure = useMemo(() => {
     const root: TreeNode = { name: rootLabel, type: 'folder', children: [], folderFullPath: '' };
@@ -38,7 +43,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     const allFiles = [...yaml, ...csv, ...html, ...png];
 
     allFiles.forEach(filePath => {
-      const parts = filePath.split('\\');
+      const parts = normalizeParts(filePath);
       let currentNode = root;
 
       // Navigate through the path, creating folders as needed
@@ -55,7 +60,6 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
             name: folderName,
             type: 'folder',
             children: [],
-            isExpanded: true,
             folderFullPath: accFolderPath
           };
           currentNode.children = currentNode.children || [];
@@ -90,7 +94,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
 
     sortChildren(root);
     return root;
-  }, [libraryFiles, rootLabel]);
+  }, [libraryFiles, rootLabel, normalizeParts]);
 
   // Track last applied root label to know when to re-initialize
   const lastRootLabelRef = useRef<string>(rootLabel);
@@ -120,7 +124,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     const html = libraryFiles?.html_files ?? [];
     const png = libraryFiles?.png_files ?? [];
     const allFiles = [...yaml, ...csv, ...html, ...png];
-    const parts = allFiles.map(p => (p || '').split('\\'));
+    const parts = allFiles.map(p => normalizeParts(p || ''));
     const hasProject = parts.some(seg => seg[0] === 'project');
     const hasProjectConfig = parts.some(seg => seg[0] === 'project' && seg[1] === 'config');
     if (hasProject) next.add(`${rootLabel}/project`);
@@ -132,9 +136,9 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     }
     setExpandedFolders(next);
     lastRootLabelRef.current = rootLabel;
-  }, [rootLabel, libraryFiles, defaultExpandFolders, expandedFolders.size]);
+  }, [rootLabel, libraryFiles, defaultExpandFolders, expandedFolders.size, normalizeParts]);
 
-  const toggleFolder = (folderPath: string) => {
+  const toggleFolder = useCallback((folderPath: string) => {
     setExpandedFolders(prev => {
       const newSet = new Set(prev);
       if (newSet.has(folderPath)) {
@@ -144,13 +148,13 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const handleFileSelect = (filePath: string) => {
+  const handleFileSelect = useCallback((filePath: string) => {
     onFileSelect(filePath);
-  };
+  }, [onFileSelect]);
 
-  const promptAndAddFile = (folderPath: string, kind: 'yaml' | 'csv') => {
+  const promptAndAddFile = useCallback((folderPath: string, kind: 'yaml' | 'csv') => {
     const suggested = kind === 'yaml' ? 'new_file.yaml' : 'new_file.csv';
     const name = window.prompt(`Enter ${kind.toUpperCase()} file name`, suggested);
     if (!name) return;
@@ -158,16 +162,16 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     const relPath = folderPath ? `${folderPath}\\${sanitized}` : sanitized;
     const defaultContent = kind === 'yaml' ? {} : 'col1,col2\n';
     onAddFile?.(relPath, defaultContent);
-  };
+  }, [onAddFile]);
 
-  const renderTreeNode = (node: TreeNode, path: string = '', level: number = 0): React.ReactNode => {
+  const renderTreeNode = useCallback((node: TreeNode, path: string = '', level: number = 0): React.ReactNode => {
     const currentPath = path ? `${path}/${node.name}` : node.name;
     const isExpanded = expandedFolders.has(currentPath);
     const isSelected = selectedFile === node.fullPath;
 
     if (node.type === 'folder') {
       return (
-        <div key={currentPath} className="tree-folder">
+        <div key={currentPath} className="tree-folder" role="treeitem" aria-expanded={isExpanded} aria-label={node.name}>
           <div 
             className="tree-folder-header"
             style={{ ['--indent' as any]: `${level * 20}px` }}
@@ -193,7 +197,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
             )}
           </div>
           {isExpanded && node.children && (
-            <div className="tree-folder-content">
+            <div className="tree-folder-content" role="group">
               {node.children.map(child => renderTreeNode(child, currentPath, level + 1))}
             </div>
           )}
@@ -208,6 +212,8 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
           key={currentPath}
           className={`tree-file ${isSelected ? 'selected' : ''}`}
           style={{ ['--indent' as any]: `${level * 20 + 20}px` }}
+          role="treeitem"
+          aria-selected={isSelected}
           onClick={() => handleFileSelect(node.fullPath!)}
         >
           <span className="file-icon">{fileIcon}</span>
@@ -254,10 +260,10 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         </div>
       );
     }
-  };
+  }, [expandedFolders, selectedFile, showActions, toggleFolder, handleFileSelect, onDownloadFile, onDeleteFile, onReplaceFile]);
 
   return (
-    <div className="file-selector">
+    <div className="file-selector" role="tree" aria-label={rootLabel}>
       <div className="file-selector-header">
         <h3>Library Files</h3>
         <p className="file-count">
