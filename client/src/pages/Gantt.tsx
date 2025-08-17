@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiContext } from '../context/ApiContext'
+import FileSelector from '../components/FileSelector'
 import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown'
 import { listFiles, readFile, type FileList } from '../api'
 import { parseCsvEvents, type EventRow } from '../utils/results'
@@ -28,6 +29,36 @@ export default function Gantt() {
 
   const plotRef = useRef<HTMLDivElement | null>(null)
   const [themeKey, setThemeKey] = useState(0) // bump to trigger re-render on theme change
+  const resultsOnlyFiles = useMemo(() => {
+    if (!files) return undefined
+    const re = /results[\\/]/i
+    return {
+      yaml_files: (files.yaml_files || []).filter(p => re.test(p)),
+      csv_files: (files.csv_files || []).filter(p => re.test(p)),
+      html_files: (files as any).html_files ? (files as any).html_files.filter((p: string) => re.test(p)) : undefined,
+      png_files: (files as any).png_files ? (files as any).png_files.filter((p: string) => re.test(p)) : undefined,
+      total_files: undefined,
+    }
+  }, [files])
+
+  const defaultExpand = useMemo(() => {
+    const base = ['results'] as string[]
+    const lists = resultsOnlyFiles ? [
+      resultsOnlyFiles.yaml_files || [],
+      resultsOnlyFiles.csv_files || [],
+      (resultsOnlyFiles as any).html_files || [],
+      (resultsOnlyFiles as any).png_files || [],
+    ] : []
+    const all = ([] as string[]).concat(...lists)
+    const subs = new Set<string>()
+    for (const p of all) {
+      const parts = String(p).replace(/\\/g, '/').split('/').filter(Boolean)
+      if (parts[0] === 'results' && parts[1]) subs.add(parts[1])
+    }
+    const first = Array.from(subs).sort()[0]
+    if (first) base.push(`results/${first}`)
+    return base
+  }, [resultsOnlyFiles])
 
   const requireSession = () => {
     if (!sessionId) throw new Error('No session')
@@ -152,22 +183,23 @@ export default function Gantt() {
       <div className="panel">
         <h3 className="panel-title">CSV File</h3>
         <div className="panel-body">
-          <div className="controls" style={{ alignItems: 'flex-end' }}>
-            <div style={{ minWidth: 280, flex: '1 1 320px' }}>
-              <select
-                value={selectedCsv}
-                onChange={e => setSelectedCsv(e.target.value)}
-                className="csv-filter"
-                style={{ width: '100%' }}
-              >
-                <option value="">-- select a CSV --</option>
-                {(files?.csv_files ?? []).filter(p => /results[\\/]/i.test(p)).map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-            </div>
+          <FileSelector
+            projectName={selectedSavedLibrary || 'Library Files'}
+            libraryFiles={resultsOnlyFiles}
+            selectedFile={selectedCsv || undefined}
+            onFileSelect={(path: string) => {
+              const isCsv = /\.csv$/i.test(path)
+              const inResults = /results[\\/]/i.test(path)
+              if (isCsv && inResults) {
+                setSelectedCsv(path)
+              }
+            }}
+            showActions={false}
+            defaultExpandFolders={defaultExpand}
+          />
+          <div className="controls" style={{ marginTop: 8, gap: 8, alignItems: 'center' }}>
             <button className="btn btn-primary" onClick={loadCsv} disabled={!selectedCsv}>Load</button>
-            <div style={{ minWidth: 120 }}>{status}</div>
+            <div style={{ marginLeft: 'auto' }}>{status}</div>
           </div>
         </div>
       </div>

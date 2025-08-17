@@ -130,10 +130,19 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     const hasProjectConfig = parts.some(seg => seg[0] === 'project' && seg[1] === 'config');
     if (hasProject) next.add(`${rootLabel}/project`);
     if (hasProjectConfig) next.add(`${rootLabel}/project/config`);
-    for (const folderName of defaultExpandFolders) {
-      if (!folderName) continue;
-      const hasFolder = parts.some(seg => seg[0] === folderName);
-      if (hasFolder) next.add(`${rootLabel}/${folderName}`);
+    for (const entry of defaultExpandFolders) {
+      if (!entry) continue;
+      // Support nested entries like "results/run1/run2"
+      const segs = entry.split('/').filter(Boolean);
+      if (segs.length === 0) continue;
+      // Expand each level progressively if present in any path
+      let accum = '';
+      for (let i = 0; i < segs.length; i++) {
+        const name = segs[i];
+        const hasLevel = parts.some(p => p[i] === segs[i] && p.slice(0, i + 1).every((s, idx) => s === segs[idx]));
+        accum = accum ? `${accum}/${name}` : name;
+        if (hasLevel) next.add(`${rootLabel}/${accum}`);
+      }
     }
     setExpandedFolders(next);
     lastRootLabelRef.current = rootLabel;

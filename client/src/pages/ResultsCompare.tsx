@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useApiContext } from '../context/ApiContext'
+import FileSelector from '../components/FileSelector'
 import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown'
 import { listFiles, readFile, type FileList } from '../api'
 import { normalizeForPlotly, parseSummaryYaml } from '../utils/results'
@@ -44,11 +45,38 @@ export default function ResultsCompare() {
     setSummaries([])
   }, [selectedSavedLibrary])
 
-  const yamlCandidates = useMemo(() => {
-    if (!files?.yaml_files?.length) return []
+  // File selection handled via FileSelector; no need to pre-filter here
+
+  const resultsOnlyFiles = useMemo(() => {
+    if (!files) return undefined
     const re = /results[\\/]/i
-    return files.yaml_files.filter(p => re.test(p))
+    return {
+      yaml_files: (files.yaml_files || []).filter(p => re.test(p)),
+      csv_files: (files.csv_files || []).filter(p => re.test(p)),
+      html_files: (files as any).html_files ? (files as any).html_files.filter((p: string) => re.test(p)) : undefined,
+      png_files: (files as any).png_files ? (files as any).png_files.filter((p: string) => re.test(p)) : undefined,
+      total_files: undefined,
+    }
   }, [files])
+
+  const defaultExpand = useMemo(() => {
+    const base = ['results'] as string[]
+    const lists = resultsOnlyFiles ? [
+      resultsOnlyFiles.yaml_files || [],
+      resultsOnlyFiles.csv_files || [],
+      (resultsOnlyFiles as any).html_files || [],
+      (resultsOnlyFiles as any).png_files || [],
+    ] : []
+    const all = ([] as string[]).concat(...lists)
+    const subs = new Set<string>()
+    for (const p of all) {
+      const parts = String(p).replace(/\\/g, '/').split('/').filter(Boolean)
+      if (parts[0] === 'results' && parts[1]) subs.add(parts[1])
+    }
+    const first = Array.from(subs).sort()[0]
+    if (first) base.push(`results/${first}`)
+    return base
+  }, [resultsOnlyFiles])
 
   const toggleSummary = (path: string) => {
     setSelectedSummaries(prev => prev.includes(path) ? prev.filter(p => p !== path) : [...prev, path])
@@ -90,30 +118,27 @@ export default function ResultsCompare() {
         </div>
       </div>
       <div className="row stack-sm" style={{ gap: 16, alignItems: 'flex-start' }}>
-        <div style={{ minWidth: 320 }} className="panel">
-          <h3 className="panel-title">Available Summaries</h3>
+        <div style={{ minWidth: 320, flex: '0 0 380px' }} className="panel">
+          <h3 className="panel-title">Browse Files</h3>
           <div className="panel-body">
-            {!files && <div>Loading files…</div>}
-            {files && yamlCandidates.length === 0 && <div>No YAML summaries found.</div>}
-            {files && yamlCandidates.length > 0 && (
-              <ul className="list-unstyled scroll-240">
-                {yamlCandidates.map(p => (
-                  <li key={p} className="item-row">
-                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedSummaries.includes(p)}
-                        onChange={() => toggleSummary(p)}
-                      />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }} title={p}>{p}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <FileSelector
+              projectName={selectedSavedLibrary || 'Library Files'}
+              libraryFiles={resultsOnlyFiles}
+              selectedFile={undefined}
+              onFileSelect={(path: string) => {
+                const isYaml = /\.(ya?ml)$/i.test(path)
+                const inResults = /results[\\/]/i.test(path)
+                if (isYaml && inResults) {
+                  toggleSummary(path)
+                }
+              }}
+              showActions={false}
+              defaultExpandFolders={defaultExpand}
+            />
+            <div className="controls" style={{ marginTop: 8, gap: 8, alignItems: 'center' }}>
               <button className="btn btn-primary" onClick={loadSelected} disabled={selectedSummaries.length === 0}>Load Selected</button>
               <button className="btn btn-secondary" onClick={() => { setSelectedSummaries([]); setSummaries([]); }}>Clear</button>
+              <span style={{ marginLeft: 'auto' }}>{selectedSummaries.length} selected</span>
             </div>
           </div>
         </div>
