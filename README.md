@@ -149,6 +149,51 @@ Key goals:
 - Extensibility: modular managers (`client_manager`, `simulation_manager`, `library_manager`) to add new actions/features with minimal coupling.
 - Developer ergonomics: hot-reload Vite UI, simple `uvicorn` server, minimal configuration to get started.
 
+## Schema validation and generation
+
+WOMBAT_ext exposes JSON Schemas for validating configuration and library YAML/JSON files. Schemas are generated programmatically and served via the API.
+
+- **Generator**: `wombat/utilities/schema_gen.py`
+  - Builds JSON Schema (Draft 2020-12) from `attrs`-based models.
+  - Maps Python/typing annotations to schema types; parses Numpy-style docstrings for field descriptions.
+  - Adds simple enums when `attrs.validators.in_(...)` is present.
+  - Provides pragmatic schemas for complex library files (e.g., `turbine`, `substation`, `cable`).
+
+- **API**: `server/routers/schemas.py`
+  - `GET /schemas` — lists available schema names.
+  - `GET /schemas/{name}` — returns a single schema by name.
+  - `GET /schemas/service_equipment/variants` — returns scheduled, unscheduled, and combined variants.
+
+- **Available names** (from `list_schemas()`):
+  - `configuration`
+  - `service_equipment`
+  - `service_equipment/variants`
+  - `service_equipment_scheduled`
+  - `service_equipment_unscheduled`
+  - `substation`
+  - `turbine`
+  - `equipment_turbine`
+  - `cable`
+  - `equipment_cable`
+  - `project_port`
+
+- **Fetch examples**
+  - Single schema: `curl http://127.0.0.1:8000/schemas/turbine`
+  - All names: `curl http://127.0.0.1:8000/schemas`
+  - Service equipment variants: `curl http://127.0.0.1:8000/schemas/service_equipment/variants`
+
+- **Generate in Python**
+  ```python
+  from wombat.utilities.schema_gen import schema_by_name
+
+  turbine_schema = schema_by_name("turbine")
+  config_schema = schema_by_name("configuration")
+  ```
+
+Notes:
+- Schemas are intentionally conservative and focus on structure/types. Some domain constraints may be relaxed for compatibility across libraries.
+- The `configuration` schema specializes `service_equipment` to allow IDs or pairs like `[count, name]` or `[name, count]`.
+
 ## Additions
 
 ### Gantt Chart
