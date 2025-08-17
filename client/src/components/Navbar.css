@@ -36,6 +36,23 @@
   gap: var(--space-8);
 }
 
+/* Dropdown container for large screens */
+.dropdown { position: relative; }
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: var(--space-6) 0;
+  z-index: 1000;
+}
+.dropdown:hover .dropdown-menu { display: block; }
+.dropdown-item { display: block; padding: var(--space-6) var(--space-8); }
+
 .link {
   text-decoration: none;
   color: var(--color-text);
@@ -93,5 +110,16 @@
     padding: var(--space-6) var(--space-8);
     border-radius: 0;
   }
+  /* Mobile: dropdown menu becomes inline list */
+  .dropdown { width: 100%; }
+  .dropdown-menu {
+    position: static;
+    display: block; /* always visible under Results in the mobile menu */
+    box-shadow: none;
+    border: none;
+    padding: 0 0 0 var(--space-8);
+    margin-left: var(--space-6);
+  }
+  .dropdown-item { padding: var(--space-6) 0; }
   /* Dropdown uses variables; no extra dark override needed */
 }

@@ -90,29 +90,31 @@ export default function ResultsCompare() {
         </div>
       </div>
       <div className="row stack-sm" style={{ gap: 16, alignItems: 'flex-start' }}>
-        <div style={{ minWidth: 280 }}>
-          <h3>Available Summaries</h3>
-          {!files && <div>Loading files…</div>}
-          {files && yamlCandidates.length === 0 && <div>No YAML summaries found.</div>}
-          {files && yamlCandidates.length > 0 && (
-            <ul style={{ maxHeight: 240, overflow: 'auto', paddingLeft: 16, marginTop: 8 }}>
-              {yamlCandidates.map(p => (
-                <li key={p}>
-                  <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedSummaries.includes(p)}
-                      onChange={() => toggleSummary(p)}
-                    />
-                    <span title={p}>{p}</span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button className="btn btn-primary" onClick={loadSelected} disabled={selectedSummaries.length === 0}>Load Selected</button>
-            <button className="btn btn-secondary" onClick={() => { setSelectedSummaries([]); setSummaries([]); }}>Clear</button>
+        <div style={{ minWidth: 320 }} className="panel">
+          <h3 className="panel-title">Available Summaries</h3>
+          <div className="panel-body">
+            {!files && <div>Loading files…</div>}
+            {files && yamlCandidates.length === 0 && <div>No YAML summaries found.</div>}
+            {files && yamlCandidates.length > 0 && (
+              <ul className="list-unstyled scroll-240">
+                {yamlCandidates.map(p => (
+                  <li key={p} className="item-row">
+                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedSummaries.includes(p)}
+                        onChange={() => toggleSummary(p)}
+                      />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }} title={p}>{p}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button className="btn btn-primary" onClick={loadSelected} disabled={selectedSummaries.length === 0}>Load Selected</button>
+              <button className="btn btn-secondary" onClick={() => { setSelectedSummaries([]); setSummaries([]); }}>Clear</button>
+            </div>
           </div>
         </div>
 

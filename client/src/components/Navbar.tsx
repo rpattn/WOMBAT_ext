@@ -32,24 +32,28 @@ export default function Navbar() {
           >
             Simulation Manager
           </NavLink>
-          <NavLink
-            to="/results"
-            className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
-          >
-            Results
-          </NavLink>
-          <NavLink
-            to="/results/compare"
-            className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
-          >
-            Compare
-          </NavLink>
-          <NavLink
-            to="/results/gantt"
-            className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
-          >
-            Gantt
-          </NavLink>
+          <div className="dropdown">
+            <NavLink
+              to="/results"
+              className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
+            >
+              Results
+            </NavLink>
+            <div className="dropdown-menu" role="menu">
+              <NavLink
+                to="/results/compare"
+                className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
+              >
+                Compare
+              </NavLink>
+              <NavLink
+                to="/results/gantt"
+                className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
+              >
+                Gantt
+              </NavLink>
+            </div>
+          </div>
         </div>
       </div>
     </nav>

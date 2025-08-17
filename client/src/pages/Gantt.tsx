@@ -27,6 +27,7 @@ export default function Gantt() {
   const [status, setStatus] = useState<string>('')
 
   const plotRef = useRef<HTMLDivElement | null>(null)
+  const [themeKey, setThemeKey] = useState(0) // bump to trigger re-render on theme change
 
   const requireSession = () => {
     if (!sessionId) throw new Error('No session')
@@ -78,6 +79,21 @@ export default function Gantt() {
 
   const segments = useMemo(() => buildCtvSegments(events || []), [events])
 
+  // Detect theme changes (prefers-color-scheme and html class toggles) and trigger re-render
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-color-scheme: dark)')
+    const onScheme = () => setThemeKey(k => k + 1)
+    try { mql.addEventListener('change', onScheme) } catch { /* Safari */ mql.addListener(onScheme) }
+
+    const mo = new MutationObserver(() => setThemeKey(k => k + 1))
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+
+    return () => {
+      try { mql.removeEventListener('change', onScheme) } catch { mql.removeListener(onScheme) }
+      mo.disconnect()
+    }
+  }, [])
+
   useEffect(() => {
     let mounted = true
     ;(async () => {
@@ -86,6 +102,23 @@ export default function Gantt() {
       const plotDiv = plotRef.current
 
       const { traces, layout } = buildPlotlyTimeline(segments)
+      // Apply theme-aware colors from CSS variables
+      const tokens = getThemeTokens()
+      ;(layout as any).paper_bgcolor = tokens.bg
+      ;(layout as any).plot_bgcolor = tokens.surface
+      ;(layout as any).font = { color: tokens.text }
+      ;(layout as any).xaxis = {
+        ...(layout as any).xaxis,
+        gridcolor: tokens.border,
+        linecolor: tokens.border,
+        tickcolor: tokens.border,
+      }
+      ;(layout as any).yaxis = {
+        ...(layout as any).yaxis,
+        gridcolor: tokens.border,
+        linecolor: tokens.border,
+        tickcolor: tokens.border,
+      }
       const config = { responsive: true, displaylogo: false } as any
       await Plotly.newPlot(plotDiv, traces as any, layout as any, config)
       if (!mounted) {
@@ -93,7 +126,7 @@ export default function Gantt() {
       }
     })()
     return () => { mounted = false }
-  }, [segments])
+  }, [segments, themeKey])
 
   return (
     <div className="app-container" style={{ gap: 12 }}>
@@ -116,23 +149,27 @@ export default function Gantt() {
           />
         </div>
       </div>
-      <div className="controls" style={{ alignItems: 'flex-end' }}>
-        <div style={{ minWidth: 280 }}>
-          <label style={{ display: 'block', fontWeight: 600 }}>CSV File</label>
-          <select
-            value={selectedCsv}
-            onChange={e => setSelectedCsv(e.target.value)}
-            className="csv-filter"
-            style={{ width: '100%' }}
-          >
-            <option value="">-- select a CSV --</option>
-            {(files?.csv_files ?? []).filter(p => /results[\\/]/i.test(p)).map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+      <div className="panel">
+        <h3 className="panel-title">CSV File</h3>
+        <div className="panel-body">
+          <div className="controls" style={{ alignItems: 'flex-end' }}>
+            <div style={{ minWidth: 280, flex: '1 1 320px' }}>
+              <select
+                value={selectedCsv}
+                onChange={e => setSelectedCsv(e.target.value)}
+                className="csv-filter"
+                style={{ width: '100%' }}
+              >
+                <option value="">-- select a CSV --</option>
+                {(files?.csv_files ?? []).filter(p => /results[\\/]/i.test(p)).map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+            <button className="btn btn-primary" onClick={loadCsv} disabled={!selectedCsv}>Load</button>
+            <div style={{ minWidth: 120 }}>{status}</div>
+          </div>
         </div>
-        <button className="btn btn-primary" onClick={loadCsv} disabled={!selectedCsv}>Load</button>
-        <div>{status}</div>
       </div>
 
       <div style={{ marginTop: 12 }}>
@@ -245,4 +282,16 @@ function buildPlotlyTimeline(segments: Segment[]) {
   }
 
   return { traces, layout }
+}
+
+function getThemeTokens() {
+  const root = document.documentElement
+  const cs = getComputedStyle(root)
+  const read = (name: string) => cs.getPropertyValue(name).trim() || undefined
+  return {
+    bg: read('--color-bg') || '#ffffff',
+    surface: read('--color-surface') || '#f8fafc',
+    text: read('--color-text') || '#111827',
+    border: read('--color-border') || '#e5e7eb',
+  }
 }
