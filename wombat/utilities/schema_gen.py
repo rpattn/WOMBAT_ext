@@ -17,6 +17,7 @@ from typing import Any, get_origin, get_args, get_type_hints
 import enum
 import inspect
 import sys
+import importlib
 
 try:
     import attrs
@@ -247,14 +248,39 @@ def build_schema_for_attrs_class(cls: Any, *, title: str | None = None) -> dict[
     properties: dict[str, Any] = {}
     required: list[str] = []
     # Resolve annotations to concrete types (handles from __future__ annotations)
+    # Be robust to failures by attempting multiple strategies and per-field fallback.
     try:
-        resolved_hints = get_type_hints(cls)
+        # Best effort resolution using the class module's globals
+        mod = importlib.import_module(cls.__module__)
+        globalns = vars(mod)
+    except Exception:
+        globalns = {}
+    try:
+        resolved_hints = get_type_hints(cls, globalns=globalns, localns=globalns)  # type: ignore[arg-type]
     except Exception:
         resolved_hints = {}
 
+    def _resolve_ann(name: str, a_obj: Any) -> Any:
+        # Priority: get_type_hints resolved -> attrs field.type -> raw __annotations__ entry
+        ann = resolved_hints.get(name, getattr(a_obj, "type", None))
+        if ann is None:
+            try:
+                raw = getattr(cls, "__annotations__", {}).get(name)
+            except Exception:
+                raw = None
+            ann = raw if raw is not None else None
+        # If still a string, try to eval in module globals
+        if isinstance(ann, str):
+            try:
+                ann = eval(ann, globalns, globalns)
+            except Exception:
+                # leave as-is; downstream will fallback to string json type
+                pass
+        return ann
+
     for a in attrs.fields(cls):
         name = a.name
-        ann = resolved_hints.get(name, a.type)
+        ann = _resolve_ann(name, a)
         sch = _json_type_from_annotation(ann) if ann is not None else {"type": "string"}
         # enum from validators.in_(...)
         enum_vals = _extract_enum_from_validator(getattr(a, "validator", None))
@@ -333,6 +359,16 @@ def schema_configuration() -> dict[str, Any]:
     }
     if se_desc:
         base["properties"]["service_equipment"]["description"] = se_desc
+
+    # Post-process guard: ensure numeric types for fields that may downcast to string
+    props = base.get("properties", {})
+    pc = props.get("project_capacity")
+    if isinstance(pc, dict):
+        ty = pc.get("type")
+        if ty == "string" or ty is None:
+            pc["type"] = ["integer", "number"]
+            props["project_capacity"] = pc
+    base["properties"] = props
     return base
 
 

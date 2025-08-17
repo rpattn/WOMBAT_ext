@@ -138,3 +138,20 @@
 .dark .json-editor .je-input::placeholder { color: #9ca3af; }
 
 /* Force light theme also uses variables; no color overrides needed */
+
+/* Error states */
+.je-input-error {
+  border-color: var(--color-danger, #dc2626);
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
+}
+
+.je-error-text {
+  color: var(--color-danger, #dc2626);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.je-valid-note {
+  color: var(--color-success, #16a34a);
+  font-size: 12px;
+}
