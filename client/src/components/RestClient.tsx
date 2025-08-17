@@ -10,6 +10,9 @@ export default function RestClient() {
   const [baseUrl, setBaseUrl] = useState(api.apiBaseUrl)
   const [pendingPath, setPendingPath] = useState('project/config/base.yaml')
   const [pendingProjectName, setPendingProjectName] = useState('my_project')
+  const [schemas, setSchemas] = useState<string[]>([])
+  const [schemaName, setSchemaName] = useState<string>('configuration')
+  const [schemaJson, setSchemaJson] = useState<string>('')
 
   useEffect(() => {
     // Keep local input in sync if context base changes
@@ -116,6 +119,42 @@ export default function RestClient() {
             />
             <button className="btn-app btn-primary" onClick={() => api.saveLibrary(pendingProjectName)} disabled={!api.sessionId}>Save</button>
           </div>
+        </div>
+
+        <div className="ws-grid">
+          <span>Schemas</span>
+          <div className="ws-row" style={{ gap: 8 }}>
+            <button
+              className="btn-app btn-primary"
+              onClick={async () => {
+                const list = await api.listSchemas()
+                setSchemas(list)
+              }}
+            >List Schemas</button>
+            <select className="ws-input" value={schemaName} onChange={(e) => setSchemaName(e.target.value)}>
+              {[schemaName, ...schemas.filter(s => s !== schemaName)].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <button
+              className="btn-app btn-secondary"
+              onClick={async () => {
+                try {
+                  const sch = await api.getSchema(schemaName)
+                  setSchemaJson(JSON.stringify(sch, null, 2))
+                } catch (e:any) {
+                  setSchemaJson(`Error: ${e?.message || String(e)}`)
+                }
+              }}
+            >Get Schema</button>
+          </div>
+          <textarea
+            className="ws-input"
+            style={{ width: '100%', height: 200 }}
+            readOnly
+            value={schemaJson}
+            placeholder="JSON Schema will appear here"
+          />
         </div>
       </div>
     </div>

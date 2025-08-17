@@ -321,6 +321,52 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
       return { id, ok: true, status: 200, json: { ok: true, message: `Deleted ${name}` } };
     }
 
+    // Schemas (no session required)
+    if (method === 'GET' && path === '/api/schemas') {
+      return { id, ok: true, status: 200, json: { available: [
+        'configuration',
+        'service_equipment',
+        'service_equipment_scheduled',
+        'service_equipment_unscheduled',
+      ] } };
+    }
+    const schemaMatch = path.match(/^\/api\/schemas\/(.+)$/);
+    if (schemaMatch && method === 'GET') {
+      const name = decodeURIComponent(schemaMatch[1]).toLowerCase();
+      // Minimal mock schemas
+      if (name === 'configuration') {
+        return { id, ok: true, status: 200, json: {
+          $schema: 'https://json-schema.org/draft/2020-12/schema',
+          title: 'SimulationConfiguration',
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            library: { type: 'string' },
+            weather: { type: 'string' },
+            layout: { type: 'string' },
+            service_equipment: { type: 'array', items: { type: 'string' } },
+          },
+        } };
+      }
+      if (name === 'service_equipment' || name === 'vessel' || name === 'vessels') {
+        return { id, ok: true, status: 200, json: {
+          $schema: 'https://json-schema.org/draft/2020-12/schema',
+          title: 'ServiceEquipment',
+          oneOf: [
+            { title: 'ServiceEquipmentScheduled', type: 'object', properties: { strategy: { const: 'scheduled' }, name: { type: 'string' } } },
+            { title: 'ServiceEquipmentUnscheduled', type: 'object', properties: { strategy: { const: 'unscheduled' }, name: { type: 'string' } } },
+          ],
+        } };
+      }
+      if (name === 'service_equipment_scheduled' || name === 'vessel_scheduled') {
+        return { id, ok: true, status: 200, json: { title: 'ServiceEquipmentScheduled', type: 'object', properties: { strategy: { const: 'scheduled' }, name: { type: 'string' } } } };
+      }
+      if (name === 'service_equipment_unscheduled' || name === 'vessel_unscheduled') {
+        return { id, ok: true, status: 200, json: { title: 'ServiceEquipmentUnscheduled', type: 'object', properties: { strategy: { const: 'unscheduled' }, name: { type: 'string' } } } };
+      }
+      return { id, ok: false, status: 404, json: { error: 'Unknown schema' } };
+    }
+
     // Client-scoped helpers
     const refreshMatch = path.match(/^\/api\/(.+?)\/refresh$/);
     const filesMatch = path.match(/^\/api\/(.+?)\/library\/files$/);

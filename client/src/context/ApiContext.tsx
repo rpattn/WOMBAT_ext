@@ -54,6 +54,10 @@ export type ApiContextType = {
   clearClientTemp: () => Promise<boolean>
   sweepTemp: () => Promise<number>
   sweepTempAll: () => Promise<number>
+
+  // Schemas
+  listSchemas: () => Promise<string[]>
+  getSchema: (name: string) => Promise<any>
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined)
@@ -110,6 +114,40 @@ export function ApiProvider({ children }: PropsWithChildren) {
   })
 
   const { clearClientTemp, sweepTemp, sweepTempAll } = useTemp({ apiBaseUrl, requireSession })
+
+  // Schema endpoints (no session required)
+  const listSchemas = useCallback(async (): Promise<string[]> => {
+    try {
+      const r = await fetch(`${apiBaseUrl}/schemas/`)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const j = await r.json()
+      const arr = Array.isArray(j) ? j : (Array.isArray(j.available) ? j.available : [])
+      return arr
+    } catch (e) {
+      // Fallback to mock worker
+      try {
+        const wr = await mockApiRequest('GET', `/api/schemas`)
+        if (wr.ok) {
+          const arr = Array.isArray(wr.json) ? wr.json : (Array.isArray(wr.json?.available) ? wr.json.available : [])
+          return arr
+        }
+      } catch {}
+      return []
+    }
+  }, [apiBaseUrl])
+
+  const getSchema = useCallback(async (name: string): Promise<any> => {
+    try {
+      const r = await fetch(`${apiBaseUrl}/schemas/${encodeURIComponent(name)}`)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return await r.json()
+    } catch (e) {
+      // Fallback to mock worker
+      const wr = await mockApiRequest('GET', `/api/schemas/${encodeURIComponent(name)}`)
+      if (wr.ok) return wr.json
+      throw new Error(wr.error || 'Failed to fetch schema')
+    }
+  }, [apiBaseUrl])
 
   const initSession = useCallback(async () => {
     try {
@@ -259,6 +297,9 @@ export function ApiProvider({ children }: PropsWithChildren) {
     clearClientTemp,
     sweepTemp,
     sweepTempAll,
+
+    listSchemas,
+    getSchema,
   }), [
     apiBaseUrl,
     sessionId,
@@ -286,6 +327,9 @@ export function ApiProvider({ children }: PropsWithChildren) {
     clearClientTemp,
     sweepTemp,
     sweepTempAll,
+
+    listSchemas,
+    getSchema,
   ])
 
   return (
