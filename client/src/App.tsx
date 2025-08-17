@@ -8,6 +8,8 @@ const SimulationManager = lazy(() => import('./pages/SimulationManager'));
 const Results = lazy(() => import('./pages/Results'));
 const ThemeSelector = lazy(() => import('./components/ThemeSelector'));
 const RestClient = lazy(() => import('./components/RestClient'));
+const ResultsCompare = lazy(() => import('./pages/ResultsCompare.tsx'));
+const Gantt = lazy(() => import('./pages/Gantt.tsx'));
 
 export function DownloadWatcher() {
   const { pendingDownloadRef, binaryPreviewUrl, csvPreview } = useApiContext();
@@ -80,6 +82,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<SimulationManager />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/results/compare" element={<ResultsCompare />} />
+          <Route path="/results/gantt" element={<Gantt />} />
           <Route path="/connect" element={<></>} />
         </Routes>
       </Suspense>
