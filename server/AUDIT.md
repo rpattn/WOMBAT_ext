@@ -153,3 +153,61 @@ __Scope__: `client/src/components/JsonEditor.tsx` (~500 LOC), `client/src/compon
 4) Factor FileSelector into Tree components and remove dead field; add ARIA roles.
 5) Add path normalization + optional search.
 6) Replace prompt/confirm with modal-driven UX hooks.
+
+### Bundle Size & Code Splitting — TODOs
+
+- [ ] Route-level code splitting in `client/src/App.tsx`:
+  - Use `React.lazy` + `Suspense` to lazy-load pages and heavy panels.
+  - Targets: `pages/SimulationManager`, `pages/Results`, `components/RestClient`, `components/ThemeSelector`.
+- [ ] Defer editor-heavy code until needed:
+  - Lazy-load `components/EditorPanel` and `components/JsonEditor` only when a YAML file is selected or when base config loads.
+  - Inside `JsonEditor`, lazy-load field subcomponents under `components/json-editor/` if not already split by Vite chunks.
+- [ ] Memoization to reduce re-renders:
+  - Wrap `LibraryPanel`, `FileSelector`, and json-editor fields with `React.memo`.
+  - Use `useCallback`/`useMemo` for handlers and derived data in `SimulationManager.tsx`, `FileSelector.tsx`.
+- [ ] Split utilities used only at runtime interaction:
+  - Move rarely-used helpers to dynamic imports (e.g., schema helpers) and load on demand.
+- [ ] Audit external deps loaded in the client bundle:
+  - Ensure no heavyweight libs (charts, monaco, yaml parsers) are eagerly imported. Prefer dynamic import when needed.
+- [ ] Create a lightweight Results view shell:
+  - Lazy-load detailed results panels and heavy tables when user expands sections.
+- [ ] Asset/code hygiene:
+  - Remove unused exports and dead code paths flagged by build analyzer.
+  - Convert large static JSON fixtures in tests to be excluded from prod builds.
+- [ ] Build-time verification:
+  - Add `vite-bundle-visualizer` (or `rollup-plugin-visualizer`) script to inspect chunks.
+  - Add CI check to report bundle size deltas on PRs.
+
+#### Pseudocode examples (for future PRs)
+
+- App route lazy loading:
+  ```tsx
+  // client/src/App.tsx
+  import { lazy, Suspense } from 'react';
+  const SimulationManager = lazy(() => import('./pages/SimulationManager'));
+  const Results = lazy(() => import('./pages/Results'));
+  const RestClient = lazy(() => import('./components/RestClient'));
+  const ThemeSelector = lazy(() => import('./components/ThemeSelector'));
+  
+  // ...
+  <Suspense fallback={null}>
+    <Routes>
+      <Route path="/" element={<SimulationManager />} />
+      <Route path="/results" element={<Results />} />
+      <Route path="/connect" element={<RestClient />} />
+    </Routes>
+    <ThemeSelector />
+  </Suspense>
+  ```
+
+- Defer EditorPanel until needed:
+  ```tsx
+  // client/src/pages/SimulationManager.tsx
+  const EditorPanel = lazy(() => import('../components/EditorPanel'));
+  // render EditorPanel only when configData has keys
+  {Object.keys(configData || {}).length > 0 && (
+    <Suspense fallback={null}>
+      <EditorPanel ... />
+    </Suspense>
+  )}
+  ```
