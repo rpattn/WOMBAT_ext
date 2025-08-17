@@ -59,8 +59,8 @@ const defaultFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) 
   return ok({});
 });
 
-// @ts-expect-error set global fetch for tests
-global.fetch = defaultFetch;
+// Set global fetch for tests (cast to any to satisfy TS in jsdom/node)
+(globalThis as any).fetch = defaultFetch;
 
 // Provide env var used by REST client
 // @ts-expect-error process-like env for Vite tests
