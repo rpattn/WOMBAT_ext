@@ -10,11 +10,12 @@ type JsonValue = JsonPrimitive | JsonArray | JsonObject;
 
 interface JsonEditorProps {
     data: JsonObject;
+    schema?: any;
     onChange?: (data: JsonObject) => void;
     onSave?: (data: JsonObject) => void;
 }
 
-const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
+const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave }) => {
     const [formData, setFormData] = React.useState<JsonObject>(data);
     const didMountRef = React.useRef(false);
     const skipNextOnChangeRef = React.useRef(false);
@@ -64,17 +65,67 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
         setFormData(prev => setDeepValue(prev, path, value));
     };
 
+    const typeLabelFromSchema = (sch: any | undefined): string | undefined => {
+        if (!sch) return undefined;
+        const t = sch.type;
+        if (typeof t === 'string') {
+            if (t === 'string') return 'str';
+            if (t === 'integer') return 'int';
+            if (t === 'number') return 'float';
+            if (t === 'boolean') return 'bool';
+            if (t === 'array') return 'arr';
+            if (t === 'object') return 'obj';
+        }
+        if (Array.isArray(t)) return t.map((x) => String(x)).join('|');
+        if (sch.oneOf) return 'union';
+        return undefined;
+    };
+
+    const getSchemaForPath = (path: (string | number)[]): any | undefined => {
+        if (!schema) return undefined;
+        let node: any = schema;
+        for (const seg of path) {
+            // If node is union, try to pick an object/array branch preferentially
+            if (node && node.oneOf && Array.isArray(node.oneOf)) {
+                const objBranch = node.oneOf.find((b: any) => b && (b.type === 'object' || b.properties))
+                    ?? node.oneOf.find((b: any) => b && (b.type === 'array' || b.items))
+                    ?? node.oneOf[0];
+                node = objBranch;
+            }
+            const t = node?.type;
+            if ((t === 'object' || node?.properties) && node.properties) {
+                const keyStr = String(seg);
+                node = node.properties[keyStr];
+            } else if (t === 'array' || node?.items) {
+                // For arrays, descend into items regardless of index value
+                node = node.items;
+                // do not attempt to index properties by numeric index here; next loop segment will handle nested keys
+            } else {
+                // unknown structure
+                return undefined;
+            }
+            if (!node) return undefined;
+        }
+        return node;
+    };
+
     const renderField = (name: (string | number)[], value: JsonValue) => {
         if (value === null) return null;
         const label = name[name.length - 1];
         const fieldKey = name.join('.');
+        // derive schema at any depth (still displayed minimally)
+        const nodeSchema = getSchemaForPath(name);
+        const typeLabel = typeLabelFromSchema(nodeSchema);
+        const desc = nodeSchema?.description as string | undefined;
 
         // Array handling
         if (Array.isArray(value)) {
             return (
                 <div key={fieldKey} className="je-section">
                     <details open>
-                        <summary className="je-label je-summary">{String(label)}</summary>
+                        <summary className="je-label je-summary" title={desc || ''}>
+                            {String(label)}{typeLabel ? <span className="je-type-badge">{typeLabel}</span> : null}
+                        </summary>
                         <div className="je-pl-12 je-mt-8">
                             {value.map((item, index) => (
                                 <div key={`${fieldKey}.${index}`} className="je-row-tight je-mb-8">
@@ -131,7 +182,9 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
             return (
                 <div key={fieldKey} className="je-section">
                     <details open>
-                        <summary className="je-label je-summary">{String(label)}</summary>
+                        <summary className="je-label je-summary" title={desc || ''}>
+                            {String(label)}{typeLabel ? <span className="je-type-badge">{typeLabel}</span> : null}
+                        </summary>
                         <div className="je-pl-12 je-mt-8">
                             {Object.entries(value as JsonObject).map(([k, v]) => (
                                 <div key={`${fieldKey}.${k}`} className="je-mb-8">
@@ -147,7 +200,9 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, onChange, onSave }) => {
         // Primitive handling
         return (
             <div key={fieldKey} className="je-row">
-                <label className="je-label je-label-inline je-min-150">{String(label)}</label>
+                <label className="je-label je-label-inline je-min-150" title={desc || ''}>
+                    {String(label)}{typeLabel ? <span className="je-type-badge">{typeLabel}</span> : null}
+                </label>
                 {typeof value === 'boolean' ? (
                     <div>
                         <input

@@ -117,6 +117,18 @@
   justify-self: left;
 }
 
+/* Minimal type badge for inline schema type hints */
+.je-type-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: 9999px;
+}
+
 /* Dark mode is handled by CSS variables; keep placeholder readable in dark */
 @media (prefers-color-scheme: dark) {
   .json-editor .je-input::placeholder { color: #9ca3af; }
