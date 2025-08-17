@@ -39,7 +39,6 @@ export default function Gantt() {
       try {
         const fl = await listFiles(apiBaseUrl, requireSession)
         setFiles(fl)
-        console.log(fl)
         const resultsPath = /results[\\/]/i
         const list = (fl?.csv_files ?? []).filter(p => resultsPath.test(p))
         if (list.length) {
@@ -99,8 +98,13 @@ export default function Gantt() {
   return (
     <div className="app-container" style={{ gap: 12 }}>
       <h2>Client Gantt (CTV Work)</h2>
-      <div className="card" style={{ padding: 12 }}>
-        <div style={{ maxWidth: 480 }}>
+      <div className="section" style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        padding: 'var(--space-8)'
+      }}>
+        <h3 className="section-title" style={{ marginTop: 0 }}>Project</h3>
+        <div className="saved-libs" style={{ maxWidth: 520 }}>
           <SavedLibrariesDropdown
             libraries={savedLibraries}
             value={selectedSavedLibrary}
@@ -112,12 +116,13 @@ export default function Gantt() {
           />
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+      <div className="controls" style={{ alignItems: 'flex-end' }}>
         <div style={{ minWidth: 280 }}>
           <label style={{ display: 'block', fontWeight: 600 }}>CSV File</label>
           <select
             value={selectedCsv}
             onChange={e => setSelectedCsv(e.target.value)}
+            className="csv-filter"
             style={{ width: '100%' }}
           >
             <option value="">-- select a CSV --</option>
@@ -126,7 +131,7 @@ export default function Gantt() {
             ))}
           </select>
         </div>
-        <button onClick={loadCsv} disabled={!selectedCsv}>Load</button>
+        <button className="btn btn-primary" onClick={loadCsv} disabled={!selectedCsv}>Load</button>
         <div>{status}</div>
       </div>
 

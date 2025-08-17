@@ -71,8 +71,13 @@ export default function ResultsCompare() {
   return (
     <div className="app-container" style={{ gap: 12 }}>
       <h2>Results Comparison</h2>
-      <div className="card" style={{ padding: 12 }}>
-        <div style={{ maxWidth: 480 }}>
+      <div className="section" style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        padding: 'var(--space-8)',
+      }}>
+        <h3 className="section-title" style={{ marginTop: 0 }}>Project</h3>
+        <div className="saved-libs" style={{ maxWidth: 520 }}>
           <SavedLibrariesDropdown
             libraries={savedLibraries}
             value={selectedSavedLibrary}
@@ -84,13 +89,13 @@ export default function ResultsCompare() {
           />
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="row stack-sm" style={{ gap: 16, alignItems: 'flex-start' }}>
         <div style={{ minWidth: 280 }}>
           <h3>Available Summaries</h3>
           {!files && <div>Loading files…</div>}
           {files && yamlCandidates.length === 0 && <div>No YAML summaries found.</div>}
           {files && yamlCandidates.length > 0 && (
-            <ul style={{ maxHeight: 240, overflow: 'auto', paddingLeft: 16 }}>
+            <ul style={{ maxHeight: 240, overflow: 'auto', paddingLeft: 16, marginTop: 8 }}>
               {yamlCandidates.map(p => (
                 <li key={p}>
                   <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -106,8 +111,8 @@ export default function ResultsCompare() {
             </ul>
           )}
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button onClick={loadSelected} disabled={selectedSummaries.length === 0}>Load Selected</button>
-            <button onClick={() => { setSelectedSummaries([]); setSummaries([]); }}>Clear</button>
+            <button className="btn btn-primary" onClick={loadSelected} disabled={selectedSummaries.length === 0}>Load Selected</button>
+            <button className="btn btn-secondary" onClick={() => { setSelectedSummaries([]); setSummaries([]); }}>Clear</button>
           </div>
         </div>
 
@@ -116,6 +121,7 @@ export default function ResultsCompare() {
           <input
             value={metricText}
             onChange={e => setMetricText(e.target.value)}
+            className="csv-filter"
             style={{ width: '100%' }}
             placeholder="Comma-separated metrics (e.g., energy_mwh,total_cost_usd)"
           />
