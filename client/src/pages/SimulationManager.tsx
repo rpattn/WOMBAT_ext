@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import '../App.css';
 import { type JsonObject } from '../components/JsonEditor';
 import SimulationControls from '../components/SimulationControls';
@@ -6,8 +6,9 @@ import CsvPreview from '../components/CsvPreview';
 import { useApiContext } from '../context/ApiContext';
 import SavedLibrariesBar from '../components/SavedLibrariesBar';
 import LibraryPanel from '../components/LibraryPanel';
-import EditorPanel from '../components/EditorPanel';
 import { useToasts } from '../hooks/useToasts';
+
+const EditorPanel = lazy(() => import('../components/EditorPanel'));
 
 export const example_library_structure = {
   "yaml_files": [
@@ -213,14 +214,18 @@ export default function SimulationManager() {
             onReplaceFile={handleReplaceFile}
             onDownloadFile={handleDownloadFile}
           />
-          <EditorPanel
-            data={configData as unknown as JsonObject}
-            onChange={(newData) => setConfigData(prev => ({
-              ...prev,
-              ...newData as JsonObject
-            }))}
-            onSave={(newData) => handleSave(newData as JsonObject)}
-          />
+          {configData && Object.keys(configData || {}).length > 0 && (
+            <Suspense fallback={null}>
+              <EditorPanel
+                data={configData as unknown as JsonObject}
+                onChange={(newData) => setConfigData(prev => ({
+                  ...prev,
+                  ...newData as JsonObject
+                }))}
+                onSave={(newData) => handleSave(newData as JsonObject)}
+              />
+            </Suspense>
+          )}
         </div>
       </div>
       <CsvPreview preview={csvPreview} filePath={selectedFile} />

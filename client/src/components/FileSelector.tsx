@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
+
 import './FileSelector.css';
 
 interface FileSelectorProps {
@@ -289,4 +290,4 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
   );
 };
 
-export default FileSelector;
+export default memo(FileSelector);

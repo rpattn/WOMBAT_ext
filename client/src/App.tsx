@@ -1,12 +1,13 @@
 import './App.css';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
-import SimulationManager from './pages/SimulationManager';
-import Results from './pages/Results';
-import ThemeSelector from './components/ThemeSelector';
 import { ApiProvider, useApiContext } from './context/ApiContext';
-import RestClient from './components/RestClient';
+
+const SimulationManager = lazy(() => import('./pages/SimulationManager'));
+const Results = lazy(() => import('./pages/Results'));
+const ThemeSelector = lazy(() => import('./components/ThemeSelector'));
+const RestClient = lazy(() => import('./components/RestClient'));
 
 export function DownloadWatcher() {
   const { pendingDownloadRef, binaryPreviewUrl, csvPreview } = useApiContext();
@@ -70,17 +71,23 @@ export default function App() {
       <div className="app-container app-full" style={{minHeight: '0px'}}>
         <details open={pathname === '/connect'}>
           <summary style={{textAlign: 'left', padding: '0px'}}>REST Client</summary>
-          <RestClient />
+          <Suspense fallback={null}>
+            <RestClient />
+          </Suspense>
         </details>
       </div>
-      <Routes>
-        <Route path="/" element={<SimulationManager />} />
-        <Route path="/results" element={<Results />} />
-        <Route path="/connect" element={<></>} />
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<SimulationManager />} />
+          <Route path="/results" element={<Results />} />
+          <Route path="/connect" element={<></>} />
+        </Routes>
+      </Suspense>
       {/* Global theme selector */}
       <div className="app-container app-full" style={{minHeight: '0px'}}>
-        <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
+        <Suspense fallback={null}>
+          <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
+        </Suspense>
       </div>
     </ApiProvider>
   );

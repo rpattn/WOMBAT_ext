@@ -1,6 +1,7 @@
 import FileSelector from './FileSelector'
 import SelectedFileInfo from './SelectedFileInfo'
 import type { LibraryFiles } from '../types'
+import { memo } from 'react'
 
 export type LibraryPanelProps = {
   libraryFiles: LibraryFiles | null | undefined
@@ -13,7 +14,7 @@ export type LibraryPanelProps = {
   onDownloadFile: (filePath: string) => void
 }
 
-export default function LibraryPanel(props: LibraryPanelProps) {
+function LibraryPanel(props: LibraryPanelProps) {
   const { libraryFiles, selectedFile, projectName, onFileSelect, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile } = props
   return (
     <div className="col">
@@ -31,3 +32,5 @@ export default function LibraryPanel(props: LibraryPanelProps) {
     </div>
   )
 }
+
+export default memo(LibraryPanel)
