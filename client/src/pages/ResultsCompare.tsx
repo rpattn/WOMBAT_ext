@@ -109,7 +109,7 @@ export default function ResultsCompare() {
   const normalized = useMemo(() => normalizeForPlotly({ summaries, metricKeys }), [summaries, metricKeys])
 
   return (
-    <div className="app-container" style={{ gap: 12 }}>
+    <div className="app-container app-full" style={{ gap: 12 }}>
       <h2>Results Comparison</h2>
       <div className="section" style={{
         background: 'var(--color-surface)',
