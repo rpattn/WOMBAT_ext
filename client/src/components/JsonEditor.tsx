@@ -311,3 +311,4 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
 };
 
 export default JsonEditor;
+export type { JsonObject, JsonValue } from './json-editor/utils/path';
