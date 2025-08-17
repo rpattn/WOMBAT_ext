@@ -4,7 +4,28 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>WOMBAT_ext</title>
+    <script>
+      (function () {
+        try {
+          var LS_KEY_THEME = 'themePreference';
+          var stored = localStorage.getItem(LS_KEY_THEME);
+          var theme = (stored === 'light' || stored === 'dark' || stored === 'system') ? stored : 'system';
+          var root = document.documentElement;
+          var mm = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+          root.classList.remove('dark');
+          root.classList.remove('light');
+          if (theme === 'dark') {
+            root.classList.add('dark');
+          } else if (theme === 'light') {
+            root.classList.add('light');
+          } else {
+            root.classList.add(mm && mm.matches ? 'dark' : 'light');
+          }
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
