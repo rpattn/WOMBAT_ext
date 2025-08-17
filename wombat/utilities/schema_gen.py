@@ -398,6 +398,91 @@ def schema_service_equipment_variants() -> dict[str, dict[str, Any]]:
     }
 
 
+def schema_substation() -> dict[str, Any]:
+    """JSON Schema for substation YAML configuration files.
+
+    Captures common fields seen in library/substations configs. This is a pragmatic
+    schema focusing on structure and basic types; many fields are optional.
+    It also constrains service_equipment entries to known capability codes.
+    """
+    capability_enum = [
+        "RMT",  # remote
+        "DRN",  # drone
+        "CTV",  # crew transfer vessel/vehicle
+        "SCN",  # small crane
+        "MCN",  # medium crane
+        "LCN",  # large crane
+        "CAB",  # cabling vessel/vehicle
+        "DSV",  # diving support vessel
+        "TOW",  # tugboat/towing
+        "AHV",  # anchor handling vessel
+        "VSG",  # vessel support group
+        "OFS",  # offsite equipment
+    ]
+
+    def service_equipment_prop():
+        # Allow a single capability string or a list of capabilities
+        return {
+            "oneOf": [
+                {"type": "string", "enum": capability_enum},
+                {"type": "array", "items": {"type": "string", "enum": capability_enum}},
+            ]
+        }
+
+    maintenance_item = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "description": {"type": "string"},
+            "time": {"type": ["integer", "number"], "minimum": 0},
+            "materials": {"type": ["integer", "number"], "minimum": 0},
+            "service_equipment": service_equipment_prop(),
+            "frequency": {"type": ["integer", "number"], "minimum": 0},
+            "level": {"type": "integer", "minimum": 0},
+        },
+    }
+
+    failure_item = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "description": {"type": "string"},
+            "scale": {"type": ["integer", "number"], "minimum": 0},
+            "shape": {"type": ["integer", "number"], "minimum": 0},
+            "time": {"type": ["integer", "number"], "minimum": 0},
+            "materials": {"type": ["integer", "number"], "minimum": 0},
+            "service_equipment": service_equipment_prop(),
+            "operation_reduction": {"type": ["integer", "number"], "minimum": 0, "maximum": 1},
+            "level": {"type": "integer", "minimum": 0},
+        },
+    }
+
+    transformer = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "name": {"type": "string"},
+            "maintenance": {"type": "array", "items": maintenance_item},
+            "failures": {"type": "array", "items": failure_item},
+        },
+        # do not enforce required keys; allow partials
+    }
+
+    schema: dict[str, Any] = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Substation",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "capacity_kw": {"type": ["integer", "number"], "minimum": 0},
+            "capex_kw": {"type": ["integer", "number"], "minimum": 0},
+            "transformer": transformer,
+            # some libraries may include other keys; relax by allowing extras at top-level if needed
+        },
+    }
+    return schema
+
+
 def schema_by_name(name: str) -> dict[str, Any]:
     name = name.lower()
     if name in ("configuration", "config"):
@@ -412,7 +497,9 @@ def schema_by_name(name: str) -> dict[str, Any]:
         # Port configuration schema
         from wombat.core.data_classes import PortConfig
         return build_schema_for_attrs_class(PortConfig, title="ProjectPort")
+    if name in ("substation", "substations"):
+        return schema_substation()
     raise KeyError(
         "Unknown schema name. Use one of: configuration, service_equipment, "
-        "service_equipment_scheduled, service_equipment_unscheduled, project_port"
+        "service_equipment_scheduled, service_equipment_unscheduled, project_port, substation"
     )

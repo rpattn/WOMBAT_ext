@@ -18,7 +18,12 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
     // minimally: fetch configuration schema for YAML files
     if (file.endsWith('.yaml') || file.endsWith('.yml')) {
       const isVessel = file.includes('vessels') || file.includes('vessel') || file.includes('service_equipment')
-      const isPort = file.includes('project/port') || (file.includes('project') && file.includes('port'))
+      const isSubstation = file.includes('substation')
+      const isPort = (
+        file.includes('project/port') ||
+        file.includes('project\\port') ||
+        (file.includes('project') && file.includes('port'))
+      )
       if (isVessel) {
         const strategy = (data as any)?.strategy
         const strat = typeof strategy === 'string' ? strategy.toLowerCase() : ''
@@ -31,6 +36,16 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
         getSchema(schemaName)
           .then((s) => { if (active) setSchema(s) })
           .catch(() => { if (active) setSchema(null) })
+      } else if (isSubstation) {
+        // Use dedicated substation schema for substation YAMLs
+        getSchema('substation')
+          .then((s) => { if (active) setSchema(s) })
+          .catch(() => {
+            // Fallback: use combined service_equipment schema
+            getSchema('service_equipment')
+              .then((s) => { if (active) setSchema(s) })
+              .catch(() => { if (active) setSchema(null) })
+          })
       } else if (isPort) {
         getSchema('project_port')
           .then((s) => { if (active) setSchema(s) })
