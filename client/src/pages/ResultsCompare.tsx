@@ -78,6 +78,18 @@ export default function ResultsCompare() {
     return base
   }, [resultsOnlyFiles])
 
+  // Only show YAML files in the FileSelector on this page
+  const resultsYamlOnlyFiles = useMemo(() => {
+    if (!resultsOnlyFiles) return undefined
+    return {
+      yaml_files: resultsOnlyFiles.yaml_files || [],
+      csv_files: [],
+      html_files: [],
+      png_files: [],
+      total_files: undefined,
+    }
+  }, [resultsOnlyFiles])
+
   const toggleSummary = (path: string) => {
     setSelectedSummaries(prev => prev.includes(path) ? prev.filter(p => p !== path) : [...prev, path])
   }
@@ -123,8 +135,9 @@ export default function ResultsCompare() {
           <div className="panel-body">
             <FileSelector
               projectName={selectedSavedLibrary || 'Library Files'}
-              libraryFiles={resultsOnlyFiles}
+              libraryFiles={resultsYamlOnlyFiles}
               selectedFile={undefined}
+              selectedFiles={selectedSummaries}
               onFileSelect={(path: string) => {
                 const isYaml = /\.(ya?ml)$/i.test(path)
                 const inResults = /results[\\/]/i.test(path)

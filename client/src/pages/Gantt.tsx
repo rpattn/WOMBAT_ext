@@ -60,6 +60,18 @@ export default function Gantt() {
     return base
   }, [resultsOnlyFiles])
 
+  // Only show CSV files in the FileSelector on this page
+  const resultsCsvOnlyFiles = useMemo(() => {
+    if (!resultsOnlyFiles) return undefined
+    return {
+      yaml_files: [],
+      csv_files: resultsOnlyFiles.csv_files || [],
+      html_files: [],
+      png_files: [],
+      total_files: undefined,
+    }
+  }, [resultsOnlyFiles])
+
   const requireSession = () => {
     if (!sessionId) throw new Error('No session')
     return sessionId
@@ -185,7 +197,7 @@ export default function Gantt() {
         <div className="panel-body">
           <FileSelector
             projectName={selectedSavedLibrary || 'Library Files'}
-            libraryFiles={resultsOnlyFiles}
+            libraryFiles={resultsCsvOnlyFiles}
             selectedFile={selectedCsv || undefined}
             onFileSelect={(path: string) => {
               const isCsv = /\.csv$/i.test(path)

@@ -5,6 +5,7 @@ import './FileSelector.css';
 interface FileSelectorProps {
   onFileSelect: (fileName: string) => void;
   selectedFile?: string;
+  selectedFiles?: string[]; // optional multi-select highlighting
   libraryFiles?: { yaml_files: string[]; csv_files: string[]; html_files?: string[]; png_files?: string[]; total_files?: number };
   onAddFile?: (filePath: string, content: any) => void;
   onDeleteFile?: (filePath: string) => void;
@@ -24,7 +25,7 @@ interface TreeNode {
   folderFullPath?: string; // for folders only, using \\ separators relative to project root
 }
 
-const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile, projectName, showActions = true, defaultExpandFolders = [] }) => {
+const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile, selectedFiles, libraryFiles, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile, projectName, showActions = true, defaultExpandFolders = [] }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const rootLabel = useMemo(() => (projectName && projectName.trim().length > 0 ? projectName : 'Library Files'), [projectName]);
@@ -177,7 +178,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
   const renderTreeNode = useCallback((node: TreeNode, path: string = '', level: number = 0): React.ReactNode => {
     const currentPath = path ? `${path}/${node.name}` : node.name;
     const isExpanded = expandedFolders.has(currentPath);
-    const isSelected = selectedFile === node.fullPath;
+    const isSelected = (selectedFile && selectedFile === node.fullPath) || (!!selectedFiles && !!node.fullPath && selectedFiles.includes(node.fullPath));
 
     if (node.type === 'folder') {
       return (
@@ -270,7 +271,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
         </div>
       );
     }
-  }, [expandedFolders, selectedFile, showActions, toggleFolder, handleFileSelect, onDownloadFile, onDeleteFile, onReplaceFile]);
+  }, [expandedFolders, selectedFile, selectedFiles, showActions, toggleFolder, handleFileSelect, onDownloadFile, onDeleteFile, onReplaceFile]);
 
   return (
     <div className="file-selector" role="tree" aria-label={rootLabel}>
