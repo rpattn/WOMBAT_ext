@@ -591,6 +591,84 @@ def schema_equipment_turbine() -> dict[str, Any]:
     }
 
 
+def schema_cable() -> dict[str, Any]:
+    """JSON Schema for cable YAML configuration files.
+
+    Pragmatic structure with common electrical cable fields and
+    maintenance/failure arrays referencing service equipment capabilities.
+    """
+    capability_enum = [
+        "RMT", "DRN", "CTV", "SCN", "MCN", "LCN", "CAB", "DSV", "TOW", "AHV", "VSG", "OFS",
+    ]
+
+    def service_equipment_prop():
+        return {
+            "oneOf": [
+                {"type": "string", "enum": capability_enum},
+                {"type": "array", "items": {"type": "string", "enum": capability_enum}},
+            ]
+        }
+
+    maintenance_item = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "description": {"type": "string"},
+            "time": {"type": ["integer", "number"], "minimum": 0},
+            "materials": {"type": ["integer", "number"], "minimum": 0},
+            "service_equipment": service_equipment_prop(),
+            "frequency": {"type": ["integer", "number"], "minimum": 0},
+            "level": {"type": "integer", "minimum": 0},
+        },
+    }
+
+    failure_item = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "description": {"type": "string"},
+            "scale": {"type": ["integer", "number"], "minimum": 0},
+            "shape": {"type": ["integer", "number"], "minimum": 0},
+            "time": {"type": ["integer", "number"], "minimum": 0},
+            "materials": {"type": ["integer", "number"], "minimum": 0},
+            "service_equipment": service_equipment_prop(),
+            "operation_reduction": {"type": ["integer", "number"], "minimum": 0, "maximum": 1},
+            "level": {"type": "integer", "minimum": 0},
+        },
+    }
+
+    schema: dict[str, Any] = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Cable",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "name": {"type": "string"},
+            "voltage_kv": {"type": ["integer", "number"], "minimum": 0},
+            "conductor_area_mm2": {"type": ["integer", "number"], "minimum": 0},
+            "max_current_a": {"type": ["integer", "number"], "minimum": 0},
+            "weight_kg_m": {"type": ["integer", "number"], "minimum": 0},
+            "maintenance": {"type": "array", "items": maintenance_item},
+            "failures": {"type": "array", "items": failure_item},
+        },
+    }
+    return schema
+
+
+def schema_equipment_cable() -> dict[str, Any]:
+    """Wrapper schema for a cable as part of a larger equipment object with capacity/capex."""
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "EquipmentCable",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "capacity_kw": {"type": ["integer", "number"], "minimum": 0},
+            "capex_kw": {"type": ["integer", "number"], "minimum": 0},
+            "cable": schema_cable(),
+        },
+    }
+
 def schema_by_name(name: str) -> dict[str, Any]:
     name = name.lower()
     if name in ("configuration", "config"):
@@ -611,7 +689,11 @@ def schema_by_name(name: str) -> dict[str, Any]:
         return schema_turbine()
     if name in ("equipment_turbine", "turbine_equipment"):
         return schema_equipment_turbine()
+    if name in ("cable", "cables"):
+        return schema_cable()
+    if name in ("equipment_cable", "cable_equipment"):
+        return schema_equipment_cable()
     raise KeyError(
         "Unknown schema name. Use one of: configuration, service_equipment, "
-        "service_equipment_scheduled, service_equipment_unscheduled, project_port, substation, turbine, equipment_turbine"
+        "service_equipment_scheduled, service_equipment_unscheduled, project_port, substation, turbine, equipment_turbine, cable, equipment_cable"
     )
