@@ -19,11 +19,13 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
     if (file.endsWith('.yaml') || file.endsWith('.yml')) {
       const isVessel = file.includes('vessels') || file.includes('vessel') || file.includes('service_equipment')
       if (isVessel) {
+        console.log(data)
         const strategy = (data as any)?.strategy
         const strat = typeof strategy === 'string' ? strategy.toLowerCase() : ''
+        const isUnscheduled = strat === 'unscheduled' || strat === 'requests' || strat === 'downtime'
         const schemaName = strat === 'scheduled'
           ? 'service_equipment_scheduled'
-          : strat === 'unscheduled'
+          : isUnscheduled
             ? 'service_equipment_unscheduled'
             : 'service_equipment'
         getSchema(schemaName)

@@ -14,10 +14,12 @@ Notes:
 """
 
 from typing import Any, get_origin, get_args, get_type_hints
+import typing
 import enum
 import inspect
 import sys
 import importlib
+import types
 
 try:
     import attrs
@@ -42,8 +44,8 @@ def _json_type_from_annotation(ann: Any) -> Any:
     if ann is type(None):  # noqa: E721
         return {"type": "null"}
 
-    # Union / Optional
-    if t is sys.modules.get('typing').Union or t is getattr(sys, 'UnionType', None):  # type: ignore
+    # Union / Optional (supports typing.Union and PEP 604 unions like int | float)
+    if t is getattr(typing, 'Union', None) or t is getattr(types, 'UnionType', None):  # type: ignore
         # Build subschemas for each argument
         subs = [_json_type_from_annotation(a) for a in args]
         # Try to collapse to simple multi-type when all subs are simple {"type": <primitive>}
