@@ -49,7 +49,7 @@ export default function LayoutMap() {
         setLibraryFiles(csvOnly)
         const candidates = (csvOnly.csv_files ?? []).filter(p => /layout\.csv$/i.test(p))
         // Prefer canonical project\\plant\\layout.csv
-        const preferred = candidates.find(p => /project[\\/]plant[\\/]layout\.csv$/i.test(p)) || candidates[0]
+        const preferred = candidates.find(p => /project[\\\/]plant[\\\/]layout\.csv$/i.test(p)) || candidates[0]
         setLayoutPath(preferred || '')
         if (preferred) {
           await loadLayout(preferred)
