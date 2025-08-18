@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.11.6 - 19 August 2025
+
+### Client (UI)
+
+- __Centralized mock fallbacks__: `client/src/api/index.ts` now transparently uses the mock web worker when the session ID starts with `mock-` or when HTTP fails. Applies to `listFiles()` and `readFile()`; prevents failing requests to `/api/mock-*` in no-server scenarios.
+- __New page: Layout Map__ (`client/src/pages/LayoutMap.tsx`), available via __Simulation Manager → Layout Map__ at route `/simulation/layout`.
+  - Interactive Leaflet map rendering coordinates from `project/plant/layout.csv` (or any selected `layout.csv`).
+  - File picker in sidebar, auto-fit bounds, optional polylines grouped by `string`, and farm boundary (convex hull).
+  - Uses `PageWithLibrary` and `FileSelector` fed by `libraryFiles` from context.
+  - Keeps CSV parsing and polyline grouping by `string` column.
+  - No direct mock calls in the page; all environment logic lives in the API layer.
+- __Layout Map labels__: labels now show on hover (non-permanent tooltips) and are slightly offset left for readability.
+- __Realistic mock layout__: `client/src/workers/mockApiWorker.ts` updated `project/plant/layout.csv` with provided coordinates and explicit `string` values for grouping; includes a substation row and 20 turbines (T02–T21) across strings 0 and 1.
+- __Navbar CSS__: small alignment tweak to dropdown and hover border cleanup.
+- __TypeScript types__: added `@types/leaflet` for Leaflet type support during development.
+
+### Server
+
+- __CORS__: added GitHub Pages origins to `server/main.py` CORS allowlist.
+
 ## v0.11.5 - 18 August 2025
 
 ### Client (UI)
