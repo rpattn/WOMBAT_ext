@@ -20,6 +20,8 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
+        "https://rpattn.github.io/WOMBAT_ext/",
+        "https://rpattn.github.io"
     ],
     # Also allow GitHub Codespaces/App domains via regex (both http/https, any port)
     # Example: https://scaling-winner-7q4xxqrvg6fgrv-8000.app.github.dev
