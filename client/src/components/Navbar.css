@@ -37,7 +37,7 @@
 }
 
 /* Dropdown container for large screens */
-.dropdown { position: relative; }
+.dropdown { position: relative; align-content: center; }
 .dropdown-menu {
   display: none;
   position: absolute;
@@ -59,7 +59,6 @@
   padding: var(--space-4) var(--space-6);
   border-radius: 0;
   font-size: var(--fs-control);
-  border: 1px solid transparent;
 }
 
 .link:hover { background: var(--color-surface); border-color: var(--color-border); }

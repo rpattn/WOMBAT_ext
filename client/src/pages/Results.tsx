@@ -59,28 +59,30 @@ export default function Results() {
       title="Results"
       sidebar={(
         <>
-          <h3 className="panel-title">Files</h3>
-          <div className="panel-body">
-            <FileSelector
-              onFileSelect={handleFileSelect}
-              selectedFile={selectedFile}
-              libraryFiles={libraryFiles ?? undefined}
-              projectName={selectedSavedLibrary || undefined}
-              onAddFile={handleAddFile}
-              onDeleteFile={handleDeleteFile}
-              onReplaceFile={handleReplaceFile}
-              onDownloadFile={handleDownloadFile}
-              showActions={false}
-              defaultExpandFolders={['results']}
-            />
-            <SelectedFileInfo selectedFile={selectedFile} />
-            <div style={{ marginTop: 12 }}>
-              <button
-                className="btn-app btn-secondary"
-                onClick={() => fetchLibraryFiles().catch(() => {})}
-              >Refresh Files</button>
+          <details open>
+            <summary>Files</summary>
+            <div className="panel-body">
+              <FileSelector
+                onFileSelect={handleFileSelect}
+                selectedFile={selectedFile}
+                libraryFiles={libraryFiles ?? undefined}
+                projectName={selectedSavedLibrary || undefined}
+                onAddFile={handleAddFile}
+                onDeleteFile={handleDeleteFile}
+                onReplaceFile={handleReplaceFile}
+                onDownloadFile={handleDownloadFile}
+                showActions={false}
+                defaultExpandFolders={['results']}
+              />
+              <SelectedFileInfo selectedFile={selectedFile} />
+              <div style={{ marginTop: 12 }}>
+                <button
+                  className="btn-app btn-secondary"
+                  onClick={() => fetchLibraryFiles().catch(() => {})}
+                >Refresh Files</button>
+              </div>
             </div>
-          </div>
+          </details>
         </>
       )}
     >

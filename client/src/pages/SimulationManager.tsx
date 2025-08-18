@@ -188,6 +188,7 @@ export default function SimulationManager() {
               try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }
             }}
             title="Delete selected saved library"
+            aria-label="Delete saved library"
           >Delete Saved</button>
         </>
       )}
