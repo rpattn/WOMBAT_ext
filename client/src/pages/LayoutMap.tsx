@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Papa from 'papaparse'
 import { useApiContext } from '../context/ApiContext'
-import { listFiles, readFile } from '../api'
+import { readFile } from '../api'
 import FileSelector from '../components/FileSelector'
 import PageWithLibrary from '../components/PageWithLibrary'
 
@@ -24,10 +24,9 @@ function useLeafletCss() {
 
 export default function LayoutMap() {
   useLeafletCss()
-  const { apiBaseUrl, sessionId, initSession, selectedSavedLibrary } = useApiContext()
+  const { apiBaseUrl, sessionId, initSession, selectedSavedLibrary, libraryFiles, fetchLibraryFiles } = useApiContext()
 
   const [layoutPath, setLayoutPath] = useState<string>('')
-  const [libraryFiles, setLibraryFiles] = useState<{ yaml_files: string[]; csv_files: string[]; html_files?: string[]; png_files?: string[]; total_files?: number } | undefined>(undefined)
   const [points, setPoints] = useState<Array<{ name: string; lat: number; lon: number; stringId?: string }>>([])
   const [status, setStatus] = useState<string>('')
 
@@ -43,28 +42,27 @@ export default function LayoutMap() {
   useEffect(() => {
     ;(async () => {
       if (!sessionId) await initSession()
-      try {
-        const fl = await listFiles(apiBaseUrl, requireSession)
-        // Only expose CSV files to the selector
-        const csvOnly = { yaml_files: [], csv_files: fl?.csv_files ?? [], total_files: fl?.total_files }
-        setLibraryFiles(csvOnly)
-        const candidates = (csvOnly.csv_files ?? []).filter(p => /layout\.csv$/i.test(p))
-        // Prefer canonical project\\plant\\layout.csv
-        const preferred = candidates.find(p => /project[\\\/]plant[\\\/]layout\.csv$/i.test(p)) || candidates[0]
-        setLayoutPath(preferred || '')
-        if (preferred) {
-          await loadLayout(preferred)
-        }
-      } catch {
-        setLibraryFiles(undefined)
-        setLayoutPath('')
-      }
+      // Ask server for latest files for the active project
+      await fetchLibraryFiles().catch(() => {})
     })()
-  }, [apiBaseUrl, sessionId, initSession, selectedSavedLibrary])
+  }, [apiBaseUrl, sessionId, initSession, selectedSavedLibrary, fetchLibraryFiles])
 
-  // Clear on library change
+  // When libraryFiles update, select a default layout and optionally load it
   useEffect(() => {
-    setLibraryFiles(undefined)
+    if (!libraryFiles) return
+    const candidates = (libraryFiles.csv_files ?? []).filter(p => /layout\.csv$/i.test(p))
+    const preferred = candidates.find(p => /project[\\\/]plant[\\\/]layout\.csv$/i.test(p)) || candidates[0]
+    setLayoutPath(preferred || '')
+    if (preferred) {
+      // fire and forget; keep UI responsive
+      loadLayout(preferred)
+    } else {
+      setStatus('')
+    }
+  }, [libraryFiles])
+
+  // Clear on project change
+  useEffect(() => {
     setPoints([])
     setStatus('')
   }, [selectedSavedLibrary])
@@ -176,7 +174,7 @@ export default function LayoutMap() {
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <FileSelector
-                libraryFiles={libraryFiles}
+                libraryFiles={libraryFiles ?? undefined}
                 selectedFile={layoutPath}
                 onFileSelect={async (fp) => {
                   if (!/\.csv$/i.test(fp)) return

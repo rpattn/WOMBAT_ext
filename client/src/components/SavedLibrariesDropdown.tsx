@@ -17,7 +17,8 @@ export default function SavedLibrariesDropdown({ libraries, value, onChange, lab
           value={value}
           onChange={(e) => onChange(e.target.value)}
         >
-          <option value="">{hasItems ? 'Select a saved library…' : 'No saved libraries found'}</option>
+          {/* Empty value represents the working session (unsaved/current) */}
+          <option value="">{hasItems ? 'Working session (current)' : 'No saved libraries found'}</option>
           {libraries.map((dir) => (
             <option key={dir} value={dir}>{dir}</option>
           ))}
