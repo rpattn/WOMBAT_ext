@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.11.5 - 18 August 2025
+
+### Client (UI)
+
+- Results page (`client/src/pages/Results.tsx`):
+  - Inline preview for HTML via sandboxed `<iframe srcDoc>` with "Open in new tab" action.
+  - Inline preview for PNG using generated object URLs; guarded loading state.
+  - Added "Refresh Files" button and default expansion of `results/` folder.
+- New shared page layout: `client/src/components/PageWithLibrary.tsx`.
+  - Collapsible, resizable sidebar with persisted width.
+  - Integrated `SavedLibrariesDropdown` for switching between working session and saved libraries.
+- New `SavedLibrariesDropdown` component (`client/src/components/SavedLibrariesDropdown.tsx`).
+- API context (`client/src/context/ApiContext.tsx`) now exposes saved libraries state and schema helpers (`listSchemas`, `getSchema`), unifying session refresh and mock worker fallbacks.
+- `useLibrary` hook enhancements (`client/src/hooks/useLibrary.ts`):
+  - Robust mock worker fallbacks for saved libraries and file operations.
+  - `readFile` supports raw HTML/CSV/YAML text and binary previews (e.g., PNG) with appropriate state updates.
+  - Added helpers for `loadSaved`, `restoreWorking`, and `deleteSaved` flows.
+
+Notes: All tests pass.
+
 ## v0.11.4 - 17 August 2025
 
 ### Client (UI)
