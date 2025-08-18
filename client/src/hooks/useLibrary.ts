@@ -346,6 +346,28 @@ export function useLibrary(deps: UseLibraryDeps) {
     } catch {}
   }, [apiBaseUrl, requireSession, fetchSavedLibraries, setLibraryFiles, setSelectedFile, readFile])
 
+  const restoreWorking = useCallback(async () => {
+    const id = requireSession()
+    try {
+      if (id.startsWith('mock-')) {
+        // No-op for mock; just refresh files from worker
+        await fetchLibraryFiles()
+        if (!workerFallbackWarned_library) {
+          workerFallbackWarned_library = true
+          warning('Server unavailable. Using mock Web Worker. Some behavior may be unexpected.')
+        }
+        return
+      }
+      const res = await fetch(`${apiBaseUrl}/${id}/working/restore`, { method: 'POST' })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      setLibraryFiles(data.files ?? null)
+    } catch {
+      // Fallback: attempt to refresh file list
+      await fetchLibraryFiles()
+    }
+  }, [apiBaseUrl, requireSession, fetchLibraryFiles, setLibraryFiles, warning])
+
   const deleteSaved = useCallback(async (name: string) => {
     try {
       const id = requireSession()
@@ -385,5 +407,6 @@ export function useLibrary(deps: UseLibraryDeps) {
     saveLibrary,
     loadSaved,
     deleteSaved,
+    restoreWorking,
   }
 }

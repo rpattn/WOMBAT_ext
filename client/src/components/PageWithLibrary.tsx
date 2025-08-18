@@ -17,7 +17,7 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
     selectedSavedLibrary,
     setSelectedSavedLibrary,
     loadSaved,
-    fetchLibraryFiles,
+    restoreWorking,
   } = useApiContext()
 
   // Sidebar layout controls
@@ -80,8 +80,8 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
                 if (val) {
                   loadSaved(val).catch(() => {})
                 } else {
-                  // switching back to working session: refresh current files
-                  fetchLibraryFiles().catch(() => {})
+                  // switching back to working session: restore from server-side backup
+                  restoreWorking().catch(() => {})
                 }
               }}
             />
