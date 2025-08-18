@@ -27,7 +27,7 @@ export default function LayoutMap() {
 
   const [layoutPath, setLayoutPath] = useState<string>('')
   const [libraryFiles, setLibraryFiles] = useState<{ yaml_files: string[]; csv_files: string[]; html_files?: string[]; png_files?: string[]; total_files?: number } | undefined>(undefined)
-  const [points, setPoints] = useState<Array<{ name: string; lat: number; lon: number }>>([])
+  const [points, setPoints] = useState<Array<{ name: string; lat: number; lon: number; stringId?: string }>>([])
   const [status, setStatus] = useState<string>('')
 
   const mapRef = useRef<HTMLDivElement | null>(null)
@@ -76,14 +76,16 @@ export default function LayoutMap() {
       const rf = await readFile(apiBaseUrl, requireSession, path, false)
       const text = typeof rf?.data === 'string' ? rf.data : (rf?.data ? JSON.stringify(rf.data) : '')
       const rows = Papa.parse(text, { header: true, dynamicTyping: true }).data as any[]
-      const pts: Array<{ name: string; lat: number; lon: number }> = []
+      const pts: Array<{ name: string; lat: number; lon: number; stringId?: string }> = []
       for (const r of rows) {
         if (!r) continue
         const name = pickFirst(r, ['name','Name','turbine','Turbine','id','ID','label','Label'])
         const lat = num(pickFirst(r, ['latitude','Latitude','lat','LAT','Lat']))
         const lon = num(pickFirst(r, ['longitude','Longitude','lon','LONG','Long','Lng','lng','long']))
+        const sraw = pickFirst(r, ['string','String','string_id','StringID','string_no','StringNo','str','Str','cable','Cable'])
         if (Number.isFinite(lat) && Number.isFinite(lon)) {
-          pts.push({ name: String(name ?? ''), lat: Number(lat), lon: Number(lon) })
+          const stringId = sraw != null && String(sraw).trim() !== '' ? String(sraw).trim() : undefined
+          pts.push({ name: String(name ?? ''), lat: Number(lat), lon: Number(lon), stringId })
         }
       }
       setPoints(pts)
@@ -127,11 +129,34 @@ export default function LayoutMap() {
       const bounds = L.latLngBounds([])
       for (const p of points) {
         const marker = L.marker([p.lat, p.lon])
-        const label = p.name ? String(p.name) : `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}`
+        const labelBase = p.name ? String(p.name) : `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}`
+        const label = p.stringId ? `${labelBase} (String ${p.stringId})` : labelBase
         marker
           .addTo(layerRef.current)
           .bindTooltip(label, { direction: 'top', offset: [-14, -10] })
         bounds.extend([p.lat, p.lon] as any)
+      }
+      // Draw polylines connecting points with the same stringId (in CSV order)
+      const groups = new Map<string, Array<[number, number]>>()
+      for (const p of points) {
+        if (!p.stringId) continue
+        const key = p.stringId
+        if (!groups.has(key)) groups.set(key, [])
+        groups.get(key)!.push([p.lat, p.lon])
+      }
+      for (const [key, coords] of groups) {
+        if (coords.length < 2) continue
+        const color = stringToColor(key)
+        L.polyline(coords as any, { color, weight: 3, opacity: 0.9 }).addTo(layerRef.current)
+      }
+
+      // Draw a boundary polygon (convex hull) around the windfarm
+      const allCoords: Array<[number, number]> = points.map(p => [p.lat, p.lon])
+      if (allCoords.length >= 3) {
+        const hull = convexHullLatLng(allCoords)
+        if (hull.length >= 3) {
+          L.polygon(hull as any, { color: '#555', weight: 2, dashArray: '6,4', fill: false }).addTo(layerRef.current)
+        }
       }
       if (bounds.isValid()) {
         map.fitBounds(bounds.pad(0.1))
@@ -153,8 +178,8 @@ export default function LayoutMap() {
         </div>
       </div>
 
-      <div className="panel">
-        <h3 className="panel-title">Layout CSV</h3>
+      <details className="panel">
+        <summary className="panel-title" style={{ cursor: 'pointer' }}>Layout CSV</summary>
         <div className="panel-body" style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <FileSelector
@@ -178,7 +203,7 @@ export default function LayoutMap() {
             <div>{status}</div>
           </div>
         </div>
-      </div>
+      </details>
 
       <div style={{ marginTop: 12 }}>
         <div ref={mapRef} style={{ width: '100%', height: 520, border: '1px solid var(--color-border)', borderRadius: 6 }} />
@@ -202,4 +227,48 @@ function pickFirst(obj: Record<string, any>, keys: string[]) {
 function num(v: any): number | undefined {
   const n = typeof v === 'string' ? Number(v.trim()) : Number(v)
   return Number.isFinite(n) ? n : undefined
+}
+
+// Deterministic string -> color using a fixed, high-contrast palette
+const STRING_COLOR_PALETTE = [
+  '#e41a1c', // red
+  '#377eb8', // blue
+  '#4daf4a', // green
+  '#984ea3', // purple
+  '#ff7f00', // orange
+  '#ffff33', // yellow
+  '#a65628', // brown
+  '#f781bf', // pink
+  '#999999', // gray
+  '#1b9e77', // teal
+  '#d95f02', // orange2
+  '#7570b3', // violet
+]
+
+function stringToColor(s: string): string {
+  let hash = 0
+  for (let i = 0; i < s.length; i++) hash = ((hash << 5) - hash) + s.charCodeAt(i)
+  const idx = Math.abs(hash) % STRING_COLOR_PALETTE.length
+  return STRING_COLOR_PALETTE[idx]
+}
+
+// Convex hull (Monotone chain) for [lat, lon] tuples; sorts by lon then lat
+function convexHullLatLng(points: Array<[number, number]>): Array<[number, number]> {
+  if (points.length < 3) return points.slice()
+  const pts = points.slice().sort((a, b) => (a[1] - b[1]) || (a[0] - b[0])) // sort by lon (x), then lat (y)
+  const cross = (o: [number, number], a: [number, number], b: [number, number]) =>
+    (a[1] - o[1]) * (b[0] - o[0]) - (a[0] - o[0]) * (b[1] - o[1])
+  const lower: Array<[number, number]> = []
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop()
+    lower.push(p)
+  }
+  const upper: Array<[number, number]> = []
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i]
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop()
+    upper.push(p)
+  }
+  upper.pop(); lower.pop()
+  return lower.concat(upper)
 }
