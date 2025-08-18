@@ -48,6 +48,7 @@ export type ApiContextType = {
   saveLibrary: (project_name: string) => Promise<void>
   loadSaved: (name: string) => Promise<void>
   deleteSaved: (name: string) => Promise<void>
+  restoreWorking: () => Promise<void>
   runSimulation: () => Promise<void>
 
   // Temp maintenance
@@ -94,6 +95,7 @@ export function ApiProvider({ children }: PropsWithChildren) {
     saveLibrary,
     loadSaved,
     deleteSaved,
+    restoreWorking,
   } = useLibrary({
     apiBaseUrl,
     requireSession,
@@ -293,6 +295,7 @@ export function ApiProvider({ children }: PropsWithChildren) {
     saveLibrary,
     loadSaved,
     deleteSaved,
+    restoreWorking,
     runSimulation,
     clearClientTemp,
     sweepTemp,

@@ -14,13 +14,16 @@ app.include_router(rest_router)
 
 app.add_middleware(
     CORSMiddleware,
+    # Explicitly list common local dev origins
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
-        "*",
     ],
+    # Also allow GitHub Codespaces/App domains via regex (both http/https, any port)
+    # Example: https://scaling-winner-7q4xxqrvg6fgrv-8000.app.github.dev
+    allow_origin_regex=r"https?://[a-z0-9-]+\.app\.github\.dev(?::\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

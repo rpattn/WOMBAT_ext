@@ -79,10 +79,29 @@ function templateLibrary(name = 'Dinwoodie Mock'): Map<string, FileEntry> {
       mime: 'text/csv',
       data:
         'id,substation_id,name,type,longitude,latitude,string,order,distance,subassembly,upstream_cable\n' +
-        'OSS1,OSS1,OSS1,substation,0,0,,,,offshore_substation.yaml,export.yaml\n' +
-        'S00T1,OSS1,S00T1,turbine,0,0,0,0,0,vestas_v90.yaml,array.yaml\n' +
-        'S00T2,OSS1,S00T2,turbine,0,0,0,1,0,vestas_v90.yaml,array.yaml\n' +
-        'S00T3,OSS1,S00T3,turbine,0,0,0,2,0,vestas_v90.yaml,array.yaml\n',
+        // Substation optional; keep to mirror real structure
+        'OSS1,OSS1,OSS1,substation,-121.7000,35.40000,,, , ,offshore_substation.yaml,export.yaml\n' +
+        // User-provided coordinates with string values; ids named T01..T21
+        'T02,OSS1,T02,turbine,-121.668,35.43564,0,0,0,vestas_v90.yaml,array.yaml\n' +
+        'T03,OSS1,T03,turbine,-121.692,35.43590,0,1,0,vestas_v90.yaml,array.yaml\n' +
+        'T04,OSS1,T04,turbine,-121.715,35.43615,0,2,0,vestas_v90.yaml,array.yaml\n' +
+        'T05,OSS1,T05,turbine,-121.739,35.43640,0,3,0,vestas_v90.yaml,array.yaml\n' +
+        'T06,OSS1,T06,turbine,-121.763,35.43665,0,4,0,vestas_v90.yaml,array.yaml\n' +
+        'T07,OSS1,T07,turbine,-121.787,35.43689,0,5,0,vestas_v90.yaml,array.yaml\n' +
+        'T08,OSS1,T08,turbine,-121.811,35.43713,0,6,0,vestas_v90.yaml,array.yaml\n' +
+        'T09,OSS1,T09,turbine,-121.834,35.43736,0,7,0,vestas_v90.yaml,array.yaml\n' +
+        'T10,OSS1,T10,turbine,-121.858,35.43759,0,8,0,vestas_v90.yaml,array.yaml\n' +
+        'T11,OSS1,T11,turbine,-121.882,35.43781,0,9,0,vestas_v90.yaml,array.yaml\n' +
+        'T12,OSS1,T12,turbine,-121.668,35.41616,1,0,0,vestas_v90.yaml,array.yaml\n' +
+        'T13,OSS1,T13,turbine,-121.692,35.41642,1,1,0,vestas_v90.yaml,array.yaml\n' +
+        'T14,OSS1,T14,turbine,-121.716,35.41668,1,2,0,vestas_v90.yaml,array.yaml\n' +
+        'T15,OSS1,T15,turbine,-121.739,35.41693,1,3,0,vestas_v90.yaml,array.yaml\n' +
+        'T16,OSS1,T16,turbine,-121.763,35.41718,1,4,0,vestas_v90.yaml,array.yaml\n' +
+        'T17,OSS1,T17,turbine,-121.787,35.41742,1,5,0,vestas_v90.yaml,array.yaml\n' +
+        'T18,OSS1,T18,turbine,-121.811,35.41765,1,6,0,vestas_v90.yaml,array.yaml\n' +
+        'T19,OSS1,T19,turbine,-121.835,35.41789,1,7,0,vestas_v90.yaml,array.yaml\n' +
+        'T20,OSS1,T20,turbine,-121.858,35.41811,1,8,0,vestas_v90.yaml,array.yaml\n' +
+        'T21,OSS1,T21,turbine,-121.882,35.41834,1,9,0,vestas_v90.yaml,array.yaml\n',
     }
   );
 

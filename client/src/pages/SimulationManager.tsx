@@ -4,9 +4,9 @@ import { type JsonObject } from '../components/JsonEditor';
 import SimulationControls from '../components/SimulationControls';
 import CsvPreview from '../components/CsvPreview';
 import { useApiContext } from '../context/ApiContext';
-import SavedLibrariesBar from '../components/SavedLibrariesBar';
 import LibraryPanel from '../components/LibraryPanel';
 import { useToasts } from '../hooks/useToasts';
+import PageWithLibrary from '../components/PageWithLibrary';
 
 const EditorPanel = lazy(() => import('../components/EditorPanel'));
 
@@ -38,7 +38,6 @@ export default function SimulationManager() {
     runSimulation,
     fetchLibraryFiles,
     saveLibrary,
-    loadSaved,
     deleteSaved,
     sweepTemp,
   } = useApiContext();
@@ -168,33 +167,44 @@ export default function SimulationManager() {
     return p;
   };
 
-  return (<>
-    <div className="app-container app-full">
-      <SavedLibrariesBar
-        libraries={savedLibraries}
-        value={selectedSavedLibrary}
-        onChange={(val: string) => {
-          setSelectedSavedLibrary(val);
-          try {
-            window.localStorage.setItem(LS_KEY_LAST_SAVED, val || '');
-          } catch { /* ignore */ }
-          if (val) {
-            toasts.info(`Loading saved library: ${val}`);
-            loadSaved(val).catch(() => toasts.error('Failed to load saved library'));
-          }
-        }}
-        onDelete={(val: string) => {
-          if (!val) return;
-          const confirmDel = window.confirm(`Delete saved library: ${val}? This cannot be undone.`);
-          if (!confirmDel) return;
-          deleteSaved(val).catch(() => {
-            toasts.error('Failed to delete saved library');
-            return;
-          });
-          setSelectedSavedLibrary('');
-          try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }
-        }}
-      />
+  return (
+    <PageWithLibrary
+      title="Simulation Manager"
+      projectActions={(
+        <>
+          <button
+            className="btn btn-danger"
+            disabled={!selectedSavedLibrary}
+            onClick={() => {
+              const val = selectedSavedLibrary;
+              if (!val) return;
+              const confirmDel = window.confirm(`Delete saved library: ${val}? This cannot be undone.`);
+              if (!confirmDel) return;
+              deleteSaved(val).catch(() => {
+                toasts.error('Failed to delete saved library');
+                return;
+              });
+              setSelectedSavedLibrary('');
+              try { window.localStorage.setItem(LS_KEY_LAST_SAVED, ''); } catch { /* ignore */ }
+            }}
+            title="Delete selected saved library"
+            aria-label="Delete saved library"
+          >Delete Saved</button>
+        </>
+      )}
+      sidebar={(
+        <LibraryPanel
+          onFileSelect={handleFileSelect}
+          selectedFile={selectedFile}
+          libraryFiles={libraryFiles}
+          projectName={selectedSavedLibrary || undefined}
+          onAddFile={handleAddFile}
+          onDeleteFile={handleDeleteFile}
+          onReplaceFile={handleReplaceFile}
+          onDownloadFile={handleDownloadFile}
+        />
+      )}
+    >
       <SimulationControls
         onRun={handleRunSimulation}
         onGetConfig={handleGetConfig}
@@ -204,16 +214,6 @@ export default function SimulationManager() {
       />
       <div className="card">
         <div className="row stack-sm">
-          <LibraryPanel
-            onFileSelect={handleFileSelect}
-            selectedFile={selectedFile}
-            libraryFiles={libraryFiles}
-            projectName={selectedSavedLibrary || undefined}
-            onAddFile={handleAddFile}
-            onDeleteFile={handleDeleteFile}
-            onReplaceFile={handleReplaceFile}
-            onDownloadFile={handleDownloadFile}
-          />
           {configData && Object.keys(configData || {}).length > 0 && (
             <Suspense fallback={null}>
               <EditorPanel
@@ -229,6 +229,6 @@ export default function SimulationManager() {
         </div>
       </div>
       <CsvPreview preview={csvPreview} filePath={selectedFile} />
-    </div>
-  </>);
+    </PageWithLibrary>
+  );
 }

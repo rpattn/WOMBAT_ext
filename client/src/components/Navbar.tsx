@@ -25,13 +25,30 @@ export default function Navbar() {
           >
             Connection Manager
           </NavLink>
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
-          >
-            Simulation Manager
-          </NavLink>
+          <div className="dropdown">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
+            >
+              Simulation Manager
+            </NavLink>
+            <div className="dropdown-menu" role="menu">
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
+              >
+                Overview
+              </NavLink>
+              <NavLink
+                to="/simulation/layout"
+                className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
+              >
+                Layout Map
+              </NavLink>
+            </div>
+          </div>
           <div className="dropdown">
             <NavLink
               to="/results"

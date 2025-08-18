@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useApiContext } from '../context/ApiContext'
 import FileSelector from '../components/FileSelector'
-import SavedLibrariesDropdown from '../components/SavedLibrariesDropdown'
 import { listFiles, readFile, type FileList } from '../api'
 import { normalizeForPlotly, parseSummaryYaml } from '../utils/results'
+import PageWithLibrary from '../components/PageWithLibrary'
 
 export default function ResultsCompare() {
   const {
@@ -11,10 +11,7 @@ export default function ResultsCompare() {
     sessionId,
     initSession,
     libraryFiles,
-    savedLibraries,
     selectedSavedLibrary,
-    setSelectedSavedLibrary,
-    loadSaved,
   } = useApiContext()
 
   const requireSession = () => {
@@ -109,28 +106,10 @@ export default function ResultsCompare() {
   const normalized = useMemo(() => normalizeForPlotly({ summaries, metricKeys }), [summaries, metricKeys])
 
   return (
-    <div className="app-container app-full" style={{ gap: 12 }}>
-      <h2>Results Comparison</h2>
-      <div className="section" style={{
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        padding: 'var(--space-8)',
-      }}>
-        <h3 className="section-title" style={{ marginTop: 0 }}>Project</h3>
-        <div className="saved-libs" style={{ maxWidth: 520 }}>
-          <SavedLibrariesDropdown
-            libraries={savedLibraries}
-            value={selectedSavedLibrary}
-            onChange={(val: string) => {
-              setSelectedSavedLibrary(val)
-              try { window.localStorage.setItem('lastSavedLibraryName', val || '') } catch {}
-              if (val) { loadSaved(val).catch(() => {}) }
-            }}
-          />
-        </div>
-      </div>
-      <div className="row stack-sm" style={{ gap: 16, alignItems: 'flex-start' }}>
-        <div style={{ minWidth: 320, flex: '0 0 380px' }} className="panel">
+    <PageWithLibrary
+      title="Results Comparison"
+      sidebar={(
+        <>
           <h3 className="panel-title">Browse Files</h3>
           <div className="panel-body">
             <FileSelector
@@ -154,41 +133,39 @@ export default function ResultsCompare() {
               <span style={{ marginLeft: 'auto' }}>{selectedSummaries.length} selected</span>
             </div>
           </div>
-        </div>
+        </>
+      )}
+    >
+      <h3>Metric Picker</h3>
+      <input
+        value={metricText}
+        onChange={e => setMetricText(e.target.value)}
+        className="csv-filter"
+        style={{ width: '100%' }}
+        placeholder="Comma-separated metrics (e.g., energy_mwh,total_cost_usd)"
+      />
 
-        <div style={{ flex: 1, minWidth: 320 }}>
-          <h3>Metric Picker</h3>
-          <input
-            value={metricText}
-            onChange={e => setMetricText(e.target.value)}
-            className="csv-filter"
-            style={{ width: '100%' }}
-            placeholder="Comma-separated metrics (e.g., energy_mwh,total_cost_usd)"
-          />
-
-          <h3 style={{ marginTop: 16 }}>Preview Table</h3>
-          {normalized.table.rows.length === 0 ? (
-            <div>Select summaries and click Load Selected.</div>
-          ) : (
-            <div style={{ overflow: 'auto', maxHeight: 320 }}>
-              <table className="table-compact">
-                <thead>
-                  <tr>
-                    {normalized.table.columns.map(c => <th key={c}>{c}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {normalized.table.rows.map((row, i) => (
-                    <tr key={i}>
-                      {row.map((cell, j) => <td key={j}>{String(cell)}</td>)}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <h3 style={{ marginTop: 16 }}>Preview Table</h3>
+      {normalized.table.rows.length === 0 ? (
+        <div>Select summaries and click Load Selected.</div>
+      ) : (
+        <div style={{ overflow: 'auto', maxHeight: 320 }}>
+          <table className="table-compact">
+            <thead>
+              <tr>
+                {normalized.table.columns.map(c => <th key={c}>{c}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {normalized.table.rows.map((row, i) => (
+                <tr key={i}>
+                  {row.map((cell, j) => <td key={j}>{String(cell)}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
 
       {/* Plotly area placeholder; traces produced by normalizeForPlotly */}
       <div style={{ marginTop: 16 }}>
@@ -197,6 +174,6 @@ export default function ResultsCompare() {
           <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(normalized.series, null, 2)}</pre>
         </details>
       </div>
-    </div>
+    </PageWithLibrary>
   )
 }
