@@ -3,6 +3,7 @@ import Papa from 'papaparse'
 import { useApiContext } from '../context/ApiContext'
 import { listFiles, readFile } from '../api'
 import FileSelector from '../components/FileSelector'
+import PageWithLibrary from '../components/PageWithLibrary'
 
 // Minimal Leaflet usage without react-leaflet to avoid extra deps
 // Dynamically load Leaflet CSS to keep scope local to this page
@@ -167,44 +168,37 @@ export default function LayoutMap() {
 
 
   return (
-    <div className="app-container app-full" style={{ gap: 12 }}>
-      <h2>Layout Map</h2>
-
-      <div className="section" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: 'var(--space-8)' }}>
-        <h3 className="section-title" style={{ marginTop: 0 }}>Project</h3>
-        {/* Reuse SavedLibrariesDropdown from Gantt context via Simulation Manager header, navigated here */}
-        <div style={{ fontSize: 12, opacity: 0.9 }}>
-          Selected: {selectedSavedLibrary || '(working library)'}
-        </div>
-      </div>
-
-      <details className="panel">
-        <summary className="panel-title" style={{ cursor: 'pointer' }}>Layout CSV</summary>
-        <div className="panel-body" style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <FileSelector
-              libraryFiles={libraryFiles}
-              selectedFile={layoutPath}
-              onFileSelect={async (fp) => {
-                if (!/\.csv$/i.test(fp)) return
-                setLayoutPath(fp)
-                await loadLayout(fp)
-              }}
-              showActions={false}
-              defaultExpandFolders={["project", "project/plant"]}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 220 }}>
-            <div><strong>Selected:</strong> <code style={{ wordBreak: 'break-all' }}>{layoutPath || '(none)'}</code></div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary" onClick={() => loadLayout()} disabled={!layoutPath}>Load</button>
-              <button className="btn" onClick={() => loadLayout()} disabled={!layoutPath}>Reload</button>
+    <PageWithLibrary
+      title="Layout Map"
+      sidebar={(
+        <>
+          <h3 className="panel-title">Layout CSV</h3>
+          <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <FileSelector
+                libraryFiles={libraryFiles}
+                selectedFile={layoutPath}
+                onFileSelect={async (fp) => {
+                  if (!/\.csv$/i.test(fp)) return
+                  setLayoutPath(fp)
+                  await loadLayout(fp)
+                }}
+                showActions={false}
+                defaultExpandFolders={["project", "project/plant"]}
+              />
             </div>
-            <div>{status}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 220 }}>
+              <div><strong>Selected:</strong> <code style={{ wordBreak: 'break-all' }}>{layoutPath || '(none)'}</code></div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-primary" onClick={() => loadLayout()} disabled={!layoutPath}>Load</button>
+                <button className="btn" onClick={() => loadLayout()} disabled={!layoutPath}>Reload</button>
+              </div>
+              <div>{status}</div>
+            </div>
           </div>
-        </div>
-      </details>
-
+        </>
+      )}
+    >
       <div style={{ marginTop: 12 }}>
         <div ref={mapRef} style={{ width: '100%', height: 520, border: '1px solid var(--color-border)', borderRadius: 6 }} />
       </div>
@@ -213,7 +207,7 @@ export default function LayoutMap() {
         <summary>Debug: Points ({points.length})</summary>
         <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(points.slice(0, 50), null, 2)}</pre>
       </details>
-    </div>
+    </PageWithLibrary>
   )
 }
 
