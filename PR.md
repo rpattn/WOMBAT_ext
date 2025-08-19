@@ -1,30 +1,46 @@
 # PR: UI layout cleanup and saved libraries UX polish
 
 ## Summary
-This PR streamlines the app layout and improves saved libraries UX. The sidebar toggle is now global (next to the theme selector), the header "Project" box is removed, and `SavedLibrariesDropdown` supports inline actions (e.g., Delete Saved) shown only when a saved library is selected. Changelog updated to v0.11.8.
+Streamlines page chrome and consolidates project controls into the sidebar. Introduces a global sidebar toggle, simplifies `PageWithLibrary` header, and polishes saved libraries UX with inline actions that only appear when relevant. Includes CHANGELOG update to v0.11.8.
+
+## Rationale
+- Reduce visual clutter by removing the header “Project” section.
+- Make sidebar behavior consistent across pages via a global control.
+- Clarify saved libraries actions and avoid showing destructive actions when they don’t apply (working session).
 
 ## Changes
-- `client/src/App.tsx`:
-  - Added global "Toggle Sidebar" button next to Theme Selector; dispatches `wombat:toggle-sidebar`.
-- `client/src/components/PageWithLibrary.tsx`:
-  - Removed header "Project" box; simplified page chrome.
-  - Listens for global sidebar toggle events; removed in-content toggle button.
-  - When `projectPlacement="sidebar"`, renders project selector and actions on the same row in the sidebar.
-- `client/src/components/SavedLibrariesDropdown.tsx`:
-  - Accepts inline `children` actions to render to the right of the selector.
-  - Shows actions only when a saved library is selected (working session hides them).
-- `client/src/pages/SimulationManager.tsx`:
-  - Provides inline Delete Saved action (X) via `projectActions`; visible only when a saved library is selected.
-- `client/src/App.css`:
-  - Tweaks to `.saved-libs*` classes for responsive inline layout.
-- `CHANGELOG.md`: updated to v0.11.8.
+- `client/src/App.tsx`
+  - Adds global "Toggle Sidebar" control next to Theme Selector; dispatches `wombat:toggle-sidebar`.
+- `client/src/components/PageWithLibrary.tsx`
+  - Removes header "Project" box; listens to global toggle events (`wombat:toggle-sidebar`, `wombat:show-sidebar`, `wombat:hide-sidebar`).
+  - When `projectPlacement="sidebar"`, renders project selector and related actions inline within the sidebar panel.
+  - Moves optional `projectActions` under the main content area when `projectPlacement!=='sidebar'`.
+- `client/src/components/SavedLibrariesDropdown.tsx`
+  - Accepts inline `children` actions; only rendered when `value` (a saved library) is selected.
+  - Minor layout tweaks for better wrapping on small widths.
+- `client/src/pages/SimulationManager.tsx`
+  - Integrates with new sidebar project placement; shows inline Delete Saved ("X") only when a saved library is selected.
+- `client/src/pages/ResultsCompare.tsx`
+  - Opts in to `projectPlacement="sidebar"` for consistent layout.
+- `client/src/App.css`
+  - Tweaks `.saved-libs*` styles for responsive inline layout.
+- `CHANGELOG.md`
+  - Adds v0.11.8 entry covering these UI and UX updates.
 
 ## Testing
+- Unit/Integration: `npm run test` — all tests passing locally.
 - Manual:
-  - Toggle sidebar using the global button; verify all pages using `PageWithLibrary` respond.
-  - Saved libraries selector shows inline X only when a saved library is selected; confirm delete flow.
-  - Sidebar resizes/collapses and persists width; no header project box remains.
+  - Use the global toggle to collapse/expand the sidebar; verify it affects pages using `PageWithLibrary`.
+  - In `Simulation Manager`, select a saved library; confirm inline Delete (X) shows, performs delete, and hides for working session.
+  - Confirm no header project box appears and that controls render inside the sidebar when `projectPlacement="sidebar"`.
 
-## Notes
-- No breaking API changes.
-- UI changes are backwards compatible; `projectPlacement` remains supported.
+## Risks / Rollout
+- Low risk. Changes are UI-only and backwards compatible.
+- Pages not opting into `projectPlacement="sidebar"` continue to render `projectActions` below main content.
+
+## Follow-ups (Optional)
+- Consider keyboard shortcut for sidebar toggle.
+- Add e2e snapshot(s) to cover presence/absence of inline actions for saved vs working sessions.
+
+## Changelog
+- Updated `CHANGELOG.md` to v0.11.8.
