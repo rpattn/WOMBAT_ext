@@ -168,6 +168,14 @@ export default function SimulationManager() {
   };
 
   return (
+    <>
+    <SimulationControls
+        onRun={handleRunSimulation}
+        onGetConfig={handleGetConfig}
+        onClearTemp={handleClearTemp}
+        onGetLibraryFiles={handleGetLibraryFiles}
+        onSaveLibrary={handleSaveLibrary}
+      />
     <PageWithLibrary
       title="Simulation Manager"
       projectActions={(
@@ -206,13 +214,6 @@ export default function SimulationManager() {
         />
       )}
     >
-      <SimulationControls
-        onRun={handleRunSimulation}
-        onGetConfig={handleGetConfig}
-        onClearTemp={handleClearTemp}
-        onGetLibraryFiles={handleGetLibraryFiles}
-        onSaveLibrary={handleSaveLibrary}
-      />
       <div className="card">
         <div className="row stack-sm">
           {configData && Object.keys(configData || {}).length > 0 && (
@@ -231,5 +232,6 @@ export default function SimulationManager() {
       </div>
       <CsvPreview preview={csvPreview} filePath={selectedFile} />
     </PageWithLibrary>
+    </>
   );
 }

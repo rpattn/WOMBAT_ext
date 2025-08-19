@@ -89,7 +89,7 @@ body {
 }
 
 h1 { font-size: var(--fs-h1); line-height: 1.2; }
-h2 { font-size: var(--fs-h2); line-height: 1.25; }
+h2 { font-size: var(--fs-h2); line-height: 1.25; margin: 0px 0px 10px 0px; }
 h3 { font-size: var(--fs-h3); line-height: 1.25; }
 
 /* Base button style; also applied to .btn class for components */

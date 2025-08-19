@@ -22,7 +22,8 @@
   border-radius: 0;
   padding: var(--space-10);
   background-color: #fff;
-  max-height: 500px;
+  max-height: 800px;
+  height: fit-content;
   overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

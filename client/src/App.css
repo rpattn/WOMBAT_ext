@@ -60,6 +60,14 @@ html {
   min-height: calc(100vh - 64px); /* 64px ~ navbar height; keep in sync with Navbar */
 }
 
+.app-container-slim {
+  padding-top: var(--space-12);
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: left;
+  /* Reserve space so when data-driven components expand, the page doesn't jump */
+}
+
 /* Full-width variant for pages that need to span the viewport */
 .app-full { max-width: var(--app-max-width); width: 95%; }
 
