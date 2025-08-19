@@ -173,7 +173,7 @@ export default function Gantt() {
   }, [segments, themeKey])
 
   return (
-    <div className="app-container" style={{ gap: 12 }}>
+    <div className="app-container app-full" style={{ gap: 12 }}>
       <h2>Client Gantt (CTV Work)</h2>
       <div className="section" style={{
         background: 'var(--color-surface)',

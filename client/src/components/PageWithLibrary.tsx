@@ -123,7 +123,8 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
               cursor: 'col-resize',
               userSelect: 'none',
               background: 'transparent',
-              position: 'relative'
+              position: 'relative',
+              paddingRight: '16px'
             }}
             aria-label="Resize sidebar"
             title="Drag to resize. Double-click to reset."
@@ -131,7 +132,7 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
             <div style={{ position: 'absolute', top: 0, bottom: 0, left: 2, width: 2, background: 'var(--color-border)' }} />
           </div>
         )}
-        <main style={{ flex: 1, minWidth: 320, paddingLeft: 16 }}>
+        <main style={{ flex: 1, minWidth: 320}}>
           {children}
         </main>
       </div>

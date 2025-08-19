@@ -170,7 +170,6 @@ export default function LayoutMap() {
       title="Layout Map"
       sidebar={(
         <>
-          <h3 className="panel-title">Layout CSV</h3>
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <FileSelector
@@ -182,7 +181,7 @@ export default function LayoutMap() {
                   await loadLayout(fp)
                 }}
                 showActions={false}
-                defaultExpandFolders={["project", "project/plant"]}
+                defaultExpandFolders={["project/plant"]}
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 220 }}>
