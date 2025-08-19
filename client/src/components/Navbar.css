@@ -18,7 +18,7 @@
 }
 
 .navbar-inner {
-  max-width: 1200px;
+  max-width: var(--app-max-width);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -37,7 +37,8 @@
 }
 
 /* Dropdown container for large screens */
-.dropdown { position: relative; align-content: center; }
+.dropdown { position: relative; align-content: center;   padding: var(--nav-margin) 0px;
+ }
 .dropdown-menu {
   display: none;
   position: absolute;
@@ -50,8 +51,8 @@
   padding: var(--space-6) 0;
   z-index: 1000;
 }
-.dropdown:hover .dropdown-menu { display: block; }
-.dropdown-item { display: block; padding: var(--space-6) var(--space-8); }
+.dropdown:hover .dropdown-menu { display: block; width: 100%; min-width: fit-content;}
+.dropdown-item { display: block; padding: var(--space-6) var(--space-8); justify-self: start; margin-right: 20px; }
 
 .link {
   text-decoration: none;

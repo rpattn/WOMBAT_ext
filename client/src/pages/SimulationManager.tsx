@@ -202,6 +202,7 @@ export default function SimulationManager() {
           onDeleteFile={handleDeleteFile}
           onReplaceFile={handleReplaceFile}
           onDownloadFile={handleDownloadFile}
+          defaultExpandFolders={["project/config"]}
         />
       )}
     >

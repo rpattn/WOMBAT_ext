@@ -130,10 +130,10 @@ const FileSelector: React.FC<FileSelectorProps> = ({ onFileSelect, selectedFile,
     const png = libraryFiles?.png_files ?? [];
     const allFiles = [...yaml, ...csv, ...html, ...png];
     const parts = allFiles.map(p => normalizeParts(p || ''));
-    const hasProject = parts.some(seg => seg[0] === 'project');
-    const hasProjectConfig = parts.some(seg => seg[0] === 'project' && seg[1] === 'config');
-    if (hasProject) next.add(`${rootLabel}/project`);
-    if (hasProjectConfig) next.add(`${rootLabel}/project/config`);
+    //const hasProject = parts.some(seg => seg[0] === 'project');
+    //const hasProjectConfig = parts.some(seg => seg[0] === 'project' && seg[1] === 'config');
+    //if (hasProject) next.add(`${rootLabel}/project`);
+    //if (hasProjectConfig) next.add(`${rootLabel}/project/config`);
     for (const entry of defaultExpandFolders) {
       if (!entry) continue;
       // Support nested entries like "results/run1/run2"

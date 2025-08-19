@@ -61,7 +61,7 @@ html {
 }
 
 /* Full-width variant for pages that need to span the viewport */
-.app-full { max-width: none; width: 95%; }
+.app-full { max-width: var(--app-max-width); width: 95%; }
 
 .section { margin-bottom: var(--space-12); }
 .section-title {
@@ -94,7 +94,6 @@ html {
 
 .editor-wrap {
   max-width: 1200px;
-  margin: 0 auto;
   min-height: 360px; /* reserve editor space prior to data load */
 }
 

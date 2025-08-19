@@ -7,6 +7,7 @@ export type LibraryPanelProps = {
   libraryFiles: LibraryFiles | null | undefined
   selectedFile: string
   projectName?: string
+  defaultExpandFolders?: Array<string>
   onFileSelect: (filePath: string) => void
   onAddFile: (filePath: string, content: any) => void
   onDeleteFile: (filePath: string) => void
@@ -15,7 +16,7 @@ export type LibraryPanelProps = {
 }
 
 function LibraryPanel(props: LibraryPanelProps) {
-  const { libraryFiles, selectedFile, projectName, onFileSelect, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile } = props
+  const { libraryFiles, selectedFile, projectName, defaultExpandFolders, onFileSelect, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile } = props
   return (
     <div className="col">
       <FileSelector
@@ -27,6 +28,7 @@ function LibraryPanel(props: LibraryPanelProps) {
         onDeleteFile={onDeleteFile}
         onReplaceFile={onReplaceFile}
         onDownloadFile={onDownloadFile}
+        defaultExpandFolders={defaultExpandFolders}
       />
       <SelectedFileInfo selectedFile={selectedFile} />
     </div>

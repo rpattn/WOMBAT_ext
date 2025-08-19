@@ -86,7 +86,7 @@ export default function Results() {
         </>
       )}
     >
-      <div className="card" style={{ padding: 16 }}>
+      <div className="card">
         {(() => {
           const lf = selectedFile?.toLowerCase() || '';
           const isYaml = lf.endsWith('.yaml') || lf.endsWith('.yml');

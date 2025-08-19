@@ -19,12 +19,14 @@ export default function Navbar() {
           <span className="bar" />
         </button>
         <div className="links" onClick={() => setOpen(false)}>
-          <NavLink
-            to="/connect"
-            className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
-          >
-            Connection Manager
-          </NavLink>
+          <div className="dropdown">
+            <NavLink
+              to="/connect"
+              className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
+            >
+              Connection Manager
+            </NavLink>
+          </div>
           <div className="dropdown">
             <NavLink
               to="/"
@@ -73,6 +75,6 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-    </nav>
+    </nav >
   );
 }
