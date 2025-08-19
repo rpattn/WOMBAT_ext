@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v0.11.7 - 19 August 2025
+
+### Client (UI)
+
+- Results Compare (`client/src/pages/ResultsCompare.tsx`):
+  - Plot now shows raw values only; removed percent-difference and baseline selector.
+  - Dark mode styling for Plotly using CSS variables; re-renders on theme change.
+  - Value labels displayed on top of each bar with compact formatting.
+  - Y-axis label auto-derives from the last segment of the metric when a single metric is selected.
+  - File browser filtered to only `results/` paths; YAML-only for this page.
+  - Collapsible sections: Preview Table and Metrics; metric keys textbox moved under an "advanced" collapsible.
+  - TypeScript fix: `readFile(..., true)` used to fetch raw text for `parseSummaryYaml()`.
+
+### Mock API Worker
+
+- `client/src/workers/mockApiWorker.ts`:
+  - Added `stats.maintenance.average_requests_per_month` to `results/summary.yaml` in both the template and simulated summaries so the metric is discoverable and plottable in mock mode.
+
 ## v0.11.6 - 19 August 2025
 
 ### Client (UI)

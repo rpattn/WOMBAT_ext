@@ -276,6 +276,7 @@ function templateLibrary(name = 'Dinwoodie Mock'): Map<string, FileEntry> {
       summary: 'Mock summary for demonstration',
       energy_mwh: 12345,
       cables: { length_km: 12.3 },
+      stats: { maintenance: { average_requests_per_month: 2.5 } },
     },
   });
   fs.set('results\\report.html', {
@@ -599,6 +600,7 @@ function runMockSimulation(store: Map<string, FileEntry>) {
     finished_at: new Date().toISOString(),
     energy_mwh: energy,
     task: 'mock',
+    stats: { maintenance: { average_requests_per_month: 2.5 } },
   };
   store.set(summaryPath, { kind: 'yaml', data: summary });
   // Create a results CSV
