@@ -70,6 +70,28 @@ function templateLibrary(name = 'Dinwoodie Mock'): Map<string, FileEntry> {
       parameters: { turbines: 5, cable_voltage_kv: 66 },
     },
   });
+  // Provide a default Gantt events CSV so the client Gantt page has data in mock mode
+  fs.set('results\\gantt\\events.csv', {
+    kind: 'text',
+    mime: 'text/csv',
+    data: [
+      ['env_datetime','duration','action','agent','part_name','system_id','request_id'].join(','),
+      // Crew Transfer Vessel 3
+      ['2003-01-04T07:15:03.000Z','11.499166666666667','repair','Crew Transfer Vessel 3','turbine','S00T66','RPR00000000'].join(','),
+      ['2003-01-05T08:15:00.000Z','9.75','repair','Crew Transfer Vessel 3','turbine','S00T66','RPR00000000'].join(','),
+      ['2003-01-07T07:15:00.000Z','0.7508333333333326','repair','Crew Transfer Vessel 3','turbine','S00T66','RPR00000000'].join(','),
+      // Crew Transfer Vessel 2
+      ['2003-01-10T07:15:08.000Z','3','repair','Crew Transfer Vessel 2','turbine','S00T60','RPR00000001'].join(','),
+      ['2003-02-13T07:15:02.000Z','11.499444444444444','repair','Crew Transfer Vessel 2','turbine','S00T13','RPR00000002'].join(','),
+      ['2003-02-14T08:15:00.000Z','10.5','repair','Crew Transfer Vessel 2','turbine','S00T13','RPR00000002'].join(','),
+      ['2003-02-15T08:15:00.000Z','0.0005555555555574188','repair','Crew Transfer Vessel 2','turbine','S00T13','RPR00000002'].join(','),
+      // Crew Transfer Vessel 3 continued
+      ['2003-03-17T07:15:06.000Z','3','repair','Crew Transfer Vessel 3','turbine','S00T17','RPR00000003'].join(','),
+      ['2003-03-29T07:15:04.000Z','7.5','repair','Crew Transfer Vessel 3','turbine','S00T14','RPR00000004'].join(','),
+      ['2003-04-01T06:15:00.000Z','7.5','repair','Crew Transfer Vessel 3','turbine','S00T75','RPR00000005'].join(','),
+      ['2003-04-11T06:15:01.000Z','3','repair','Crew Transfer Vessel 3','turbine','S00T66','RPR00000006'].join(','),
+    ].join('\n') + '\n',
+  });
 
   // Windfarm layout (subset) modeled after dinwoodie/project/plant/layout.csv
   fs.set(

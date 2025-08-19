@@ -22,7 +22,14 @@ export default function ResultsCompare() {
   const [files, setFiles] = useState<FileList | null>(null)
   const [selectedSummaries, setSelectedSummaries] = useState<string[]>([])
   const [summaries, setSummaries] = useState<{ run: string; data: any }[]>([])
-  const [metricText, setMetricText] = useState<string>('energy_mwh,total_cost_usd,downtime_hours')
+  // Default to useful nested metrics present in summary YAMLs
+  const [metricText, setMetricText] = useState<string>([
+    'stats.power_production.capacity_factor',
+    'stats.power_production.peak_windfarm_power_mw',
+    'stats.power_production.windfarm_energy_mwh',
+    'stats.maintenance.total_requests',
+    'stats.maintenance.average_requests_per_month',
+  ].join(','))
 
   useEffect(() => {
     ;(async () => {
@@ -42,8 +49,7 @@ export default function ResultsCompare() {
     setSummaries([])
   }, [selectedSavedLibrary])
 
-  // File selection handled via FileSelector; no need to pre-filter here
-
+  // Only show files that live under the results directory
   const resultsOnlyFiles = useMemo(() => {
     if (!files) return undefined
     const re = /results[\\/]/i
@@ -75,7 +81,7 @@ export default function ResultsCompare() {
     return base
   }, [resultsOnlyFiles])
 
-  // Only show YAML files in the FileSelector on this page
+  // Only show YAML files under results in the FileSelector on this page
   const resultsYamlOnlyFiles = useMemo(() => {
     if (!resultsOnlyFiles) return undefined
     return {
@@ -97,7 +103,10 @@ export default function ResultsCompare() {
       const rf = await readFile(apiBaseUrl, requireSession, p, false)
       const text = typeof rf?.data === 'string' ? rf?.data : (rf?.data ? JSON.stringify(rf.data) : '')
       const obj = await parseSummaryYaml(text)
-      loaded.push({ run: p.split('/').pop() || p, data: obj })
+      const runName = (obj && typeof obj === 'object' && (obj as any).name)
+        ? String((obj as any).name)
+        : (String(p).replace(/\\/g, '/').split('/').pop() || String(p))
+      loaded.push({ run: runName, data: obj })
     }
     setSummaries(loaded)
   }

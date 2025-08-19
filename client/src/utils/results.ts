@@ -40,7 +40,7 @@ export function normalizeForPlotly(params: { summaries: { run: string; data: Sum
   const tableRows: any[][] = []
 
   for (const s of summaries) {
-    const y = metricKeys.map(k => safeNumber(s.data?.[k]))
+    const y = metricKeys.map(k => safeNumber(getNestedValue(s.data, k)))
     series.push({ x: metricKeys, y, name: s.run, type: 'bar' })
     tableRows.push([s.run, ...y])
   }
@@ -51,4 +51,16 @@ export function normalizeForPlotly(params: { summaries: { run: string; data: Sum
 function safeNumber(v: any): number {
   const n = typeof v === 'number' ? v : Number(v)
   return Number.isFinite(n) ? n : 0
+}
+
+function getNestedValue(obj: any, path: string): any {
+  if (!obj) return undefined
+  if (!path) return undefined
+  const parts = path.split('.')
+  let cur: any = obj
+  for (const p of parts) {
+    if (cur && typeof cur === 'object' && p in cur) cur = cur[p]
+    else return undefined
+  }
+  return cur
 }
