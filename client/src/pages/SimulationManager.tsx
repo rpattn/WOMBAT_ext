@@ -178,11 +178,12 @@ export default function SimulationManager() {
       />
     <PageWithLibrary
       title="Simulation Manager"
-      projectActions={(
-        <>
+      projectPlacement="sidebar"
+      projectActions={selectedSavedLibrary ? (
+        <div className="panel-body" style={{ paddingTop: 0 }}>
           <button
             className="btn btn-danger"
-            disabled={!selectedSavedLibrary}
+            style={{ width: '100%', marginBottom: '5px' }}
             onClick={() => {
               const val = selectedSavedLibrary;
               if (!val) return;
@@ -197,21 +198,23 @@ export default function SimulationManager() {
             }}
             title="Delete selected saved library"
             aria-label="Delete saved library"
-          >Delete Saved</button>
-        </>
-      )}
+          >X</button>
+        </div>
+      ) : null}
       sidebar={(
-        <LibraryPanel
-          onFileSelect={handleFileSelect}
-          selectedFile={selectedFile}
-          libraryFiles={libraryFiles}
-          projectName={selectedSavedLibrary || undefined}
-          onAddFile={handleAddFile}
-          onDeleteFile={handleDeleteFile}
-          onReplaceFile={handleReplaceFile}
-          onDownloadFile={handleDownloadFile}
-          defaultExpandFolders={["project/config"]}
-        />
+        <>
+          <LibraryPanel
+            onFileSelect={handleFileSelect}
+            selectedFile={selectedFile}
+            libraryFiles={libraryFiles}
+            projectName={selectedSavedLibrary || undefined}
+            onAddFile={handleAddFile}
+            onDeleteFile={handleDeleteFile}
+            onReplaceFile={handleReplaceFile}
+            onDownloadFile={handleDownloadFile}
+            defaultExpandFolders={["project/config"]}
+          />
+        </>
       )}
     >
       <div className="card">

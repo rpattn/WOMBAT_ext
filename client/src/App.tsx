@@ -95,11 +95,20 @@ export default function App() {
           <Route path="/connect" element={<ConnectionManager />} />
         </Routes>
       </Suspense>
-      {/* Global theme selector */}
+      {/* Global theme selector and sidebar toggle */}
       <div className="app-container app-full" style={{minHeight: '0px'}}>
-        <Suspense fallback={null}>
-          <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
-        </Suspense>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Suspense fallback={null}>
+            <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
+          </Suspense>
+          <button
+            className="btn"
+            title="Toggle Sidebar"
+            aria-label="Toggle Sidebar"
+            onClick={() => { try { window.dispatchEvent(new Event('wombat:toggle-sidebar')) } catch {} }}
+            style={{ marginLeft: 'auto' }}
+          >Toggle Sidebar</button>
+        </div>
       </div>
     </ApiProvider>
   );

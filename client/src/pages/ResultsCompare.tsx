@@ -238,6 +238,7 @@ export default function ResultsCompare() {
   return (
     <PageWithLibrary
       title="Results Comparison"
+      projectPlacement="sidebar"
       sidebar={(
         <>
           <h3 className="panel-title">Browse Files</h3>

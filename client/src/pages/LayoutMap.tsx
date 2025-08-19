@@ -268,6 +268,7 @@ export default function LayoutMap() {
   return (
     <PageWithLibrary
       title="Layout Map"
+      projectPlacement="sidebar"
       sidebar={(
         <>
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
