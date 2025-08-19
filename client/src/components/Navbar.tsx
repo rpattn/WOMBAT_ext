@@ -6,7 +6,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   return (
     <nav className={`navbar ${open ? 'open' : ''}`}>
-      <div className="navbar-inner">
+      <div className="navbar-inner app-full">
         <div className="brand">WOMBAT_ext</div>
         <button
           className="menu-toggle"
