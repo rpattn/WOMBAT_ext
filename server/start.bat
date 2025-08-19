@@ -1,0 +1,3 @@
+echo Starting server...
+%cd%\.venv\Scripts\python.exe -m uvicorn server.main:app
+echo Server shutdown.
