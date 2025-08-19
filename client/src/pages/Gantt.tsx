@@ -41,6 +41,32 @@ export default function Gantt() {
     }
   }, [files])
 
+  // Detect gantt assets grouped by results subfolder
+  const ganttByRun = useMemo(() => {
+    const out = new Map<string, { html?: string; png?: string }>()
+    const htmls = (resultsOnlyFiles as any)?.html_files as string[] | undefined
+    const pngs = (resultsOnlyFiles as any)?.png_files as string[] | undefined
+    const add = (p: string, kind: 'html' | 'png') => {
+      const parts = String(p).replace(/\\/g, '/').split('/').filter(Boolean)
+      if (parts[0] !== 'results' || !parts[1]) return
+      if (kind === 'html' && !/gantt/i.test(parts[parts.length - 1])) return
+      if (kind === 'png' && !/gantt/i.test(parts[parts.length - 1])) return
+      const run = parts[1]
+      const cur = out.get(run) || {}
+      cur[kind] = p
+      out.set(run, cur)
+    }
+    for (const p of htmls || []) add(p, 'html')
+    for (const p of pngs || []) add(p, 'png')
+    return out
+  }, [resultsOnlyFiles])
+
+  const latestGantt = useMemo(() => {
+    const runs = Array.from(ganttByRun.keys()).sort()
+    const latest = runs[runs.length - 1]
+    return latest ? { run: latest, ...ganttByRun.get(latest)! } : undefined
+  }, [ganttByRun])
+
   const defaultExpand = useMemo(() => {
     const base = ['results'] as string[]
     const lists = resultsOnlyFiles ? [
@@ -220,6 +246,24 @@ export default function Gantt() {
       <div style={{ marginTop: 12 }}>
         <div ref={plotRef} style={{ width: '100%', height: 500 }} />
       </div>
+
+      {latestGantt && (
+        <div className="panel" style={{ marginTop: 12 }}>
+          <h3 className="panel-title">Gantt Assets (latest run: results/{latestGantt.run})</h3>
+          <div className="panel-body" style={{ fontFamily: 'monospace', fontSize: 13 }}>
+            {latestGantt.html ? (
+              <div>HTML: {latestGantt.html}</div>
+            ) : (
+              <div>HTML: (not found)</div>
+            )}
+            {latestGantt.png ? (
+              <div>PNG: {latestGantt.png}</div>
+            ) : (
+              <div>PNG: (not found)</div>
+            )}
+          </div>
+        </div>
+      )}
 
       <details style={{ marginTop: 12 }}>
         <summary>Debug: Segments ({segments.length})</summary>
