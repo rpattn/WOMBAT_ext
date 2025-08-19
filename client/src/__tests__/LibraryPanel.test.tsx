@@ -29,6 +29,7 @@ describe('LibraryPanel', () => {
         onDeleteFile={onDeleteFile}
         onReplaceFile={onReplaceFile}
         onDownloadFile={onDownloadFile}
+        defaultExpandFolders={['project/config']}
       />
     )
 
