@@ -1,32 +1,30 @@
-# PR: UI improvements for Results and saved libraries integration
+# PR: UI layout cleanup and saved libraries UX polish
 
 ## Summary
-This PR enhances the Results viewing experience, introduces a reusable page layout with saved libraries switching, and expands the API context and hooks to support these flows. It also updates the changelog for v0.11.5.
+This PR streamlines the app layout and improves saved libraries UX. The sidebar toggle is now global (next to the theme selector), the header "Project" box is removed, and `SavedLibrariesDropdown` supports inline actions (e.g., Delete Saved) shown only when a saved library is selected. Changelog updated to v0.11.8.
 
 ## Changes
-- Results page (`client/src/pages/Results.tsx`):
-  - Inline HTML preview via sandboxed iframe (`srcDoc`) and "Open in new tab" action.
-  - Inline PNG preview using object URLs with loading guard.
-  - Added "Refresh Files" button and default expansion of `results/` folder.
-- New layout (`client/src/components/PageWithLibrary.tsx`):
-  - Collapsible, resizable sidebar with persisted width.
-  - Integrated `SavedLibrariesDropdown` for switching between working session and saved libraries.
-- New component: `client/src/components/SavedLibrariesDropdown.tsx`.
-- API context (`client/src/context/ApiContext.tsx`):
-  - Exposes saved libraries state and schema helpers (`listSchemas`, `getSchema`).
-  - Unified refresh behavior with mock worker fallbacks.
-- Hook updates (`client/src/hooks/useLibrary.ts`):
-  - Stronger mock worker fallbacks for saved libraries and file ops.
-  - `readFile` supports raw text (HTML/CSV/YAML) and binary (PNG) previews.
-  - Helpers for `loadSaved`, `restoreWorking`, and `deleteSaved`.
-- Changelog: update `CHANGELOG.md` to v0.11.5 (18 Aug 2025).
+- `client/src/App.tsx`:
+  - Added global "Toggle Sidebar" button next to Theme Selector; dispatches `wombat:toggle-sidebar`.
+- `client/src/components/PageWithLibrary.tsx`:
+  - Removed header "Project" box; simplified page chrome.
+  - Listens for global sidebar toggle events; removed in-content toggle button.
+  - When `projectPlacement="sidebar"`, renders project selector and actions on the same row in the sidebar.
+- `client/src/components/SavedLibrariesDropdown.tsx`:
+  - Accepts inline `children` actions to render to the right of the selector.
+  - Shows actions only when a saved library is selected (working session hides them).
+- `client/src/pages/SimulationManager.tsx`:
+  - Provides inline Delete Saved action (X) via `projectActions`; visible only when a saved library is selected.
+- `client/src/App.css`:
+  - Tweaks to `.saved-libs*` classes for responsive inline layout.
+- `CHANGELOG.md`: updated to v0.11.8.
 
 ## Testing
-- All tests pass locally.
-- Manual verification:
-  - Switch between working session and saved libraries.
-  - Preview YAML, CSV, HTML, and PNG in Results.
-  - Resize/collapse sidebar persists across reloads.
+- Manual:
+  - Toggle sidebar using the global button; verify all pages using `PageWithLibrary` respond.
+  - Saved libraries selector shows inline X only when a saved library is selected; confirm delete flow.
+  - Sidebar resizes/collapses and persists width; no header project box remains.
 
 ## Notes
-No breaking API changes. UI strings and behaviors are backwards compatible.
+- No breaking API changes.
+- UI changes are backwards compatible; `projectPlacement` remains supported.

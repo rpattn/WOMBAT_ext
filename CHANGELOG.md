@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## v0.11.8 - 20 August 2025
+
+### Client (UI)
+
+- Page layout (`client/src/components/PageWithLibrary.tsx`):
+  - Removed the header "Project" box entirely for a cleaner layout.
+  - Moved the Hide/Show Sidebar control to a global toolbar and wired it via window events (`wombat:toggle-sidebar`).
+  - When `projectPlacement="sidebar"`, the project selector and actions render on the same row within the sidebar panel.
+- Global toolbar (`client/src/App.tsx`):
+  - Added a global "Toggle Sidebar" button next to the Theme Selector.
+- Saved libraries dropdown (`client/src/components/SavedLibrariesDropdown.tsx`):
+  - Now accepts inline `children` actions that appear to the right of the selector.
+  - Shows these actions only when a saved library is selected (working session hides them).
+  - Minor layout adjustments for responsive wrapping; CSS updated in `client/src/App.css`.
+- Simulation Manager (`client/src/pages/SimulationManager.tsx`):
+  - "Delete Saved" action moved next to the project selector (as an inline X button) and only appears when a saved library is selected.
+
+Notes: These changes apply across all pages using `PageWithLibrary` and improve consistency of sidebar behavior and project actions.
+
 ## v0.11.7 - 19 August 2025
 
 ### Client (UI)
