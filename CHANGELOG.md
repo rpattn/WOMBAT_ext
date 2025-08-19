@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## v0.11.8 - 20 August 2025
+
+### Client (UI)
+
+- Page layout (`client/src/components/PageWithLibrary.tsx`):
+  - Removed the header "Project" box entirely for a cleaner layout.
+  - Moved the Hide/Show Sidebar control to a global toolbar and wired it via window events (`wombat:toggle-sidebar`).
+  - When `projectPlacement="sidebar"`, the project selector and actions render on the same row within the sidebar panel.
+- Global toolbar (`client/src/App.tsx`):
+  - Added a global "Toggle Sidebar" button next to the Theme Selector.
+- Saved libraries dropdown (`client/src/components/SavedLibrariesDropdown.tsx`):
+  - Now accepts inline `children` actions that appear to the right of the selector.
+  - Shows these actions only when a saved library is selected (working session hides them).
+  - Minor layout adjustments for responsive wrapping; CSS updated in `client/src/App.css`.
+- Simulation Manager (`client/src/pages/SimulationManager.tsx`):
+  - "Delete Saved" action moved next to the project selector (as an inline X button) and only appears when a saved library is selected.
+
+Notes: These changes apply across all pages using `PageWithLibrary` and improve consistency of sidebar behavior and project actions.
+
+## v0.11.7 - 19 August 2025
+
+### Client (UI)
+
+- Results Compare (`client/src/pages/ResultsCompare.tsx`):
+  - Plot now shows raw values only; removed percent-difference and baseline selector.
+  - Dark mode styling for Plotly using CSS variables; re-renders on theme change.
+  - Value labels displayed on top of each bar with compact formatting.
+  - Y-axis label auto-derives from the last segment of the metric when a single metric is selected.
+  - File browser filtered to only `results/` paths; YAML-only for this page.
+  - Collapsible sections: Preview Table and Metrics; metric keys textbox moved under an "advanced" collapsible.
+  - TypeScript fix: `readFile(..., true)` used to fetch raw text for `parseSummaryYaml()`.
+
+### Mock API Worker
+
+- `client/src/workers/mockApiWorker.ts`:
+  - Added `stats.maintenance.average_requests_per_month` to `results/summary.yaml` in both the template and simulated summaries so the metric is discoverable and plottable in mock mode.
+
 ## v0.11.6 - 19 August 2025
 
 ### Client (UI)

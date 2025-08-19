@@ -27,7 +27,13 @@ export default function LayoutMap() {
   const { apiBaseUrl, sessionId, initSession, selectedSavedLibrary, libraryFiles, fetchLibraryFiles } = useApiContext()
 
   const [layoutPath, setLayoutPath] = useState<string>('')
-  const [points, setPoints] = useState<Array<{ name: string; lat: number; lon: number; stringId?: string }>>([])
+  const [points, setPoints] = useState<Array<{ id?: string; name: string; lat: number; lon: number; stringId?: string }>>([])
+  const [turbineEnergy, setTurbineEnergy] = useState<Record<string, number>>({})
+  const [turbineMaint, setTurbineMaint] = useState<Record<string, { count: number; hours: number }>>({})
+  const [eventsCsvPath, setEventsCsvPath] = useState<string>('')
+  const [summaryYamlPath, setSummaryYamlPath] = useState<string>('')
+  const [resultGroups, setResultGroups] = useState<Record<string, { summaries: string[]; events: string[] }>>({})
+  const [selectedGroup, setSelectedGroup] = useState<string>('')
   const [status, setStatus] = useState<string>('')
 
   const mapRef = useRef<HTMLDivElement | null>(null)
@@ -47,7 +53,8 @@ export default function LayoutMap() {
     })()
   }, [apiBaseUrl, sessionId, initSession, selectedSavedLibrary, fetchLibraryFiles])
 
-  // When libraryFiles update, select a default layout and optionally load it
+  // When libraryFiles update, select a default layout and optionally load it.
+  // Also detect and build result groups and load selected group's summary/events to enrich popups.
   useEffect(() => {
     if (!libraryFiles) return
     const candidates = (libraryFiles.csv_files ?? []).filter(p => /layout\.csv$/i.test(p))
@@ -59,7 +66,75 @@ export default function LayoutMap() {
     } else {
       setStatus('')
     }
+    // Build groups of results by subfolder under results/, e.g., results/2025-08-19_19-27-28/
+    const yamlList = libraryFiles.yaml_files || []
+    const csvList = libraryFiles.csv_files || []
+    const summaries = yamlList.filter(p => /(^|[\\/])results[\\/].*summary\.(ya?ml)$/i.test(p))
+    const events = csvList.filter(p => /(^|[\\/])results[\\/].*events\.csv$/i.test(p))
+    const groups: Record<string, { summaries: string[]; events: string[] }> = {}
+    const getKey = (p: string) => {
+      // Extract immediate folder name after results/
+      const m = String(p).match(/(^|[\\/])results[\\/]([^\\/]+)[\\/]/i)
+      return m ? m[2] : 'ungrouped'
+    }
+    for (const s of summaries) {
+      const k = getKey(s)
+      if (!groups[k]) groups[k] = { summaries: [], events: [] }
+      groups[k].summaries.push(s)
+    }
+    for (const e of events) {
+      const k = getKey(e)
+      if (!groups[k]) groups[k] = { summaries: [], events: [] }
+      groups[k].events.push(e)
+    }
+    setResultGroups(groups)
+    // Select latest group by lexicographic order, else 'ungrouped'
+    const keys = Object.keys(groups)
+    const sorted = keys.filter(k => k !== 'ungrouped').sort()
+    const def = (sorted.length ? sorted[sorted.length - 1] : (keys.includes('ungrouped') ? 'ungrouped' : ''))
+    setSelectedGroup(def)
+    // Prefer files inside the selected results subfolder
+    setSummaryYamlPath(def && groups[def]?.summaries?.[0] ? groups[def].summaries[0] : '')
+    setEventsCsvPath(def && groups[def]?.events?.[0] ? groups[def].events[0] : '')
   }, [libraryFiles])
+
+  // Load energy/maintenance when selected group or chosen files change
+  useEffect(() => {
+    // Energy from selected summary
+    if (summaryYamlPath) {
+      ;(async () => {
+        try {
+          const rf = await readFile(apiBaseUrl, requireSession, summaryYamlPath, false)
+          const data = rf?.data
+          const energyMap = extractPerTurbineEnergy(data)
+          setTurbineEnergy(energyMap)
+        } catch (e) {
+          console.warn('Failed to load summary yaml', e)
+          setTurbineEnergy({})
+        }
+      })()
+    } else {
+      setTurbineEnergy({})
+    }
+
+    // Maintenance from selected events CSV
+    if (eventsCsvPath) {
+      ;(async () => {
+        try {
+          const rf = await readFile(apiBaseUrl, requireSession, eventsCsvPath, false)
+          const text = typeof rf?.data === 'string' ? rf.data : (rf?.data ? JSON.stringify(rf.data) : '')
+          const rows = Papa.parse(text, { header: true, dynamicTyping: true, skipEmptyLines: true }).data as any[]
+          const maintMap = extractMaintenanceStats(rows)
+          setTurbineMaint(maintMap)
+        } catch (e) {
+          console.warn('Failed to load events CSV', e)
+          setTurbineMaint({})
+        }
+      })()
+    } else {
+      setTurbineMaint({})
+    }
+  }, [summaryYamlPath, eventsCsvPath])
 
   // Clear on project change
   useEffect(() => {
@@ -75,16 +150,30 @@ export default function LayoutMap() {
       const rf = await readFile(apiBaseUrl, requireSession, path, false)
       const text = typeof rf?.data === 'string' ? rf.data : (rf?.data ? JSON.stringify(rf.data) : '')
       const rows = Papa.parse(text, { header: true, dynamicTyping: true }).data as any[]
-      const pts: Array<{ name: string; lat: number; lon: number; stringId?: string }> = []
+      const pts: Array<{ id?: string; name: string; lat: number; lon: number; stringId?: string }> = []
       for (const r of rows) {
         if (!r) continue
-        const name = pickFirst(r, ['name','Name','turbine','Turbine','id','ID','label','Label'])
+        const idVal = pickFirst(r, [
+          // Prefer explicit system/turbine identifiers when present
+          'system_name','SystemName','system_id','SystemID',
+          'turbine','Turbine',
+          // Generic ids and labels
+          'id','ID','name','Name','label','Label',
+        ])
+        const name = pickFirst(r, [
+          'name','Name','label','Label',
+          // Also consider turbine/system names as display names
+          'turbine','Turbine','system_name','SystemName',
+          // Fallback to id fields
+          'id','ID'
+        ])
         const lat = num(pickFirst(r, ['latitude','Latitude','lat','LAT','Lat']))
         const lon = num(pickFirst(r, ['longitude','Longitude','lon','LONG','Long','Lng','lng','long']))
         const sraw = pickFirst(r, ['string','String','string_id','StringID','string_no','StringNo','str','Str','cable','Cable'])
         if (Number.isFinite(lat) && Number.isFinite(lon)) {
           const stringId = sraw != null && String(sraw).trim() !== '' ? String(sraw).trim() : undefined
-          pts.push({ name: String(name ?? ''), lat: Number(lat), lon: Number(lon), stringId })
+          const id = idVal != null && String(idVal).trim() !== '' ? String(idVal).trim() : undefined
+          pts.push({ id, name: String(name ?? ''), lat: Number(lat), lon: Number(lon), stringId })
         }
       }
       setPoints(pts)
@@ -130,9 +219,20 @@ export default function LayoutMap() {
         const marker = L.marker([p.lat, p.lon])
         const labelBase = p.name ? String(p.name) : `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}`
         const label = p.stringId ? `${labelBase} (String ${p.stringId})` : labelBase
+        const energy = lookupEnergy(turbineEnergy, p)
+        const maint = lookupMaint(turbineMaint, p)
+        const popupHtml = `
+          <div style="min-width:200px">
+            <div style="font-weight:600;margin-bottom:4px">${escapeHtml(p.name || '')}${p.id ? ` <span style='color:#888'>(ID: ${escapeHtml(p.id)})</span>` : ''}</div>
+            ${p.stringId ? `<div><strong>String:</strong> ${escapeHtml(p.stringId)}</div>` : ''}
+            <div><strong>Location:</strong> ${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</div>
+            ${Number.isFinite(energy as any) ? `<div><strong>Energy:</strong> ${Number(energy).toFixed(1)} MWh</div>` : ''}
+            ${(maint && (maint.count > 0 || maint.hours > 0)) ? `<div><strong>Maintenance:</strong> ${maint.count} events, ${maint.hours.toFixed(1)} h</div>` : ''}
+          </div>`
         marker
           .addTo(layerRef.current)
           .bindTooltip(label, { direction: 'top', offset: [-14, -10] })
+          .bindPopup(popupHtml)
         bounds.extend([p.lat, p.lon] as any)
       }
       // Draw polylines connecting points with the same stringId (in CSV order)
@@ -162,12 +262,13 @@ export default function LayoutMap() {
       }
     })()
     return () => { /* no-op */ }
-  }, [points])
+  }, [points, turbineEnergy, turbineMaint])
 
 
   return (
     <PageWithLibrary
       title="Layout Map"
+      projectPlacement="sidebar"
       sidebar={(
         <>
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -191,6 +292,40 @@ export default function LayoutMap() {
                 <button className="btn" onClick={() => loadLayout()} disabled={!layoutPath}>Reload</button>
               </div>
               <div>{status}</div>
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontWeight: 600, marginBottom: 6 }}>Results group</div>
+                <select
+                  className="form-control"
+                  value={selectedGroup}
+                  onChange={(e) => {
+                    const g = e.target.value
+                    setSelectedGroup(g)
+                    const grp = resultGroups[g] || { summaries: [], events: [] }
+                    setSummaryYamlPath(grp.summaries[0] || '')
+                    setEventsCsvPath(grp.events[0] || '')
+                  }}
+                >
+                  {Object.entries(resultGroups).sort(([a],[b]) => a.localeCompare(b)).map(([k, v]) => (
+                    <option key={k} value={k}>{k} ({v.summaries.length} sum, {v.events.length} evt)</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 6 }}>
+                  Summary: <code>{summaryYamlPath || '(none)'}</code>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>
+                  Events: <code>{eventsCsvPath || '(none)'}</code>
+                </div>
+              </div>
+              {Object.keys(turbineEnergy).length > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>
+                  Loaded per-turbine energy from <code>results/summary.yaml</code>
+                </div>
+              )}
+              {Object.keys(turbineMaint).length > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>
+                  Loaded maintenance stats from <code>{eventsCsvPath || 'events.csv'}</code>
+                </div>
+              )}
             </div>
           </div>
         </>
@@ -204,6 +339,18 @@ export default function LayoutMap() {
         <summary>Debug: Points ({points.length})</summary>
         <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(points.slice(0, 50), null, 2)}</pre>
       </details>
+      {Object.keys(turbineEnergy).length > 0 && (
+        <details style={{ marginTop: 12 }}>
+          <summary>Debug: Per-turbine energy entries ({Object.keys(turbineEnergy).length})</summary>
+          <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(Object.fromEntries(Object.entries(turbineEnergy).slice(0, 50)), null, 2)}</pre>
+        </details>
+      )}
+      {Object.keys(turbineMaint).length > 0 && (
+        <details style={{ marginTop: 12 }}>
+          <summary>Debug: Maintenance stats entries ({Object.keys(turbineMaint).length})</summary>
+          <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(Object.fromEntries(Object.entries(turbineMaint).slice(0, 50)), null, 2)}</pre>
+        </details>
+      )}
     </PageWithLibrary>
   )
 }
@@ -262,4 +409,96 @@ function convexHullLatLng(points: Array<[number, number]>): Array<[number, numbe
   }
   upper.pop(); lower.pop()
   return lower.concat(upper)
+}
+
+// Try to extract a mapping of turbine identifier -> energy (MWh) from summary.yaml
+function extractPerTurbineEnergy(obj: any): Record<string, number> {
+  if (!obj || typeof obj !== 'object') return {}
+  const candidates: any[] = []
+  // Common shapes we support
+  candidates.push(obj?.stats?.power_production?.per_component_energy_mwh)
+  candidates.push(obj?.power_production?.per_component_energy_mwh)
+  candidates.push(obj?.per_component_energy_mwh)
+  candidates.push(obj?.turbines?.energy_mwh)
+  // Some summaries might nest under results or similar
+  candidates.push(obj?.results?.power_production?.per_component_energy_mwh)
+
+  for (const c of candidates) {
+    if (c && typeof c === 'object' && !Array.isArray(c)) {
+      const out: Record<string, number> = {}
+      for (const [k, v] of Object.entries(c)) {
+        const n = Number(v)
+        if (Number.isFinite(n)) out[String(k)] = n
+      }
+      if (Object.keys(out).length) return out
+    }
+  }
+  return {}
+}
+
+function lookupEnergy(map: Record<string, number>, p: { id?: string; name: string }): number | undefined {
+  if (!map) return undefined
+  // Try by name, then id, then case-insensitive
+  if (p.name && map[p.name] != null) return map[p.name]
+  if (p.id && map[p.id] != null) return map[p.id]
+  const nameKey = Object.keys(map).find(k => p.name && k.toLowerCase() === p.name.toLowerCase())
+  if (nameKey) return map[nameKey]
+  if (p.id) {
+    const idKey = Object.keys(map).find(k => k.toLowerCase() === p.id!.toLowerCase())
+    if (idKey) return map[idKey]
+  }
+  return undefined
+}
+
+// Build a map of turbine identifier -> { count, hours } for maintenance/repair events
+function extractMaintenanceStats(rows: any[]): Record<string, { count: number; hours: number }> {
+  const out: Record<string, { count: number; hours: number }> = {}
+  if (!Array.isArray(rows)) return out
+  for (const r of rows) {
+    if (!r) continue
+    const action = String(r.action ?? r.Action ?? '').toLowerCase()
+    if (action !== 'maintenance' && action !== 'repair') continue
+    // duration in hours
+    const dur = Number(r.duration ?? r.Duration ?? r.duration_hours ?? r.Hours ?? 0)
+    if (!Number.isFinite(dur) || dur <= 0) continue
+    // turbine identifier: prefer explicit turbine/turbine_id, fall back to id/name/label
+    const tid = pickFirst(r, [
+      // Common turbine fields
+      'turbine','Turbine','turbine_id','TurbineID','turbine_name','TurbineName',
+      // Provided schema likely uses system_name/system_id as the turbine identifier
+      'system_name','SystemName','system_id','SystemID',
+      // Fallbacks
+      'id','ID','name','Name','label','Label',
+    ])
+    const key = tid != null && String(tid).trim() !== '' ? String(tid).trim() : undefined
+    if (!key) continue
+    if (!out[key]) out[key] = { count: 0, hours: 0 }
+    out[key].count += 1
+    out[key].hours += dur
+  }
+  return out
+}
+
+function lookupMaint(map: Record<string, { count: number; hours: number }>, p: { id?: string; name: string }) {
+  if (!map) return undefined
+  if (p.name && map[p.name]) return map[p.name]
+  if (p.id && map[p.id]) return map[p.id]
+  const nameKey = Object.keys(map).find(k => p.name && k.toLowerCase() === p.name.toLowerCase())
+  if (nameKey) return map[nameKey]
+  if (p.id) {
+    const idKey = Object.keys(map).find(k => k.toLowerCase() === p.id!.toLowerCase())
+    if (idKey) return map[idKey]
+  }
+  return undefined
+}
+
+// Basic HTML escape to prevent injecting unsafe content into popup HTML
+function escapeHtml(input: string): string {
+  if (input == null) return ''
+  return String(input)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }

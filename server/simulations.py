@@ -58,9 +58,75 @@ def start_simulation_task(client_id: str, project_dir: Optional[str]) -> str:
             # Attempt to save results into client library
             try:
                 import time
-                from server.services.libraries import add_client_library_file, scan_client_library_files
-                path = f"results/{time.strftime('%Y-%m-%d_%H-%M')}_summary.yaml"
-                add_client_library_file(client_id, path, content=result)
+                from server.services.libraries import add_client_library_file, scan_client_library_files, delete_client_library_file
+                ts = time.strftime('%Y-%m-%d_%H-%M-%S')
+                base_dir = f"results/{ts}"
+                # Save structured summary
+                add_client_library_file(client_id, f"{base_dir}/summary.yaml", content=result)
+
+                # Try to persist selected artifacts from the result payload
+                try:
+                    res_files = (result or {}).get("results", {})
+                    # Map of key -> desired target filename
+                    file_map = {
+                        "events": "events.csv",
+                        "operations": "operations.csv",
+                        "power_potential": "power_potential.csv",
+                        "power_production": "power_production.csv",
+                        "metrics_input": "metrics_input.csv",
+                        "gantt": "gantt.html",
+                    }
+                    for key, target_name in file_map.items():
+                        src = res_files.get(key)
+                        if not src:
+                            continue
+                        try:
+                            p = Path(src)
+                            # Resolve relative paths against the client project_dir
+                            if not p.is_absolute() and project_dir:
+                                p = Path(project_dir) / p
+                            if p.exists() and p.is_file():
+                                # Read as text; if binary sneaks in, fallback to bytes decoded as latin-1
+                                try:
+                                    content_text = p.read_text(encoding="utf-8", errors="replace")
+                                except Exception:
+                                    content_text = p.read_bytes().decode("latin-1", errors="replace")
+                                add_client_library_file(client_id, f"{base_dir}/{target_name}", content=content_text)
+                                # If this is the gantt HTML, also try to persist a PNG sibling
+                                if key == "gantt":
+                                    try:
+                                        p_png = p.with_suffix(".png")
+                                        if p_png.exists() and p_png.is_file():
+                                            try:
+                                                png_text = p_png.read_bytes().decode("latin-1", errors="replace")
+                                            except Exception:
+                                                png_text = p_png.read_text(encoding="utf-8", errors="replace")
+                                            add_client_library_file(client_id, f"{base_dir}/gantt.png", content=png_text)
+                                            # delete original png if different location
+                                            if project_dir:
+                                                proj = Path(project_dir).resolve()
+                                                try:
+                                                    rel_png = str(p_png.resolve().relative_to(proj))
+                                                    if not rel_png.replace('\\','/').startswith(f"{base_dir}/"):
+                                                        delete_client_library_file(client_id, rel_png)
+                                                except Exception:
+                                                    pass
+                                    except Exception:
+                                        pass
+                                # Attempt to delete the original to avoid duplicates in results root
+                                try:
+                                    if project_dir:
+                                        proj = Path(project_dir).resolve()
+                                        rel = str(p.resolve().relative_to(proj))
+                                        # Only delete if different from the new location
+                                        if not rel.replace('\\','/').startswith(f"{base_dir}/"):
+                                            delete_client_library_file(client_id, rel)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            continue
+                except Exception:
+                    pass
                 files = scan_client_library_files(client_id)
             except Exception as save_err:
                 logger.warning(f"Failed to persist simulation results for {client_id}: {save_err}")

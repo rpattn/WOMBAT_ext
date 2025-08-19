@@ -57,6 +57,7 @@ export default function Results() {
   return (
     <PageWithLibrary
       title="Results"
+      projectPlacement="sidebar"
       sidebar={(
         <>
           <details open>

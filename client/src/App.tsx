@@ -1,5 +1,5 @@
 import './App.css';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import { ApiProvider, useApiContext } from './context/ApiContext';
@@ -7,10 +7,25 @@ import { ApiProvider, useApiContext } from './context/ApiContext';
 const SimulationManager = lazy(() => import('./pages/SimulationManager'));
 const Results = lazy(() => import('./pages/Results'));
 const ThemeSelector = lazy(() => import('./components/ThemeSelector'));
-const RestClient = lazy(() => import('./components/RestClient'));
 const ResultsCompare = lazy(() => import('./pages/ResultsCompare.tsx'));
 const Gantt = lazy(() => import('./pages/Gantt.tsx'));
 const LayoutMap = lazy(() => import('./pages/LayoutMap.tsx'));
+const ConnectionManager = lazy(() => import('./pages/ConnectionManager'));
+
+// Guard to avoid double auto-init under React StrictMode in development
+let __appAutoInitDone = false;
+
+function AppAutoInit() {
+  const { sessionId, initSession } = useApiContext();
+  useEffect(() => {
+    if (__appAutoInitDone) return;
+    __appAutoInitDone = true;
+    if (!sessionId) {
+      void initSession();
+    }
+  }, [sessionId, initSession]);
+  return null;
+}
 
 export function DownloadWatcher() {
   const { pendingDownloadRef, binaryPreviewUrl, csvPreview } = useApiContext();
@@ -65,20 +80,11 @@ export function DownloadWatcher() {
 }
 
 export default function App() {
-  const { pathname } = useLocation();
   return (
     <ApiProvider>
+      <AppAutoInit />
       <DownloadWatcher />
       <Navbar />
-      {/* REST client panel */}
-      <div className="app-container app-full" style={{minHeight: '0px'}}>
-        <details open={pathname === '/connect'}>
-          <summary style={{textAlign: 'left', padding: '0px'}}>REST Client</summary>
-          <Suspense fallback={null}>
-            <RestClient />
-          </Suspense>
-        </details>
-      </div>
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<SimulationManager />} />
@@ -86,14 +92,23 @@ export default function App() {
           <Route path="/results/compare" element={<ResultsCompare />} />
           <Route path="/results/gantt" element={<Gantt />} />
           <Route path="/simulation/layout" element={<LayoutMap />} />
-          <Route path="/connect" element={<></>} />
+          <Route path="/connect" element={<ConnectionManager />} />
         </Routes>
       </Suspense>
-      {/* Global theme selector */}
+      {/* Global theme selector and sidebar toggle */}
       <div className="app-container app-full" style={{minHeight: '0px'}}>
-        <Suspense fallback={null}>
-          <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
-        </Suspense>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Suspense fallback={null}>
+            <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
+          </Suspense>
+          <button
+            className="btn"
+            title="Toggle Sidebar"
+            aria-label="Toggle Sidebar"
+            onClick={() => { try { window.dispatchEvent(new Event('wombat:toggle-sidebar')) } catch {} }}
+            style={{ marginLeft: 'auto' }}
+          >Toggle Sidebar</button>
+        </div>
       </div>
     </ApiProvider>
   );

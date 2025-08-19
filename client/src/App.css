@@ -43,7 +43,7 @@ html {
 }
 
 .card {
-  padding: 2px;
+  padding: 2px 0px;
 }
 
 .read-the-docs {
@@ -274,7 +274,6 @@ html.dark .btn-secondary:hover { background-color: var(--secondary-100); color: 
   gap: 8px;
   flex-wrap: wrap;
   width: 100%;
-  max-width: 400px;
 }
 .saved-libs-label {
   display: flex;

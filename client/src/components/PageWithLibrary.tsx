@@ -9,9 +9,10 @@ export type PageWithLibraryProps = {
   children: ReactNode
   projectLabel?: string
   projectActions?: ReactNode
+  projectPlacement?: 'header' | 'sidebar'
 }
 
-export default function PageWithLibrary({ title, sidebar, children, projectLabel = 'Project', projectActions }: PageWithLibraryProps) {
+export default function PageWithLibrary({ title, sidebar, children, projectLabel = 'Project', projectActions, projectPlacement = 'header' }: PageWithLibraryProps) {
   const {
     savedLibraries,
     selectedSavedLibrary,
@@ -59,45 +60,26 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
     }
   }, [])
 
+  // Listen for global toggle events dispatched from the App toolbar
+  useEffect(() => {
+    const onToggle = () => setCollapsed(c => !c)
+    const onShow = () => setCollapsed(false)
+    const onHide = () => setCollapsed(true)
+    window.addEventListener('wombat:toggle-sidebar', onToggle as any)
+    window.addEventListener('wombat:show-sidebar', onShow as any)
+    window.addEventListener('wombat:hide-sidebar', onHide as any)
+    return () => {
+      window.removeEventListener('wombat:toggle-sidebar', onToggle as any)
+      window.removeEventListener('wombat:show-sidebar', onShow as any)
+      window.removeEventListener('wombat:hide-sidebar', onHide as any)
+    }
+  }, [])
+
+  // (dropdown now rendered inline in the sidebar when projectPlacement==='sidebar')
+
   return (
     <div className="app-container app-full" style={{ gap: 12 }}>
       <h2>{title}</h2>
-
-      <div className="section" style={{
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        padding: 'var(--space-8)'
-      }}>
-        <h3 className="section-title" style={{ marginTop: 0 }}>{projectLabel}</h3>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="saved-libs" style={{ maxWidth: 520 }}>
-            <SavedLibrariesDropdown
-              libraries={savedLibraries}
-              value={selectedSavedLibrary}
-              onChange={(val: string) => {
-                setSelectedSavedLibrary(val)
-                try { window.localStorage.setItem('lastSavedLibraryName', val || '') } catch {}
-                if (val) {
-                  loadSaved(val).catch(() => {})
-                } else {
-                  // switching back to working session: restore from server-side backup
-                  restoreWorking().catch(() => {})
-                }
-              }}
-            />
-          </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            {sidebar && (
-              <button
-                className="btn"
-                onClick={() => setCollapsed(c => !c)}
-                title={collapsed ? 'Show Sidebar' : 'Hide Sidebar'}
-              >{collapsed ? 'Show Sidebar' : 'Hide Sidebar'}</button>
-            )}
-            {projectActions}
-          </div>
-        </div>
-      </div>
 
       <div className="row stack-sm" style={{ gap: 0, alignItems: 'stretch' }}>
         {sidebar && !collapsed && (
@@ -111,6 +93,29 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
             }}
             className="panel"
           >
+            {projectPlacement === 'sidebar' && (
+              <div>
+                <h3 className="panel-title">{projectLabel}</h3>
+                <div className="panel-body">
+                  <SavedLibrariesDropdown
+                    libraries={savedLibraries}
+                    value={selectedSavedLibrary}
+                    onChange={(val: string) => {
+                      setSelectedSavedLibrary(val)
+                      try { window.localStorage.setItem('lastSavedLibraryName', val || '') } catch {}
+                      if (val) {
+                        loadSaved(val).catch(() => {})
+                      } else {
+                        // switching back to working session: restore from server-side backup
+                        restoreWorking().catch(() => {})
+                      }
+                    }}
+                  >
+                    {projectActions}
+                  </SavedLibrariesDropdown>
+                </div>
+              </div>
+            )}
             {sidebar}
           </aside>
         )}
@@ -134,6 +139,11 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
         )}
         <main style={{ flex: 1, minWidth: 320}}>
           {children}
+          {projectPlacement !== 'sidebar' && projectActions && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+              {projectActions}
+            </div>
+          )}
         </main>
       </div>
     </div>

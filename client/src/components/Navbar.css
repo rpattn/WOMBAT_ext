@@ -90,7 +90,7 @@
 
 /* Small screens: collapse links into dropdown */
 @media (max-width: 768px) {
-  .menu-toggle { display: inline-flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; }
+  .menu-toggle { display: inline-flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; margin: var(--space-6) 0px; }
   .links {
     display: none;
     position: absolute;
@@ -111,7 +111,7 @@
     border-radius: 0;
   }
   /* Mobile: dropdown menu becomes inline list */
-  .dropdown { width: 100%; }
+  .dropdown { width: 100%; display: inline-flex; flex-direction: column; text-align: start; margin-left: var(--space-6); }
   .dropdown-menu {
     position: static;
     display: block; /* always visible under Results in the mobile menu */
