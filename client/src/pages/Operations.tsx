@@ -39,6 +39,9 @@ export default function Operations() {
   const [envDatetimes, setEnvDatetimes] = useState<Date[]>([])
   const [farmAvail, setFarmAvail] = useState<number[]>([])
   const [perSystemLostHours, setPerSystemLostHours] = useState<{ id: string; lost: number; availability: number }[]>([])
+  // Events
+  const [events, setEvents] = useState<{ time: Date; envTime: number; system: string; action: string; reason: string; location: string; requestId: string }[]>([])
+  const [plotEvents, setPlotEvents] = useState<boolean>(true)
 
   useEffect(() => {
     ;(async () => {
@@ -125,7 +128,7 @@ export default function Operations() {
       rf = await readFile(apiBaseUrl, requireSession, path, true)
     }
     if (!rf) return
-    const text = String(rf.data ?? '')
+    const text = typeof rf.data === 'string' ? rf.data : (rf.data_b64 ? atob(rf.data_b64) : '')
     const { columns, rows } = parsePipeCsv(text)
     if (columns.length === 0) return
 
@@ -179,6 +182,61 @@ export default function Operations() {
     setEnvDatetimes(envDT)
     setFarmAvail(farm)
     setPerSystemLostHours(per)
+
+    // Attempt to load the sibling events.csv
+    try {
+      const evPath = norm.replace(/operations\.csv$/i, 'events.csv')
+      const evParts = evPath.split('/')
+      let evRes = null as any
+      if (savedLibraries.includes(evParts[0] || '')) {
+        const lib = evParts.shift() as string
+        const inner = evParts.join('/')
+        evRes = await readSavedFile(apiBaseUrl, lib, inner, true)
+      } else {
+        evRes = await readFile(apiBaseUrl, requireSession, evPath, true)
+      }
+      if (evRes && (typeof evRes.data === 'string' || typeof evRes.data_b64 === 'string')) {
+        const evText = typeof evRes.data === 'string' ? evRes.data : (evRes.data_b64 ? atob(evRes.data_b64) : '')
+        const { columns: ecols, rows: erows } = parsePipeCsv(evText)
+        const tIx = ecols.indexOf('env_datetime')
+        const etIx = ecols.indexOf('env_time')
+        const sysIx = ecols.indexOf('system_id')
+        const actIx = ecols.indexOf('action')
+        const reaIx = ecols.indexOf('reason')
+        const locIx = ecols.indexOf('location')
+        const reqIx = ecols.indexOf('request_id')
+        const out: { time: Date; envTime: number; system: string; action: string; reason: string; location: string; requestId: string }[] = []
+        for (const r of erows) {
+          if (!r || r.length !== ecols.length) continue
+          const dt = tIx >= 0 ? new Date(r[tIx]) : new Date()
+          const etRaw = etIx >= 0 ? Number(r[etIx]) : NaN
+          const action = (actIx >= 0 ? String(r[actIx]) : '').trim()
+          const reason = (reaIx >= 0 ? String(r[reaIx]) : '').trim()
+          const location = (locIx >= 0 ? String(r[locIx]) : '').trim()
+          // Filter out noisy 'n/a delay' style rows
+          const isNA = (s: string) => s === '' || s.toLowerCase() === 'na' || s.toLowerCase() === 'n/a'
+          if (action.toLowerCase() === 'delay' && (isNA(reason) || isNA(location))) continue
+          out.push({
+            time: dt,
+            envTime: Number.isFinite(etRaw) ? etRaw : NaN,
+            system: sysIx >= 0 ? String(r[sysIx]).trim() : '',
+            action,
+            reason: isNA(reason) ? '' : reason,
+            location: isNA(location) ? '' : location,
+            requestId: reqIx >= 0 ? String(r[reqIx]).trim() : '',
+          })
+        }
+        // Keep only MAJOR events at load time to reduce memory/overplotting
+        const MAJOR = /(fail|fault|repair|replace|replac|damage|break|trip|down|restore|startup|commission|decommission|tow|jack|cable|substation|transformer|grid|outage)/i
+        const majorOnly = out.filter(e => MAJOR.test(e.action) || MAJOR.test(e.reason))
+        majorOnly.sort((a, b) => a.time.getTime() - b.time.getTime())
+        setEvents(majorOnly)
+      } else {
+        setEvents([])
+      }
+    } catch {
+      setEvents([])
+    }
   }
 
   // Plotly line chart for farm availability
@@ -210,15 +268,63 @@ export default function Operations() {
       const text = (root.getPropertyValue('--color-text') || '').trim() || (themeMode === 'dark' ? '#E5E7EB' : '#111827')
       const border = (root.getPropertyValue('--color-border') || '').trim() || (themeMode === 'dark' ? '#374151' : '#E5E7EB')
 
-      const x = envDatetimes.length ? envDatetimes : envTimes
-      const traces = [{
+      const usingDates = envDatetimes.length > 0
+      const x = usingDates ? envDatetimes : envTimes
+      const traces: any[] = [{
         x,
         y: farmAvail,
         type: 'scatter',
         mode: 'lines',
         name: 'Farm availability',
-        hovertemplate: '%{x|%Y-%m-%d %H:%M}: %{y:.3f}<extra></extra>'
-      }] as any
+        hovertemplate: usingDates ? '%{x|%Y-%m-%d %H:%M}: %{y:.3f}<extra></extra>' : 'h %{x:.2f}: %{y:.3f}<extra></extra>'
+      }]
+
+      // Event markers (limit to avoid overplotting)
+      const haveTimes = usingDates
+      let evs: typeof events = []
+      if (plotEvents) {
+        const evsSource = events
+        // Only plot repair requests (heuristic): has non-na requestId OR action/reason mentions repair/request
+        const isNA = (s: string) => !s || s.toLowerCase() === 'na' || s.toLowerCase() === 'n/a'
+        const REPAIR_REQ = /(repair|request|repair request)/i
+        const filtered = evsSource.filter(e => !isNA(e.requestId) || REPAIR_REQ.test(e.action) || REPAIR_REQ.test(e.reason))
+        // If numeric axis, only keep events with finite envTime
+        evs = haveTimes ? filtered : filtered.filter(e => Number.isFinite(e.envTime))
+      }
+      if (evs.length > 0) {
+        const ex = haveTimes ? evs.map(e => e.time) : evs.map(e => e.envTime)
+        // Map each event to nearest farm availability Y for hover
+        const y: number[] = []
+        if (haveTimes) {
+          for (const e of evs) {
+            let best = 0, bestDiff = Infinity
+            for (let i = 0; i < envDatetimes.length; i++) {
+              const d = Math.abs(envDatetimes[i].getTime() - e.time.getTime())
+              if (d < bestDiff) { bestDiff = d; best = i }
+            }
+            y.push(farmAvail[best] ?? NaN)
+          }
+        } else {
+          for (const e of evs) {
+            let best = 0, bestDiff = Infinity
+            for (let i = 0; i < envTimes.length; i++) {
+              const d = Math.abs(envTimes[i] - e.envTime)
+              if (d < bestDiff) { bestDiff = d; best = i }
+            }
+            y.push(farmAvail[best] ?? NaN)
+          }
+        }
+        traces.push({
+          x: ex,
+          y,
+          type: 'scatter',
+          mode: 'markers',
+          name: 'Repair requests',
+          marker: { size: 6, color: 'crimson', symbol: 'circle' },
+          text: evs.map(e => `${e.system || ''}${e.system ? ' | ' : ''}${e.action}${e.reason ? ' – ' + e.reason : ''}${!e.requestId ? '' : ` (#${e.requestId})`}`),
+          hovertemplate: (haveTimes ? '%{x|%Y-%m-%d %H:%M} — ' : 'h %{x:.2f} — ') + '%{text}<extra>Event</extra>',
+        })
+      }
 
       const layout = {
         title: 'Farm Availability (equal-weighted)',
@@ -226,17 +332,17 @@ export default function Operations() {
         paper_bgcolor: surface,
         plot_bgcolor: surface,
         font: { color: text },
-        xaxis: { title: envDatetimes.length ? 'Time' : 'Env Hours', gridcolor: border, zerolinecolor: border, linecolor: border, tickcolor: border },
-        yaxis: { title: 'Availability', range: [0, 1.05], gridcolor: border, zerolinecolor: border, linecolor: border, tickcolor: border },
+        xaxis: { title: usingDates ? 'Time' : 'Env Hours', autorange: true, gridcolor: border, zerolinecolor: border, linecolor: border, tickcolor: border },
+        yaxis: { title: 'Availability', autorange: true, gridcolor: border, zerolinecolor: border, linecolor: border, tickcolor: border },
       } as any
       const config = { responsive: true, displaylogo: false } as any
-      await Plotly.newPlot(plotRef.current, traces, layout, config)
+      await Plotly.newPlot(plotRef.current, traces as any, layout, config)
       if (!mounted) {
         await Plotly.purge(plotRef.current)
       }
     })()
     return () => { mounted = false }
-  }, [envTimes, envDatetimes, farmAvail, themeMode])
+  }, [envTimes, envDatetimes, farmAvail, events, plotEvents, themeMode])
 
   return (
     <PageWithLibrary
@@ -293,6 +399,12 @@ export default function Operations() {
         <h3 style={{ margin: 0 }}>Farm availability</h3>
         {loadedRun ? <small style={{ opacity: 0.8 }}>Source: {loadedRun}</small> : null}
       </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+          <input type="checkbox" checked={plotEvents} onChange={e => setPlotEvents(e.target.checked)} />
+          Plot events (repair requests only)
+        </label>
+      </div>
       <div ref={plotRef} style={{ width: '100%', height: 420, background: 'var(--color-surface)', marginTop: 8 }} />
 
       <details style={{ marginTop: 16 }} open>
@@ -319,6 +431,41 @@ export default function Operations() {
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+      </details>
+
+      <details style={{ marginTop: 16 }}>
+        <summary style={{ fontWeight: 600 }}>Major events (filtered)</summary>
+        <div style={{ marginTop: 8, overflow: 'auto', maxHeight: 320 }}>
+          {events.length === 0 ? (
+            <div>No events found for this run/time window.</div>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, marginBottom: 6, opacity: 0.8 }}>Total major events loaded: {events.length}</div>
+              <table className="table-compact">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>System</th>
+                    <th>Action</th>
+                    <th>Reason</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((e, i) => (
+                    <tr key={i}>
+                      <td>{e.time.toISOString().replace('T', ' ').slice(0, 16)}</td>
+                      <td>{e.system}</td>
+                      <td>{e.action}</td>
+                      <td>{e.reason}</td>
+                      <td>{e.location}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       </details>
