@@ -73,10 +73,10 @@ html {
 /* Full-width variant for pages that need to span the viewport */
 .app-full { max-width: var(--app-max-width); width: 95%; }
 
-.section { margin-bottom: var(--space-12); }
 .section-title {
   margin-bottom: var(--space-8);
   color: var(--color-text);
+  padding: var(--space-10);
 }
 
 .controls {
@@ -113,6 +113,8 @@ html {
   border: 1px solid var(--color-border);
   padding: var(--space-8);
   height: fit-content;
+  border-radius: 6px;
+  transition: box-shadow .2s ease, transform .15s ease, border-color .2s ease, background-color .2s ease;
 }
 .panel-title {
   margin: 0 0 var(--space-8) 0;
@@ -120,6 +122,7 @@ html {
   font-size: var(--fs-h3);
 }
 .panel-body { display: block; }
+.panel:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.16); transform: translateY(-1px); }
 
 /* Unstyled list with subtle item rows */
 .list-unstyled { list-style: none; padding-left: 0; margin: 0; }
@@ -129,6 +132,15 @@ html {
 @media (prefers-color-scheme: dark) {
   .item-row:hover { background: rgba(255,255,255,0.04); }
 }
+
+/* Link affordances within panels */
+.panel .link { position: relative; }
+.panel .link::after {
+  content: "→";
+  margin-left: 6px;
+  transition: transform .15s ease;
+}
+.panel .link:hover::after { transform: translateX(2px); }
 
 /* Scroll area for lists */
 .scroll-240 { max-height: 240px; overflow: auto; }
@@ -238,6 +250,10 @@ html.dark .btn-secondary:hover { background-color: var(--secondary-100); color: 
 .csv-controls-bottom { margin-top: var(--space-6); }
 .csv-note { font-size: 12px; opacity: 0.75; margin-top: var(--space-6); }
 
+/* CSV: column filter button uses pseudo-element so header textContent is clean */
+.csv-filter-btn { position: relative; padding: 0 6px; min-width: 24px; height: 24px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.csv-filter-btn::after { content: "⚙"; font-size: 14px; }
+
 /* Results page layout */
 .layout-results {
   display: flex;
@@ -288,3 +304,237 @@ html.dark .btn-secondary:hover { background-color: var(--secondary-100); color: 
 .saved-libs-label-text { margin-right: 8px; white-space: nowrap; }
 .saved-libs-select { padding: 6px 8px; width: 100%; min-width: 0; max-width: 100%; }
 .saved-libs-actions { flex: 0 0 auto; }
+
+/* Splash page */
+.splash-hero {
+  /* Layered, theme-aware background */
+  background:
+    radial-gradient(900px 360px at calc(8% + var(--parallax-x, 0px)) calc(-12% + var(--parallax-y, 0px)), var(--primary-100), transparent 65%),
+    radial-gradient(600px 280px at calc(90% + var(--parallax-x, 0px)) calc(-20% + var(--parallax-y, 0px)), rgba(96,165,250,0.12), transparent 70%),
+    linear-gradient(135deg, var(--color-surface) 0%, rgba(0,0,0,0) 60%);
+  border: none; /* edge-to-edge */
+  padding: 0;
+  margin: 0;
+  position: relative;
+  overflow: hidden;
+  min-height: clamp(420px, 62vh, 720px);
+}
+
+.splash-hero::after {
+  /* subtle vignette */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 60% at 50% 0%, transparent 30%, rgba(0,0,0,0.06) 100%);
+}
+.splash-page { padding-top: var(--space-20); }
+.splash-inner { max-width: 760px; margin: 0 auto; padding: 0 var(--space-6); }
+.splash-hero-content { max-width: 760px; margin-inline: auto; z-index: 1; padding: 20px; margin-top: 10%; }
+.splash-hero-content .btn {align-content: center; height: var(--btn-height); padding: var(--space-8);}
+@media (max-width: 900px) {
+  .splash-hero-content {
+    margin-top: 0%;
+    display: flex;
+    flex-direction: column;
+    min-height: inherit; /* match hero height */
+    padding-bottom: var(--space-10);
+  }
+  .splash-cta {
+    margin-top: auto !important; /* push CTA to bottom */
+  }
+}
+.splash-title {
+  margin: 0 0 var(--space-6) 0;
+  font-size: clamp(34px, 5vw, 56px);
+  color: var(--color-text);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+.splash-title::after {
+  content: "";
+  display: block;
+  width: 50%;
+  height: 3px;
+  margin-top: 10px;
+  background: linear-gradient(90deg, var(--primary-700), transparent);
+  animation: bar-in 700ms ease-out both;
+}
+@keyframes bar-in { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); transform-origin: left; } }
+.splash-subtitle { margin: 0 0 var(--space-8) 0; opacity: 0.9; }
+.splash-cta { display: flex; gap: var(--space-8); flex-wrap: wrap; margin-top: var(--space-4); }
+.splash-cta .btn {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  transform: translateY(0);
+  transition: transform .15s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease;
+  border-radius: 8px;
+}
+.splash-cta .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(0,0,0,0.18); }
+
+/* Hero fade-in on load */
+.splash-hero-content .splash-subtitle,
+.splash-hero-content .splash-cta { opacity: 0; transform: translateY(6px); }
+.splash-hero-content.fade-in .splash-subtitle,
+.splash-hero-content.fade-in .splash-cta {
+  opacity: 1; transform: translateY(0);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.splash-hero-content.fade-in .splash-cta { transition-delay: .06s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-hero-content .splash-subtitle,
+  .splash-hero-content .splash-cta { opacity: 1; transform: none; }
+}
+
+/* Subtle backgrounds for subsequent sections */
+.section {
+  position: relative;
+  z-index: 0;
+  padding: var(--space-16) 0;
+  /* default: inherit subtle from surface; overridden per theme below */
+  background: linear-gradient(180deg, var(--color-surface) 0%, rgba(0,0,0,0) 100%);
+}
+
+/* Light mode: airy, subtle surface fade #dde1e9 98%, #e1e3e8 2%*/
+@media (prefers-color-scheme: light) {
+  .section {
+    background: linear-gradient(to right, #dde1e9, #e1e3e8);
+  }
+}
+
+/* Manual light toggle */
+html.light .section {
+  background: linear-gradient(to right, #dde1e9, #e1e3e8);
+}
+
+/* Dark mode: keep darker banded gradient */
+@media (prefers-color-scheme: dark) {
+  .section { background: linear-gradient(to right, #1a2129, #151920); }
+}
+html.dark .section { background: linear-gradient(to right, #1a2129, #151920); }
+
+/* Panels micro-interactions */
+.panel {
+  transition: transform .25s ease, box-shadow .25s ease, background-color .25s ease;
+  will-change: transform;
+}
+.panel:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.10); }
+
+/* Scroll-reveal animations */
+.reveal { opacity: 0; transform: translateY(12px); }
+.reveal.in-view { opacity: 1; transform: translateY(0); transition: opacity .6s ease, transform .6s ease; }
+.reveal.delay-1 { transition-delay: .06s; }
+.reveal.delay-2 { transition-delay: .12s; }
+.reveal.delay-3 { transition-delay: .18s; }
+
+/* Section title underline sweep (smaller) */
+.section-title {
+  position: relative;
+}
+.section-title::after {
+  content: "";
+  display: block;
+  width: 36%;
+  max-width: 220px;
+  height: 2px;
+  margin-top: 8px;
+  background: linear-gradient(90deg, var(--primary-600), transparent);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+.reveal.in-view .section-title::after,
+.section-title.reveal.in-view::after { animation: bar-in-small 500ms ease-out both; }
+
+@keyframes bar-in-small { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Item-based pop-in for grid items: only items with .reveal animate when they individually enter view */
+.splash-grid > .reveal { opacity: 0; transform: translateY(10px) scale(0.98); }
+.splash-grid > .reveal.in-view { opacity: 1; transform: none; transition: opacity .5s ease, transform .5s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-grid > * { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal.in-view { transition: none !important; transform: none !important; opacity: 1 !important; }
+  .panel { transition: none !important; }
+}
+
+/* Theme-aware CTA emphasis */
+@media (prefers-color-scheme: light) {
+  .splash-cta .btn.btn-primary { background-color: var(--primary-700); color: #fff; border-color: var(--primary-700); }
+  .splash-cta .btn.btn-primary:hover { background-color: var(--primary-600); }
+}
+html.light .splash-cta .btn.btn-primary { background-color: var(--primary-700); color: #fff; border-color: var(--primary-700); }
+html.light .splash-cta .btn.btn-primary:hover { background-color: var(--primary-600); }
+
+@media (prefers-color-scheme: dark) {
+  .splash-cta .btn.btn-secondary { background-color: transparent; color: var(--secondary-700); border-color: var(--secondary-700); }
+  .splash-cta .btn.btn-secondary:hover { background-color: var(--secondary-100); color: var(--secondary-700); }
+}
+html.dark .splash-cta .btn.btn-secondary { background-color: transparent; color: var(--secondary-700); border-color: var(--secondary-700); }
+html.dark .splash-cta .btn.btn-secondary:hover { background-color: var(--secondary-100); color: var(--secondary-700); }
+
+.splash-page .section { padding: var(--space-4) 0 var(--space-2); }
+.splash-page .section + .section { margin-top: var(--space-14); }
+
+.splash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-20);
+}
+@media (max-width: 900px) {
+  .splash-grid { grid-template-columns: 1fr; }
+}
+
+/* Remove conflicting keyframe pop-in; rely on reveal + transition delays above */
+/* Retain panel spacing without forcing animation */
+.splash-grid .panel { margin: var(--space-10); height: auto; }
+
+/* Splash logo animation */
+.splash-logo {
+  width: 96px;
+  height: 96px;
+  display: block;
+  margin: 0 0 var(--space-8) 0;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.15));
+  animation: splash-float 6s ease-in-out infinite;
+}
+
+@keyframes splash-float {
+  0% { transform: translateY(0px) scale(1); opacity: 0.96; }
+  50% { transform: translateY(-6px) scale(1.01); opacity: 1; }
+  100% { transform: translateY(0px) scale(1); opacity: 0.96; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo { animation: none; }
+}
+
+/* Hero illustration positioned behind text */
+.splash-illustration {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch; /* allow the image to fill height */
+  justify-content: stretch;
+  pointer-events: none;
+  z-index: 0;
+}
+.splash-illustration img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 80% 100%; /* bias towards right/bottom */
+  opacity: 0.2;
+  filter: saturate(0.9) contrast(1.05);
+  transition: opacity .3s ease;
+}
+@media (max-width: 900px) {
+  .splash-illustration img { object-position: 70% 100%; opacity: 0.22; }
+}
+@media (prefers-color-scheme: dark) {
+  .splash-illustration img { opacity: 0.22; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-illustration img { transition: none; }
+}

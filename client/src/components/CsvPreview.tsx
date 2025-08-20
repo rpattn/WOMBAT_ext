@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 type Props = {
   preview: string | null;
   filePath: string;
+  onFilteredChange?: (payload: { headers: string[]; rows: string[][] }) => void;
 };
 
 // Detect delimiter from the first non-empty line, counting only delimiters outside quotes
@@ -126,19 +127,36 @@ function parseCsv(text: string, delimiter: string): string[][] {
   return rows;
 }
 
-export default function CsvPreview({ preview, filePath }: Props) {
+export default function CsvPreview({ preview, filePath, onFilteredChange }: Props) {
   const isCsv = !!filePath && filePath.toLowerCase().endsWith('.csv');
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [sort, setSort] = useState<{ index: number; dir: 'asc' | 'desc' } | null>(null);
+  // Column filter state: map column index -> selected values set
+  const [colFilters, setColFilters] = useState<Record<number, Set<string>>>({});
+  const [showFilterFor, setShowFilterFor] = useState<number | null>(null);
 
   // Reset paging when preview changes
   React.useEffect(() => {
     setPage(1);
     setQuery('');
     setSort(null);
+    setColFilters({});
+    setShowFilterFor(null);
   }, [preview, filePath]);
+
+  // Debounce global query input (no debounce in test mode)
+  const DEBOUNCE_MS = (typeof import.meta !== 'undefined' && (import.meta as any).env?.MODE === 'test') ? 0 : 300;
+  React.useEffect(() => {
+    if (DEBOUNCE_MS === 0) {
+      setDebouncedQuery(query.trim().toLowerCase());
+      return;
+    }
+    const id = setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [query, DEBOUNCE_MS]);
 
   // Avoid conditional hooks by always computing with safe text
   // Strip BOM if present to avoid polluting first cell
@@ -246,11 +264,52 @@ export default function CsvPreview({ preview, filePath }: Props) {
     return areHeaders ? effectiveRows.slice(1) : effectiveRows;
   }, [effectiveRows]);
 
+  // Precompute unique values per column (cap to avoid huge menus)
+  const uniqueValuesByCol = useMemo(() => {
+    const map: Record<number, string[]> = {};
+    const MAX = 200;
+    const seenMap: Record<number, Set<string>> = {};
+    for (let ci = 0; ci < headers.length; ci++) {
+      seenMap[ci] = new Set<string>();
+      map[ci] = [];
+    }
+    for (let i = 0; i < dataRows.length; i++) {
+      const r = dataRows[i];
+      for (let ci = 0; ci < headers.length; ci++) {
+        const val = (r?.[ci] ?? '').toString();
+        const set = seenMap[ci]!;
+        if (!set.has(val)) {
+          set.add(val);
+          if (map[ci]!.length < MAX) map[ci]!.push(val);
+        }
+      }
+      // small optimization: stop early if all columns reached cap
+      if (Object.values(map).every(arr => arr.length >= MAX)) break;
+    }
+    // sort values for stable UI
+    for (const k of Object.keys(map)) map[Number(k)].sort((a, b) => a.localeCompare(b));
+    return map;
+  }, [dataRows, headers]);
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return dataRows;
-    return dataRows.filter(r => r.some(c => (c ?? '').toString().toLowerCase().includes(q)));
-  }, [dataRows, query]);
+    // Step 1: global debounced search
+    let base = debouncedQuery
+      ? dataRows.filter(r => r.some(c => (c ?? '').toString().toLowerCase().includes(debouncedQuery)))
+      : dataRows;
+    // Step 2: column filters (AND across columns)
+    const activeCols = Object.keys(colFilters)
+      .map(k => Number(k))
+      .filter(ci => colFilters[ci] && colFilters[ci]!.size > 0);
+    if (activeCols.length === 0) return base;
+    return base.filter(r => {
+      for (const ci of activeCols) {
+        const allowed = colFilters[ci]!;
+        const v = (r?.[ci] ?? '').toString();
+        if (!allowed.has(v)) return false;
+      }
+      return true;
+    });
+  }, [dataRows, debouncedQuery, colFilters]);
 
   const sorted = useMemo(() => {
     if (!sort) return filtered;
@@ -268,6 +327,19 @@ export default function CsvPreview({ preview, filePath }: Props) {
     return copy;
   }, [filtered, sort]);
 
+  // Notify parent about filtered subset (ignoring sorting/pagination) without causing loops
+  const onChangeRef = React.useRef<undefined | ((payload: { headers: string[]; rows: string[][] }) => void)>(undefined);
+  React.useEffect(() => { onChangeRef.current = onFilteredChange; }, [onFilteredChange]);
+  const lastRefs = React.useRef<{ headers: string[] | null; rows: string[][] | null }>({ headers: null, rows: null });
+  React.useEffect(() => {
+    const changed = lastRefs.current.headers !== headers || lastRefs.current.rows !== filtered;
+    if (!changed) return;
+    lastRefs.current = { headers, rows: filtered };
+    if (typeof onChangeRef.current === 'function') {
+      onChangeRef.current({ headers, rows: filtered });
+    }
+  }, [headers, filtered]);
+
   const total = sorted.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -280,6 +352,28 @@ export default function CsvPreview({ preview, filePath }: Props) {
       if (!prev || prev.index !== idx) return { index: idx, dir: 'asc' };
       if (prev.dir === 'asc') return { index: idx, dir: 'desc' };
       return null; // third click removes sort
+    });
+  };
+
+  const toggleColFilterValue = (ci: number, value: string) => {
+    setColFilters(prev => {
+      const next = { ...prev } as Record<number, Set<string>>;
+      const cur = new Set(next[ci] ?? []);
+      if (cur.has(value)) cur.delete(value); else cur.add(value);
+      next[ci] = cur;
+      return next;
+    });
+  };
+
+  const setAllForCol = (ci: number, mode: 'all' | 'none') => {
+    setColFilters(prev => {
+      const next = { ...prev } as Record<number, Set<string>>;
+      if (mode === 'none') {
+        next[ci] = new Set();
+      } else {
+        next[ci] = new Set(uniqueValuesByCol[ci] ?? []);
+      }
+      return next;
     });
   };
 
@@ -329,7 +423,41 @@ export default function CsvPreview({ preview, filePath }: Props) {
                     onClick={() => onHeaderClick(i)}
                     className="csv-th"
                     title="Click to sort"
-                  >{h}{arrow}</th>
+                  >
+                    <span>{h}{arrow}</span>
+                    <button
+                      type="button"
+                      className="btn csv-filter-btn"
+                      style={{ marginLeft: 6 }}
+                      title="Column filters"
+                      aria-label="Column filters"
+                      onClick={(e) => { e.stopPropagation(); setShowFilterFor(p => p === i ? null : i); }}
+                    />
+                    {showFilterFor === i && (
+                      <div className="csv-col-filter-popover" role="dialog" style={{ position: 'absolute', zIndex: 10, background: 'var(--color-surface, #fff)', border: '1px solid var(--color-border, #ccc)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: 8, maxHeight: 260, overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                          <button className="btn" onClick={() => setAllForCol(i, 'all')}>All</button>
+                          <button className="btn" onClick={() => setAllForCol(i, 'none')}>None</button>
+                          <button className="btn" onClick={() => setShowFilterFor(null)}>Close</button>
+                        </div>
+                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Values ({(uniqueValuesByCol[i] ?? []).length})</div>
+                        {(uniqueValuesByCol[i] ?? []).map((v, vi) => {
+                          const selected = colFilters[i]?.has(v) ?? false;
+                          return (
+                            <label key={vi} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0' }}>
+                              <input type="checkbox" checked={selected} onChange={() => toggleColFilterValue(i, v)} />
+                              <span style={{ whiteSpace: 'nowrap' }}>{v === '' ? '(empty)' : v}</span>
+                            </label>
+                          );
+                        })}
+                        {((uniqueValuesByCol[i] ?? []).length >= 200) && (
+                          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
+                            Showing first 200 unique values
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </th>
                 );
               })}
             </tr>
