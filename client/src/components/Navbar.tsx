@@ -66,6 +66,12 @@ export default function Navbar() {
                 Compare
               </NavLink>
               <NavLink
+                to="/results/operations"
+                className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
+              >
+                Operations
+              </NavLink>
+              <NavLink
                 to="/results/gantt"
                 className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
               >

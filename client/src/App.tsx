@@ -10,6 +10,7 @@ const ThemeSelector = lazy(() => import('./components/ThemeSelector'));
 const ResultsCompare = lazy(() => import('./pages/ResultsCompare.tsx'));
 const Gantt = lazy(() => import('./pages/Gantt.tsx'));
 const LayoutMap = lazy(() => import('./pages/LayoutMap.tsx'));
+const Operations = lazy(() => import('./pages/Operations.tsx'));
 const ConnectionManager = lazy(() => import('./pages/ConnectionManager'));
 
 // Guard to avoid double auto-init under React StrictMode in development
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/" element={<SimulationManager />} />
           <Route path="/results" element={<Results />} />
           <Route path="/results/compare" element={<ResultsCompare />} />
+          <Route path="/results/operations" element={<Operations />} />
           <Route path="/results/gantt" element={<Gantt />} />
           <Route path="/simulation/layout" element={<LayoutMap />} />
           <Route path="/connect" element={<ConnectionManager />} />
