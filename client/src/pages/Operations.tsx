@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import CsvPreview from '../components/CsvPreview'
 import PageWithLibrary from '../components/PageWithLibrary'
 import FileSelector from '../components/FileSelector'
 import { useApiContext } from '../context/ApiContext'
@@ -42,6 +43,14 @@ export default function Operations() {
   // Events
   const [events, setEvents] = useState<{ time: Date; envTime: number; system: string; action: string; reason: string; location: string; requestId: string }[]>([])
   const [plotEvents, setPlotEvents] = useState<boolean>(true)
+  // events.csv raw text and viewer-filtered subset
+  const [eventsCsvPreview, setEventsCsvPreview] = useState<string | null>(null)
+  const [eventsCsvPath, setEventsCsvPath] = useState<string>('')
+  const [viewerFiltered, setViewerFiltered] = useState<{ headers: string[]; rows: string[][] } | null>(null)
+
+  const handleViewerFiltered = useCallback((p: { headers: string[]; rows: string[][] }) => {
+    setViewerFiltered(p)
+  }, [])
 
   useEffect(() => {
     ;(async () => {
@@ -231,8 +240,14 @@ export default function Operations() {
         const majorOnly = out.filter(e => MAJOR.test(e.action) || MAJOR.test(e.reason))
         majorOnly.sort((a, b) => a.time.getTime() - b.time.getTime())
         setEvents(majorOnly)
+        setEventsCsvPreview(evText)
+        setEventsCsvPath(evPath)
+        setViewerFiltered(null)
       } else {
         setEvents([])
+        setEventsCsvPreview(null)
+        setEventsCsvPath('')
+        setViewerFiltered(null)
       }
     } catch {
       setEvents([])
@@ -279,17 +294,37 @@ export default function Operations() {
         hovertemplate: usingDates ? '%{x|%Y-%m-%d %H:%M}: %{y:.3f}<extra></extra>' : 'h %{x:.2f}: %{y:.3f}<extra></extra>'
       }]
 
-      // Event markers (limit to avoid overplotting)
+      // Event markers sourced directly from CSV viewer subset
       const haveTimes = usingDates
       let evs: typeof events = []
       if (plotEvents) {
-        const evsSource = events
-        // Only plot repair requests (heuristic): has non-na requestId OR action/reason mentions repair/request
-        const isNA = (s: string) => !s || s.toLowerCase() === 'na' || s.toLowerCase() === 'n/a'
-        const REPAIR_REQ = /(repair|request|repair request)/i
-        const filtered = evsSource.filter(e => !isNA(e.requestId) || REPAIR_REQ.test(e.action) || REPAIR_REQ.test(e.reason))
-        // If numeric axis, only keep events with finite envTime
-        evs = haveTimes ? filtered : filtered.filter(e => Number.isFinite(e.envTime))
+        if (viewerFiltered && viewerFiltered.rows && viewerFiltered.rows.length > 0) {
+          const H = viewerFiltered.headers.map(h => (h || '').toString().trim())
+          const tIx = H.findIndex(h => h.toLowerCase() === 'env_datetime')
+          const etIx = H.findIndex(h => h.toLowerCase() === 'env_time')
+          const sysIx = H.findIndex(h => h.toLowerCase() === 'system_id')
+          const actIx = H.findIndex(h => h.toLowerCase() === 'action')
+          const reaIx = H.findIndex(h => h.toLowerCase() === 'reason')
+          const locIx = H.findIndex(h => h.toLowerCase() === 'location')
+          const reqIx = H.findIndex(h => h.toLowerCase() === 'request_id')
+          const toStr = (v: any) => (v ?? '').toString().trim()
+          const mapped: typeof events = []
+          for (const r of viewerFiltered.rows) {
+            const dt = tIx >= 0 ? new Date(toStr(r[tIx])) : new Date()
+            const etRaw = etIx >= 0 ? Number(toStr(r[etIx])) : NaN
+            const action = actIx >= 0 ? toStr(r[actIx]) : ''
+            const reason = reaIx >= 0 ? toStr(r[reaIx]) : ''
+            const location = locIx >= 0 ? toStr(r[locIx]) : ''
+            const system = sysIx >= 0 ? toStr(r[sysIx]) : ''
+            const requestId = reqIx >= 0 ? toStr(r[reqIx]) : ''
+            mapped.push({ time: dt, envTime: Number.isFinite(etRaw) ? etRaw : NaN, system, action, reason, location, requestId })
+          }
+          // If numeric axis, only keep events with finite envTime
+          evs = haveTimes ? mapped : mapped.filter(e => Number.isFinite(e.envTime))
+        } else {
+          // Fallback to loaded events with no extra filtering
+          evs = haveTimes ? events : events.filter(e => Number.isFinite(e.envTime))
+        }
       }
       if (evs.length > 0) {
         const ex = haveTimes ? evs.map(e => e.time) : evs.map(e => e.envTime)
@@ -342,7 +377,7 @@ export default function Operations() {
       }
     })()
     return () => { mounted = false }
-  }, [envTimes, envDatetimes, farmAvail, events, plotEvents, themeMode])
+  }, [envTimes, envDatetimes, farmAvail, events, plotEvents, viewerFiltered, themeMode])
 
   return (
     <PageWithLibrary
@@ -402,7 +437,7 @@ export default function Operations() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
           <input type="checkbox" checked={plotEvents} onChange={e => setPlotEvents(e.target.checked)} />
-          Plot events (repair requests only)
+          Plot events
         </label>
       </div>
       <div ref={plotRef} style={{ width: '100%', height: 420, background: 'var(--color-surface)', marginTop: 8 }} />
@@ -434,6 +469,17 @@ export default function Operations() {
           )}
         </div>
       </details>
+
+      {eventsCsvPreview ? (
+        <details style={{ marginTop: 16 }} open>
+          <summary style={{ fontWeight: 600 }}>Events CSV (filter to update plot)</summary>
+          <CsvPreview
+            preview={eventsCsvPreview}
+            filePath={eventsCsvPath || 'events.csv'}
+            onFilteredChange={handleViewerFiltered}
+          />
+        </details>
+      ) : null}
 
       <details style={{ marginTop: 16 }}>
         <summary style={{ fontWeight: 600 }}>Major events (filtered)</summary>
