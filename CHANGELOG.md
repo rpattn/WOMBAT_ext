@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v0.11.11 - 20 August 2025
+
+### Client (UI)
+
+- Operations (`client/src/pages/Operations.tsx`):
+  - Plot now reflects exactly the subset shown in the embedded CSV Preview; removed internal repair-request and reason-based filtering.
+  - Hooked plotting to CSV Preview’s `onFilteredChange` so filtering (global or per-column) updates the chart immediately.
+  - Fixed Maximum update depth exceeded by memoizing the handler and using stable emissions from CSV Preview.
+  - Simplified UI: reason dropdown removed; toggle now labeled “Plot events”.
+- CSV Preview (`client/src/components/CsvPreview.tsx`):
+  - Added per-column filter popovers (gear icon in header) with All/None and value checkboxes (capped to 200 unique values).
+  - Global text filter is now debounced (300ms).
+  - Emits filtered subset to parent without causing render loops (callback stored in ref; emits only when headers/rows references change).
+
+### Notes
+
+- Plot autoscaling remains enabled for both axes and respects theme variables.
+
 ## v0.11.10 - 20 August 2025
 
 ### Client (UI)
