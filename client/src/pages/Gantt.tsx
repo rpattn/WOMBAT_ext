@@ -148,6 +148,41 @@ export default function Gantt() {
 
   const segments = useMemo(() => buildCtvSegments(events || []), [events])
 
+  // --- Filtering state ---
+  const [minDuration, setMinDuration] = useState<number>(0)
+  const [textFilter, setTextFilter] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>('') // ISO from input type="datetime-local"
+  const [endDate, setEndDate] = useState<string>('')
+  const vesselList = useMemo(() => Array.from(new Set((segments || []).map(s => s.vessel))).sort(), [segments])
+  const [selectedVessels, setSelectedVessels] = useState<string[]>([])
+  // Reset selected vessels when data changes (default to all)
+  useEffect(() => {
+    setSelectedVessels(vesselList)
+  }, [vesselList])
+  const toggleVessel = (v: string) => setSelectedVessels(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])
+  const selectAllVessels = () => setSelectedVessels(vesselList)
+  const clearVessels = () => setSelectedVessels([])
+
+  const filteredSegments = useMemo(() => {
+    if (!segments || segments.length === 0) return [] as Segment[]
+    const q = textFilter.trim().toLowerCase()
+    const hasQ = q.length > 0
+    const startMs = startDate ? new Date(startDate).getTime() : -Infinity
+    const endMs = endDate ? new Date(endDate).getTime() : Infinity
+    return segments.filter(s => {
+      if (selectedVessels.length && !selectedVessels.includes(s.vessel)) return false
+      if (s.duration_hours < (Number.isFinite(minDuration) ? Number(minDuration) : 0)) return false
+      const sMs = new Date(s.start).getTime()
+      const fMs = new Date(s.finish).getTime()
+      if (!(fMs >= startMs && sMs <= endMs)) return false
+      if (hasQ) {
+        const blob = [s.vessel, s.part_name, s.system_id, s.request_id].filter(Boolean).join(' ').toLowerCase()
+        if (!blob.includes(q)) return false
+      }
+      return true
+    })
+  }, [segments, selectedVessels, minDuration, textFilter, startDate, endDate])
+
   // Detect theme changes (prefers-color-scheme and html class toggles) and trigger re-render
   useEffect(() => {
     const mql = window.matchMedia('(prefers-color-scheme: dark)')
@@ -167,11 +202,11 @@ export default function Gantt() {
     let mounted = true
     ;(async () => {
       // Do not import/initialize Plotly when there is nothing to render (e.g., in tests with no data)
-      if (!plotRef.current || segments.length === 0) return
+      if (!plotRef.current || filteredSegments.length === 0) return
       const Plotly = (await import('plotly.js-dist-min')).default
       const plotDiv = plotRef.current
 
-      const { traces, layout } = buildPlotlyTimeline(segments)
+      const { traces, layout } = buildPlotlyTimeline(filteredSegments)
       // Apply theme-aware colors from CSS variables
       const tokens = getThemeTokens()
       ;(layout as any).paper_bgcolor = tokens.bg
@@ -196,7 +231,7 @@ export default function Gantt() {
       }
     })()
     return () => { mounted = false }
-  }, [segments, themeKey])
+  }, [filteredSegments, themeKey])
 
   return (
     <div className="app-container app-full" style={{ gap: 12 }}>
@@ -244,6 +279,52 @@ export default function Gantt() {
       </div>
 
       <div style={{ marginTop: 12 }}>
+        <div className="panel" style={{ marginBottom: 8 }}>
+          <h3 className="panel-title">Filters</h3>
+          <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ minWidth: 110, fontWeight: 600 }}>Min duration (h)</span>
+                <input type="number" step={0.25} min={0} value={minDuration} onChange={e => setMinDuration(Number(e.target.value))} style={{ width: 100 }} />
+              </label>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ minWidth: 90, fontWeight: 600 }}>Start</span>
+                <input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              </label>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ minWidth: 90, fontWeight: 600 }}>End</span>
+                <input type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </label>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: '1 1 260px' }}>
+                <span style={{ minWidth: 80, fontWeight: 600 }}>Search</span>
+                <input type="text" placeholder="Filter by vessel/part/system/request..." value={textFilter} onChange={e => setTextFilter(e.target.value)} className="csv-filter" style={{ width: '100%' }} />
+              </label>
+              <div style={{ marginLeft: 'auto', opacity: 0.8 }}>
+                {filteredSegments.length} of {segments.length} segments
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <strong>Vessels</strong>
+                <button className="btn btn-secondary" onClick={selectAllVessels} disabled={vesselList.length === 0}>All</button>
+                <button className="btn btn-secondary" onClick={clearVessels} disabled={selectedVessels.length === 0}>None</button>
+              </div>
+              <div style={{ maxHeight: 140, overflow: 'auto', border: '1px solid var(--color-border)', padding: 8, borderRadius: 4 }}>
+                {vesselList.length === 0 ? (
+                  <small>No vessels.</small>
+                ) : (
+                  vesselList.map(v => (
+                    <label key={v} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 12, marginBottom: 6 }}>
+                      <input type="checkbox" checked={selectedVessels.includes(v)} onChange={() => toggleVessel(v)} />
+                      <span>{v}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
         <div ref={plotRef} style={{ width: '100%', height: 500 }} />
       </div>
 
@@ -266,8 +347,8 @@ export default function Gantt() {
       )}
 
       <details style={{ marginTop: 12 }}>
-        <summary>Debug: Segments ({segments.length})</summary>
-        <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(segments.slice(0, 50), null, 2)}</pre>
+        <summary>Debug: Segments ({segments.length}) • Filtered ({filteredSegments.length})</summary>
+        <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(filteredSegments.slice(0, 50), null, 2)}</pre>
       </details>
     </div>
   )

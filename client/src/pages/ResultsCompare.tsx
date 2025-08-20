@@ -372,28 +372,30 @@ export default function ResultsCompare() {
             />
           </div>
         </details>
-        <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="Filter metrics..."
-            value={metricFilter}
-            onChange={e => setMetricFilter(e.target.value)}
-            className="csv-filter"
-            style={{ flex: '0 0 280px' }}
-          />
-          <small>{filteredDiscovered.length} metrics found</small>
-        </div>
-        <div style={{ maxHeight: 180, overflow: 'auto', border: '1px solid var(--color-border)', padding: 8, borderRadius: 4, marginTop: 8 }}>
-          {filteredDiscovered.map(k => (
-            <label key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 12, marginBottom: 6 }}>
-              <input type="checkbox" checked={selectedSet.has(k)} onChange={() => toggleMetric(k)} />
-              <span>{k}</span>
-            </label>
-          ))}
-        </div>
+        <details style={{ marginTop: 8 }} open>
+          <summary style={{ fontWeight: 600 }}>Metric filter</summary>
+          <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="Filter metrics..."
+              value={metricFilter}
+              onChange={e => setMetricFilter(e.target.value)}
+              className="csv-filter"
+              style={{ flex: '0 0 280px' }}
+            />
+            <small>{filteredDiscovered.length} metrics found</small>
+          </div>
+          <div style={{ maxHeight: 180, overflow: 'auto', border: '1px solid var(--color-border)', padding: 8, borderRadius: 4, marginTop: 8 }}>
+            {filteredDiscovered.map(k => (
+              <label key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 12, marginBottom: 6 }}>
+                <input type="checkbox" checked={selectedSet.has(k)} onChange={() => toggleMetric(k)} />
+                <span>{k}</span>
+              </label>
+            ))}
+          </div>
+        </details>
       </details>
 
-      <h3 style={{ marginTop: 16 }}>Chart</h3>
       <div ref={plotRef} style={{ width: '100%', height: 420, background: 'var(--color-surface)' }} />
       <details style={{ marginTop: 8 }}>
         <summary>Plot Data (debug)</summary>

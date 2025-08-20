@@ -6,7 +6,7 @@ type Props = {
   children?: React.ReactNode;
 };
 
-export default function SavedLibrariesDropdown({ libraries, value, onChange, label = 'Saved Libraries', children }: Props) {
+export default function SavedLibrariesDropdown({ libraries, value, onChange, label = 'Saved', children }: Props) {
   const hasItems = Array.isArray(libraries) && libraries.length > 0;
   return (
     <div className="saved-libs" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
