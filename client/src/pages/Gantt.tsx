@@ -202,15 +202,13 @@ export default function Gantt() {
   }, [])
 
   useEffect(() => {
-    let mounted = true
     ;(async () => {
-      // Do not import/initialize Plotly when there is nothing to render (e.g., in tests with no data)
-      if (!plotRef.current || filteredSegments.length === 0) return
+      if (!plotRef.current) return
+      if (filteredSegments.length === 0) return // keep existing plot to avoid flicker
       const Plotly = (await import('plotly.js-dist-min')).default
       const plotDiv = plotRef.current
 
       const { traces, layout } = buildPlotlyTimeline(filteredSegments, chartType)
-      // Apply theme-aware colors from CSS variables
       const tokens = getThemeTokens()
       ;(layout as any).paper_bgcolor = tokens.bg
       ;(layout as any).plot_bgcolor = tokens.surface
@@ -228,12 +226,8 @@ export default function Gantt() {
         tickcolor: tokens.border,
       }
       const config = { responsive: true, displaylogo: false } as any
-      await Plotly.newPlot(plotDiv, traces as any, layout as any, config)
-      if (!mounted) {
-        await Plotly.purge(plotDiv)
-      }
+      await Plotly.react(plotDiv, traces as any, layout as any, config)
     })()
-    return () => { mounted = false }
   }, [filteredSegments, chartType, themeKey])
 
   return (

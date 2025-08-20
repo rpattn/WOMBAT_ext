@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v0.11.10 - 20 August 2025
+
+### Client (UI)
+
+- Gantt (`client/src/pages/Gantt.tsx`):
+  - Added filters: vessel multi-select, minimum duration (hours), date range, and text search across vessel/part/system/request.
+  - Added chart variants selector with three modes:
+    - CTV by vessel (timeline grouped by vessel).
+    - CTV duration (repairs) with duration-based color scale (short→green, long→red).
+    - Repair request durations (aggregated request windows, colored by duration).
+  - Theme-aware Plotly styling via CSS variables continues to apply.
+  - Render stability: switched to `Plotly.react` and avoided purging/clearing on transient empty data to prevent initial flicker/disappearance.
+
+### Notes
+
+- The duration color scale uses `RdYlGn_r` to match server examples (short→green, long→red).
+
 ## v0.11.9 - 20 August 2025
 
 ### Client (UI)
