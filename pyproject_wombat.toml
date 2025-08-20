@@ -1,0 +1,215 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wombat"
+dynamic = ["version"]
+authors = [{name = "Rob Hammond", email = "rob.hammond@nrel.gov"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+description = "Windfarm operations and maintenance cost-benefit analysis tool"
+requires-python = ">=3.11, <3.13"
+license = {file = "LICENSE"}
+dependencies = [
+    "attrs>=24.1.0",
+    "numpy>=1.21",
+    "scipy>=1.8",
+    "pandas>=2",
+    "polars>=0.20.4",
+    "pyarrow>=10",
+    "jupyterlab>=3",
+    "simpy>=4.0.1",
+    "pyyaml>=6",
+    "geopy>=2.3",
+    "networkx>=2.7",
+    "matplotlib>=3.3",
+    "types-attrs>=19",
+    "types-typed-ast>=1.5",
+    "types-PyYAML>=6",
+    "types-python-dateutil>=2.8",
+    "python-dateutil",
+    "polars-lts-cpu; sys_platform == 'darwin'",
+]
+keywords = [
+    "python3",
+    "wind-energy",
+    "operations-maintenance",
+    "discrete-event-simulation",
+    "simulation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Other Audience",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+[project.urls]
+source = "https://github.com/WISDEM/WOMBAT"
+documentation = "https://wisdem.github.io/WOMBAT/"
+issues = "https://github.com/WISDEM/WOMBAT/issues"
+changelog = "https://github.com/WISDEM/WOMBAT/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=2.20",
+    "isort>=5.10",
+    "pytest>=7",
+    "pytest-cov>=4",
+    "pytest-check",
+    "mypy",
+    "ruff>=0.2",
+    "pyupgrade",
+]
+docs = [
+    "jupyter-book>=0.15",
+    "myst-nb>=0.16",
+    "myst-parser>=0.17",
+    "linkify-it-py>=2",
+    "sphinx-autodoc-typehints",
+    "sphinxcontrib-autoyaml",
+    "sphinxcontrib-bibtex>=2.4",
+    "sphinxcontrib-spelling>=7",
+]
+all = ["wombat[dev,docs]"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["wombat", "library", "*.yaml", "*.csv"]
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
+
+[tool.setuptools.dynamic]
+version = {attr = "wombat.__version__"}
+
+[tool.coverage.run]
+# Coverage.py configuration file
+# https://coverage.readthedocs.io/en/latest/config.html
+branch = true
+source = "wombat/*"
+omit = [
+    "setup.py",
+    "tests/*"
+]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --pdbcls=tests:Debugger -r sxX --cov=wombat --cov-report=html --cov-report=term-missing:skip-covered --no-cov-on-fail --ignore=setup.py"
+testpaths = "tests"
+cache_dir = ".cache"
+filterwarnings = [
+  "ignore::DeprecationWarning:simpy.*:",
+  "ignore::DeprecationWarning:pkg_resources.*:",
+]
+
+[tool.isort]
+skip = [
+  "wombat/__init__.py",
+  "wombat/core/__init__.py",
+  "wombat/utilities/__init__.py",
+  "wombat/windfarm/__init__.py",
+  "wombat/windfarm/system/__init__.py",
+]
+multi_line_output = 3
+sections = [
+  "FUTURE",
+  "STDLIB",
+  "THIRDPARTY",
+  "FIRSTPARTY",
+  "LOCALFOLDER",
+]
+known_third_party = [
+  "attrs",
+  "numpy",
+  "networkx",
+  "pandas",
+  "pytest",
+  "scipy",
+  "simpy",
+]
+known_first_party = "wombat"
+known_local_folder = "tests"
+combine_as_imports = true
+force_grid_wrap = 0
+include_trailing_comma = true
+use_parentheses = true
+length_sort = true
+lines_after_imports = 2
+line_length = 88
+
+[tool.numpydoc_validation]
+checks = [
+  "all",
+  "ES01",
+  "SA01",
+  "EX01",
+]
+exclude = ["*__pycache__"]
+
+[tool.ruff]
+src = ["wombat", "tests"]
+line-length = 88
+target-version = "py39"
+fix = true
+
+[tool.ruff.lint]
+# See https://github.com/charliermarsh/ruff#supported-rules
+# for rules included and matching to prefix.
+# TODO: "FBT", "B", "PIE, "T20", "SIM", "PTH", "PD", "I", "PL"
+select = ["F", "E", "W", "C4", "D", "UP"]
+
+# D205: not using summary lines and descriptions, just descriptions
+# D401: don't believe enough in imperative mode to make all the changes currently
+ignore = ["D205", "D401"]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["F", "E", "W", "C4", "D", "UP"]
+unfixable = []
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "examples/archival/*",
+    "examples/*.ipynb"
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"setup.py" = ["D104"]
+"*/__init__.py" = ["D104"]
+"wombat/*__init__.py" = ["F401"]
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"

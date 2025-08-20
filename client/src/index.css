@@ -73,6 +73,11 @@
   --app-max-width: 1600px;
 }
 
+p {
+  margin: 0;
+  margin-top: var(--space-6);
+}
+
 a {
   font-weight: 500;
   color: var(--color-link);

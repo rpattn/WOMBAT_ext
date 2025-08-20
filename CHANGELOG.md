@@ -1,5 +1,51 @@
 # CHANGELOG
 
+## v0.11.10 - 20 August 2025
+
+### Client (UI)
+
+- Gantt (`client/src/pages/Gantt.tsx`):
+  - Added filters: vessel multi-select, minimum duration (hours), date range, and text search across vessel/part/system/request.
+  - Added chart variants selector with three modes:
+    - CTV by vessel (timeline grouped by vessel).
+    - CTV duration (repairs) with duration-based color scale (short→green, long→red).
+    - Repair request durations (aggregated request windows, colored by duration).
+  - Theme-aware Plotly styling via CSS variables continues to apply.
+  - Render stability: switched to `Plotly.react` and avoided purging/clearing on transient empty data to prevent initial flicker/disappearance.
+
+### Notes
+
+- The duration color scale uses `RdYlGn_r` to match server examples (short→green, long→red).
+
+## v0.11.9 - 20 August 2025
+
+### Client (UI)
+
+- Results Compare (`client/src/pages/ResultsCompare.tsx`):
+  - Compare results across multiple saved libraries without loading them into the working session.
+  - New checklist to include saved projects; merged `results/` trees are shown with `libName/` prefixes.
+  - File selection and default expansion updated to handle prefixed paths. Run labels include the library name.
+
+### Client API
+
+- `client/src/api/index.ts`:
+  - Added `listSavedFiles(apiBaseUrl, name)` to list files inside a saved library.
+  - Added `readSavedFile(apiBaseUrl, name, path, raw?)` to read a file from a saved library (supports raw text for YAML/CSV/HTML and base64 for binary where applicable).
+  - Both functions include transparent mock-worker fallbacks.
+
+### Server
+
+- Saved-libraries read-only endpoints:
+  - `GET /api/saved/{name}/files` returns the file listing for a saved library.
+  - `GET /api/saved/{name}/file?path=&raw=` returns the file contents (YAML parsed when not raw; text/html/csv or base64 for binary when raw).
+  - Path resolution guarded against traversal; mirrors shapes used by existing file APIs.
+
+### Mock API Worker
+
+- `client/src/workers/mockApiWorker.ts`:
+  - Implemented handlers for `GET /api/saved/{name}/files` and `GET /api/saved/{name}/file` using `templateLibrary(name)` to provide deterministic content.
+  - Accepts POSIX/Windows path separators and returns structures consistent with server endpoints.
+
 ## v0.11.8 - 20 August 2025
 
 ### Client (UI)

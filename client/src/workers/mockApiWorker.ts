@@ -363,6 +363,49 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
       return { id, ok: true, status: 200, json: { ok: true, message: `Deleted ${name}` } };
     }
 
+    // Read-only access to saved library contents (no session load)
+    const savedFilesMatch = path.match(/^\/api\/saved\/([^/]+)\/files$/);
+    if (savedFilesMatch && method === 'GET') {
+      const name = decodeURIComponent(savedFilesMatch[1]);
+      // Create a deterministic mock library for the saved name
+      const store = templateLibrary(name);
+      return { id, ok: true, status: 200, json: { files: scanFiles(store) } };
+    }
+
+    const savedFileMatch = path.match(/^\/api\/saved\/([^/]+)\/file(.*)$/);
+    if (savedFileMatch && method === 'GET') {
+      const name = decodeURIComponent(savedFileMatch[1]);
+      const query = new URLSearchParams((savedFileMatch[2] || '').replace(/^\?/, ''));
+      const inner = (query.get('path') || '').toString();
+      const raw = (query.get('raw') || 'false').toLowerCase() === 'true';
+      const store = templateLibrary(name);
+      // Accept either POSIX or Windows separators from the client
+      const candidates = [inner, inner.replace(/\//g, '\\')];
+      let key = candidates.find((p) => store.has(p));
+      if (!key) {
+        return { id, ok: false, status: 404, json: { error: 'File not found' } };
+      }
+      const entry = store.get(key)!;
+      const ext = key.toLowerCase();
+      if (raw) {
+        if (entry.kind === 'binary') {
+          return { id, ok: true, status: 200, json: { file: key, data_b64: String(entry.data), mime: entry.mime || 'application/octet-stream', raw: true } };
+        } else {
+          const mime = entry.mime || (ext.endsWith('.html') ? 'text/html' : 'text/plain');
+          const data = entry.kind === 'yaml' ? JSON.stringify(entry.data, null, 2) : String(entry.data);
+          return { id, ok: true, status: 200, json: { file: key, data, mime, raw: true } };
+        }
+      } else {
+        if (entry.kind === 'yaml') {
+          return { id, ok: true, status: 200, json: { file: key, data: entry.data } };
+        } else if (ext.endsWith('.csv') || ext.endsWith('.html')) {
+          return { id, ok: true, status: 200, json: { file: key, data: String(entry.data) } };
+        } else {
+          return { id, ok: true, status: 200, json: { file: key, data: String(entry.data) } };
+        }
+      }
+    }
+
     // Schemas (no session required)
     if (method === 'GET' && path === '/api/schemas') {
       return { id, ok: true, status: 200, json: { available: [

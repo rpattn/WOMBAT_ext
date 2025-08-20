@@ -1,46 +1,38 @@
-# PR: UI layout cleanup and saved libraries UX polish
+# PR: Client Gantt filtering, chart variants, and render stability
 
 ## Summary
-Streamlines page chrome and consolidates project controls into the sidebar. Introduces a global sidebar toggle, simplifies `PageWithLibrary` header, and polishes saved libraries UX with inline actions that only appear when relevant. Includes CHANGELOG update to v0.11.8.
+Enhances the client Gantt page with powerful filtering and multiple chart variants aligned with server examples. Stabilizes Plotly rendering to avoid initial flicker/disappearance. Updates CHANGELOG to v0.11.10.
 
 ## Rationale
-- Reduce visual clutter by removing the header “Project” section.
-- Make sidebar behavior consistent across pages via a global control.
-- Clarify saved libraries actions and avoid showing destructive actions when they don’t apply (working session).
+- Better explore results by filtering vessels, time ranges, and text.
+- Provide alternate visualizations (duration-colored CTV repairs and aggregated repair request windows) inspired by `examples/dinwoodie_gantt_chart_plotly.py`.
+- Improve UX by switching to `Plotly.react` and preventing transient clears.
 
 ## Changes
-- `client/src/App.tsx`
-  - Adds global "Toggle Sidebar" control next to Theme Selector; dispatches `wombat:toggle-sidebar`.
-- `client/src/components/PageWithLibrary.tsx`
-  - Removes header "Project" box; listens to global toggle events (`wombat:toggle-sidebar`, `wombat:show-sidebar`, `wombat:hide-sidebar`).
-  - When `projectPlacement="sidebar"`, renders project selector and related actions inline within the sidebar panel.
-  - Moves optional `projectActions` under the main content area when `projectPlacement!=='sidebar'`.
-- `client/src/components/SavedLibrariesDropdown.tsx`
-  - Accepts inline `children` actions; only rendered when `value` (a saved library) is selected.
-  - Minor layout tweaks for better wrapping on small widths.
-- `client/src/pages/SimulationManager.tsx`
-  - Integrates with new sidebar project placement; shows inline Delete Saved ("X") only when a saved library is selected.
-- `client/src/pages/ResultsCompare.tsx`
-  - Opts in to `projectPlacement="sidebar"` for consistent layout.
-- `client/src/App.css`
-  - Tweaks `.saved-libs*` styles for responsive inline layout.
+- `client/src/pages/Gantt.tsx`
+  - Added filters: vessel multi-select, min duration (h), date range, text search.
+  - Added chart selector with three modes: `ctv_vessel`, `ctv_duration`, `repair_requests`.
+  - Extended `Segment` to include `action` (maintenance|repair) for variant filtering.
+  - Implemented `buildPlotlyTimeline(segments, chartType)` generating traces/layout per variant.
+  - Duration color scale set to `RdYlGn_r` (short→green, long→red) for consistency with examples.
+  - Switched to `Plotly.react` and kept existing plot when filtered data is empty to avoid flicker.
 - `CHANGELOG.md`
-  - Adds v0.11.8 entry covering these UI and UX updates.
+  - Added v0.11.10 entry describing the above.
 
 ## Testing
-- Unit/Integration: `npm run test` — all tests passing locally.
 - Manual:
-  - Use the global toggle to collapse/expand the sidebar; verify it affects pages using `PageWithLibrary`.
-  - In `Simulation Manager`, select a saved library; confirm inline Delete (X) shows, performs delete, and hides for working session.
-  - Confirm no header project box appears and that controls render inside the sidebar when `projectPlacement="sidebar"`.
+  - Load a results CSV containing events; verify segments appear.
+  - Toggle chart selector across the three modes; ensure plot updates without disappearing.
+  - Apply filters (vessels, min duration, date range, text) and confirm traces update accordingly; observe counter "filtered of total".
+  - Toggle theme; verify axis/grid/text colors adapt (CSS variables).
 
 ## Risks / Rollout
-- Low risk. Changes are UI-only and backwards compatible.
-- Pages not opting into `projectPlacement="sidebar"` continue to render `projectActions` below main content.
+- Low risk; changes are client-only. Uses existing CSV data and does not alter server APIs.
+- The aggregated “repair requests” view approximates durations by span of events per request_id; acceptable for client visualization.
 
-## Follow-ups (Optional)
-- Consider keyboard shortcut for sidebar toggle.
-- Add e2e snapshot(s) to cover presence/absence of inline actions for saved vs working sessions.
+## Follow-ups
+- Optionally add a "detailed" tasks chart equivalent to `create_detailed_gantt_chart_plotly()` server example.
+- Persist filter selections via URL or localStorage.
 
 ## Changelog
-- Updated `CHANGELOG.md` to v0.11.8.
+- Updated `CHANGELOG.md` to v0.11.10.
