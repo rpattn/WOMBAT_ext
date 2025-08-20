@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiContext } from '../context/ApiContext'
 import FileSelector from '../components/FileSelector'
-import { listFiles, readFile, type FileList } from '../api'
+import { listFiles, readFile, listSavedFiles, readSavedFile, type FileList } from '../api'
 import { normalizeForPlotly, parseSummaryYaml } from '../utils/results'
 import PageWithLibrary from '../components/PageWithLibrary'
 
@@ -11,6 +11,7 @@ export default function ResultsCompare() {
     sessionId,
     initSession,
     libraryFiles,
+    savedLibraries,
     selectedSavedLibrary,
   } = useApiContext()
 
@@ -20,6 +21,8 @@ export default function ResultsCompare() {
   }
 
   const [files, setFiles] = useState<FileList | null>(null)
+  const [selectedLibs, setSelectedLibs] = useState<string[]>([])
+  const [savedLibFiles, setSavedLibFiles] = useState<Record<string, FileList>>({})
   const [selectedSummaries, setSelectedSummaries] = useState<string[]>([])
   const [summaries, setSummaries] = useState<{ run: string; data: any }[]>([])
   // Default to useful nested metrics present in summary YAMLs
@@ -40,24 +43,48 @@ export default function ResultsCompare() {
     })()
   }, [apiBaseUrl, sessionId, initSession, selectedSavedLibrary, libraryFiles])
 
+  // Load file lists for selected saved libraries
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const out: Record<string, FileList> = {}
+      for (const name of selectedLibs) {
+        const f = await listSavedFiles(apiBaseUrl, name)
+        if (f) out[name] = f
+      }
+      if (!cancelled) setSavedLibFiles(out)
+    })()
+    return () => { cancelled = true }
+  }, [apiBaseUrl, selectedLibs])
+
   // Clear current selections when project changes
   useEffect(() => {
     setSelectedSummaries([])
     setSummaries([])
   }, [selectedSavedLibrary])
 
-  // Only show files that live under the results directory
+  // Only show files that live under the results directory (merge current session and selected saved libs, prefixing with lib name)
   const resultsOnlyFiles = useMemo(() => {
     if (!files) return undefined
     const re = /^(?:results[\\/])/i
-    return {
+    const base = {
       yaml_files: (files.yaml_files || []).filter(p => re.test(p)),
       csv_files: (files.csv_files || []).filter(p => re.test(p)),
-      html_files: (files as any).html_files ? (files as any).html_files.filter((p: string) => re.test(p)) : undefined,
-      png_files: (files as any).png_files ? (files as any).png_files.filter((p: string) => re.test(p)) : undefined,
-      total_files: undefined,
+      html_files: (files as any).html_files ? (files as any).html_files.filter((p: string) => re.test(p)) : [],
+      png_files: (files as any).png_files ? (files as any).png_files.filter((p: string) => re.test(p)) : [],
+      total_files: undefined as any,
     }
-  }, [files])
+    // Append saved libraries with prefix `${lib}/`
+    for (const lib of Object.keys(savedLibFiles)) {
+      const libFiles = savedLibFiles[lib]
+      const addPref = (arr?: string[]) => (arr || []).filter(p => re.test(p)).map(p => `${lib}/${p}`)
+      base.yaml_files = base.yaml_files.concat(addPref(libFiles.yaml_files))
+      base.csv_files = base.csv_files.concat(addPref(libFiles.csv_files))
+      base.html_files = base.html_files.concat(addPref((libFiles as any).html_files))
+      base.png_files = base.png_files.concat(addPref((libFiles as any).png_files))
+    }
+    return base
+  }, [files, savedLibFiles])
 
   const defaultExpand = useMemo(() => {
     const base = ['results'] as string[]
@@ -71,10 +98,15 @@ export default function ResultsCompare() {
     const subs = new Set<string>()
     for (const p of all) {
       const parts = String(p).replace(/\\/g, '/').split('/').filter(Boolean)
-      if (parts[0] === 'results' && parts[1]) subs.add(parts[1])
+      if (parts[0] && parts[1] === 'results' && parts[2]) {
+        // Prefixed path: lib/results/<sub>
+        subs.add(`${parts[0]}/results/${parts[2]}`)
+      } else if (parts[0] === 'results' && parts[1]) {
+        subs.add(`results/${parts[1]}`)
+      }
     }
     const first = Array.from(subs).sort()[0]
-    if (first) base.push(`results/${first}`)
+    if (first) base.push(first)
     return base
   }, [resultsOnlyFiles])
 
@@ -99,18 +131,30 @@ export default function ResultsCompare() {
     if (paths.length === 0) return
     const loaded: { run: string; data: any }[] = []
     for (const p of paths) {
-      const rf = await readFile(apiBaseUrl, requireSession, p, true)
+      // Detect if path is prefixed with a saved library name "lib/path"
+      const norm = String(p).replace(/\\/g, '/')
+      const parts = norm.split('/')
+      let rf = null as any
+      if (parts.length > 1 && savedLibraries.includes(parts[0])) {
+        const lib = parts.shift() as string
+        const inner = parts.join('/')
+        rf = await readSavedFile(apiBaseUrl, lib, inner, true)
+      } else {
+        rf = await readFile(apiBaseUrl, requireSession, p, true)
+      }
       if (!rf) continue
       const text = String(rf.data ?? '')
       const obj = await parseSummaryYaml(text)
-      const normalizedPath = String(p).replace(/\\/g, '/')
-      const parts = normalizedPath.split('/')
-      const fileBase = parts.pop() || normalizedPath
-      const folder = parts.pop() || ''
+      const normalizedPath = norm
+      const parts2 = normalizedPath.split('/')
+      const fileBase = parts2.pop() || normalizedPath
+      const folder = parts2.pop() || ''
       const baseRun = (obj && typeof obj === 'object' && (obj as any).name)
         ? String((obj as any).name)
         : fileBase
-      const runName = folder ? `${baseRun} (${folder})` : baseRun
+      // If prefixed with a library, include it in the run name
+      const maybeLib = savedLibraries.includes(parts2[0] || '') ? parts2[0] + ': ' : ''
+      const runName = folder ? `${maybeLib}${baseRun} (${folder})` : `${maybeLib}${baseRun}`
       loaded.push({ run: runName, data: obj })
     }
     setSummaries(loaded)
@@ -243,14 +287,33 @@ export default function ResultsCompare() {
         <>
           <h3 className="panel-title">Browse Files</h3>
           <div className="panel-body">
+            <details>
+              <summary style={{ fontWeight: 600 }}>Saved projects to include</summary>
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {savedLibraries.length === 0 ? (
+                  <small>No saved libraries found.</small>
+                ) : (
+                  savedLibraries.map((lib) => (
+                    <label key={lib} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedLibs.includes(lib)}
+                        onChange={() => setSelectedLibs(s => s.includes(lib) ? s.filter(x => x !== lib) : [...s, lib])}
+                      />
+                      <span>{lib}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </details>
             <FileSelector
-              projectName={selectedSavedLibrary || 'Library Files'}
+              projectName={(selectedSavedLibrary || 'Library Files') + (selectedLibs.length ? ` + ${selectedLibs.length} saved` : '')}
               libraryFiles={resultsYamlOnlyFiles}
               selectedFile={undefined}
               selectedFiles={selectedSummaries}
               onFileSelect={(path: string) => {
                 const isYaml = /\.(ya?ml)$/i.test(path)
-                const inResults = /^(?:results[\\/])/i.test(path)
+                const inResults = /^(?:[^/]+\/)?results[\\/]/i.test(path)
                 if (isYaml && inResults) {
                   toggleSummary(path)
                 }

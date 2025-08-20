@@ -75,3 +75,39 @@ export async function triggerRun(apiBaseUrl: string, requireSession: () => strin
   if (!r.ok) return null
   return await r.json()
 }
+
+// Saved library read-only helpers (no session load required)
+export async function listSavedFiles(apiBaseUrl: string, name: string): Promise<FileList | null> {
+  try {
+    const r = await fetch(`${apiBaseUrl}/saved/${encodeURIComponent(name)}/files`)
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const j = await r.json()
+    return j?.files ?? null
+  } catch {
+    try {
+      const wr = await mockApiRequest('GET', `/api/saved/${encodeURIComponent(name)}/files`)
+      if (wr.ok) return (wr.json?.files ?? wr.json) as FileList
+    } catch {}
+    return null
+  }
+}
+
+export async function readSavedFile(apiBaseUrl: string, name: string, path: string, raw = false): Promise<ReadFileResult | null> {
+  try {
+    const url = new URL(`${apiBaseUrl}/saved/${encodeURIComponent(name)}/file`)
+    url.searchParams.set('path', path)
+    url.searchParams.set('raw', String(raw))
+    const r = await fetch(url)
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    return await r.json()
+  } catch {
+    try {
+      const q = new URLSearchParams()
+      q.set('path', path)
+      q.set('raw', String(raw))
+      const wr = await mockApiRequest('GET', `/api/saved/${encodeURIComponent(name)}/file?${q.toString()}`)
+      if (wr.ok) return wr.json as ReadFileResult
+    } catch {}
+    return null
+  }
+}
