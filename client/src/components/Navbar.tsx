@@ -21,6 +21,15 @@ export default function Navbar() {
         <div className="links" onClick={() => setOpen(false)}>
           <div className="dropdown">
             <NavLink
+              to="/"
+              end
+              className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
+            >
+              Home
+            </NavLink>
+          </div>
+          <div className="dropdown">
+            <NavLink
               to="/connect"
               className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
             >
@@ -29,16 +38,14 @@ export default function Navbar() {
           </div>
           <div className="dropdown">
             <NavLink
-              to="/"
-              end
+              to="/sim"
               className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
             >
               Simulation Manager
             </NavLink>
             <div className="dropdown-menu" role="menu">
               <NavLink
-                to="/"
-                end
+                to="/sim"
                 className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
               >
                 Overview

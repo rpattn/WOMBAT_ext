@@ -12,6 +12,7 @@ const Gantt = lazy(() => import('./pages/Gantt.tsx'));
 const LayoutMap = lazy(() => import('./pages/LayoutMap.tsx'));
 const Operations = lazy(() => import('./pages/Operations.tsx'));
 const ConnectionManager = lazy(() => import('./pages/ConnectionManager'));
+const Splash = lazy(() => import('./pages/Splash.tsx'));
 
 // Guard to avoid double auto-init under React StrictMode in development
 let __appAutoInitDone = false;
@@ -88,7 +89,8 @@ export default function App() {
       <Navbar />
       <Suspense fallback={null}>
         <Routes>
-          <Route path="/" element={<SimulationManager />} />
+          <Route path="/" element={<Splash />} />
+          <Route path="/sim" element={<SimulationManager />} />
           <Route path="/results" element={<Results />} />
           <Route path="/results/compare" element={<ResultsCompare />} />
           <Route path="/results/operations" element={<Operations />} />
@@ -115,3 +117,4 @@ export default function App() {
     </ApiProvider>
   );
 }
+

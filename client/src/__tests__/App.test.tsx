@@ -27,8 +27,13 @@ describe('App', () => {
     // Navbar brand
     expect(screen.getByText('WOMBAT_ext')).toBeInTheDocument();
 
-    // Simulation Manager link should be active on root
+    // Home is active on root
+    const homeLink = screen.getByRole('link', { name: /home/i });
+    expect(homeLink).toHaveClass('active');
+
+    // Navigate to Simulation Manager
     const simLink = screen.getByRole('link', { name: /simulation manager/i });
+    await user.click(simLink);
     expect(simLink).toHaveClass('active');
 
     // Navigate to Results
