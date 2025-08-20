@@ -147,11 +147,16 @@ export default function CsvPreview({ preview, filePath, onFilteredChange }: Prop
     setShowFilterFor(null);
   }, [preview, filePath]);
 
-  // Debounce global query input
+  // Debounce global query input (no debounce in test mode)
+  const DEBOUNCE_MS = (typeof import.meta !== 'undefined' && (import.meta as any).env?.MODE === 'test') ? 0 : 300;
   React.useEffect(() => {
-    const id = setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 300);
+    if (DEBOUNCE_MS === 0) {
+      setDebouncedQuery(query.trim().toLowerCase());
+      return;
+    }
+    const id = setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), DEBOUNCE_MS);
     return () => clearTimeout(id);
-  }, [query]);
+  }, [query, DEBOUNCE_MS]);
 
   // Avoid conditional hooks by always computing with safe text
   // Strip BOM if present to avoid polluting first cell
@@ -425,10 +430,9 @@ export default function CsvPreview({ preview, filePath, onFilteredChange }: Prop
                       className="btn csv-filter-btn"
                       style={{ marginLeft: 6 }}
                       title="Column filters"
+                      aria-label="Column filters"
                       onClick={(e) => { e.stopPropagation(); setShowFilterFor(p => p === i ? null : i); }}
-                    >
-                      ⚙
-                    </button>
+                    />
                     {showFilterFor === i && (
                       <div className="csv-col-filter-popover" role="dialog" style={{ position: 'absolute', zIndex: 10, background: 'var(--color-surface, #fff)', border: '1px solid var(--color-border, #ccc)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: 8, maxHeight: 260, overflow: 'auto' }} onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>

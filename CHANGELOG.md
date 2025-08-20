@@ -13,6 +13,12 @@
   - Added per-column filter popovers (gear icon in header) with All/None and value checkboxes (capped to 200 unique values).
   - Global text filter is now debounced (300ms).
   - Emits filtered subset to parent without causing render loops (callback stored in ref; emits only when headers/rows references change).
+ - Splash (`client/src/pages/Splash.tsx`, `client/src/App.css`):
+   - Added 5s delayed reveal for the second section via `.delay-reveal-5s` and removed pre-applied `in-view` on the section title so it’s observer-controlled.
+   - Ensured delay applies by adding a more specific rule after `.reveal.in-view` (with `!important`), and targeted grid item reveals.
+   - Light mode section background updated to a soft gradient `linear-gradient(to right, #dde1e9, #e1e3e8)`; dark mode keeps `#1a2129 → #151920`.
+   - Minor spacing cleanup on the hero/sections to achieve edge-to-edge hero and consistent section padding.
+   - Respects reduced-motion: transition delays are disabled when `prefers-reduced-motion: reduce`.
 
 ### Notes
 

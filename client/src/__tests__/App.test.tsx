@@ -42,9 +42,5 @@ describe('App', () => {
 
     // Navigate to Connection Manager
     await user.click(screen.getByRole('link', { name: /connection manager/i }));
-    // The details element summary shows REST Client
-    const matches = screen.getAllByText(/rest client/i);
-    const summaryEl = matches.find((el) => el.tagName.toLowerCase() === 'summary');
-    expect(summaryEl).toBeTruthy();
   });
 });

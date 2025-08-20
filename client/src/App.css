@@ -250,6 +250,10 @@ html.dark .btn-secondary:hover { background-color: var(--secondary-100); color: 
 .csv-controls-bottom { margin-top: var(--space-6); }
 .csv-note { font-size: 12px; opacity: 0.75; margin-top: var(--space-6); }
 
+/* CSV: column filter button uses pseudo-element so header textContent is clean */
+.csv-filter-btn { position: relative; padding: 0 6px; min-width: 24px; height: 24px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.csv-filter-btn::after { content: "⚙"; font-size: 14px; }
+
 /* Results page layout */
 .layout-results {
   display: flex;
