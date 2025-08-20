@@ -42,7 +42,7 @@ html {
   }
 }
 
-@media screen {
+@media (max-width: 768px) {
   .card {
     margin: 8px 0px;
   }
