@@ -22,7 +22,7 @@
   border-radius: 0;
   padding: var(--space-10);
   background-color: #fff;
-  max-height: 800px;
+  max-height: 550px;
   height: fit-content;
   overflow-y: auto;
   /* Improve nested scrolling on mobile Safari/Chrome */

@@ -88,7 +88,6 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
               minWidth: MIN_WIDTH,
               flex: `0 0 ${sidebarWidth}px`,
               maxWidth: MAX_WIDTH,
-              overflow: 'hidden',
               borderRight: '1px solid var(--color-border)'
             }}
             className="panel"
@@ -129,7 +128,7 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
               userSelect: 'none',
               background: 'transparent',
               position: 'relative',
-              paddingRight: '16px'
+              margin: '0px 2px'
             }}
             aria-label="Resize sidebar"
             title="Drag to resize. Double-click to reset."

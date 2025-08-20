@@ -33,7 +33,7 @@ Set python interpreter to `.$name/bin/python` in VS code or as kernel in ipynb n
 Server:\
 `python -m uvicorn server.main:app` \
 or \
-`.\server\run.bat`
+`.\server\start.bat`
 
 Client:\
 `cd client`\

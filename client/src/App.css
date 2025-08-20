@@ -42,8 +42,10 @@ html {
   }
 }
 
-.card {
-  padding: 2px 0px;
+@media screen {
+  .card {
+    margin: 8px 0px;
+  }
 }
 
 .read-the-docs {
@@ -110,6 +112,7 @@ html {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   padding: var(--space-8);
+  height: fit-content;
 }
 .panel-title {
   margin: 0 0 var(--space-8) 0;
