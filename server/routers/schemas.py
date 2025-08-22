@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from wombat.utilities.schema_gen import (
+from wombat_api.utilities.schema_gen import (
     schema_by_name,
     schema_service_equipment_variants,
 )

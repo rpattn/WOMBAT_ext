@@ -186,7 +186,7 @@ WOMBAT_ext exposes JSON Schemas for validating configuration and library YAML/JS
 
 - **Generate in Python**
   ```python
-  from wombat.utilities.schema_gen import schema_by_name
+  from wombat_api.utilities.schema_gen import schema_by_name
 
   turbine_schema = schema_by_name("turbine")
   config_schema = schema_by_name("configuration")

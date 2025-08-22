@@ -105,7 +105,7 @@ class ClientManager:
     
     def _create_client_project(self, client_id: str) -> str:
         """Create a per-client project directory and configuration."""
-        from wombat.api.simulation_setup import create_temp_config, create_temp_library
+        from wombat_api.api.simulation_setup import create_temp_config, create_temp_library
         import os
         
         # Create client-specific directory
