@@ -64,7 +64,7 @@ export default function Splash() {
             <Link to="/sim" className="btn btn-primary">Open Simulation Manager</Link>
             <Link to="/results" className="btn btn-secondary">Browse Results</Link>
           </div>
-          <div className="splash-illustration">
+          <div className="splash-illustration" style={{width: '110%', height: '110%'}}>
             <img src={hero} alt="Offshore wind hero" />
           </div>
         </div>

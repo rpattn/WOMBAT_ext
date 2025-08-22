@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import { ApiProvider, useApiContext } from './context/ApiContext';
+import Splash from './pages/Splash.tsx';
 
 const SimulationManager = lazy(() => import('./pages/SimulationManager'));
 const Results = lazy(() => import('./pages/Results'));
@@ -12,7 +13,6 @@ const Gantt = lazy(() => import('./pages/Gantt.tsx'));
 const LayoutMap = lazy(() => import('./pages/LayoutMap.tsx'));
 const Operations = lazy(() => import('./pages/Operations.tsx'));
 const ConnectionManager = lazy(() => import('./pages/ConnectionManager'));
-const Splash = lazy(() => import('./pages/Splash.tsx'));
 
 // Guard to avoid double auto-init under React StrictMode in development
 let __appAutoInitDone = false;
