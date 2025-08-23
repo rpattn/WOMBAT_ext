@@ -38,8 +38,10 @@ type FileEntry = { kind: 'text' | 'yaml' | 'binary'; mime?: string; data: any };
 const clientStores = new Map<string, Map<string, FileEntry>>(); // per-client virtual FS
 
 const savedLibraries = new Set<string>(['dinwoodie_mock', 'dinwoodie_base']);
-type Task = { clientId: string; status: 'running' | 'finished' | 'unknown'; result?: any };
+type Progress = { now: number; percent?: number | null; message?: string };
+type Task = { clientId: string; status: 'running' | 'finished' | 'failed' | 'unknown'; result?: any; progress?: Progress; timerId?: any; startedAt?: number };
 const tasks = new Map<string, Task>();
+const progressTimers = new Map<string, any>();
 
 function tinyPngB64(): string {
   // 1x1 transparent PNG
@@ -273,10 +275,48 @@ function templateLibrary(name = 'Dinwoodie Mock'): Map<string, FileEntry> {
   fs.set('results\\summary.yaml', {
     kind: 'yaml',
     data: {
-      summary: 'Mock summary for demonstration',
-      energy_mwh: 12345,
-      cables: { length_km: 12.3 },
-      stats: { maintenance: { average_requests_per_month: 2.5 } },
+      summary: 'Mock simulation complete',
+      status: 'finished',
+      finished_at: new Date().toISOString(),
+      task: 'mock',
+      energy_mwh: 12500,
+      capacity_mw: 15,
+      stats: {
+        maintenance: {
+          total_requests: 8,
+          start_time: '2003-01-01T00:00:00Z',
+          end_time: '2003-12-31T23:59:59Z',
+          average_requests_per_month: 0.7,
+          peak_month: '2003-03',
+          peak_month_count: 2,
+          requests_by_type: { repair: 5, service: 3 },
+          requests_by_component: { T01: 2, T02: 2, T03: 1, T04: 2, T05: 1 },
+        },
+        power_production: {
+          start_time: '2003-01-01T00:00:00Z',
+          end_time: '2003-12-31T23:59:59Z',
+          hours: 8760,
+          windfarm_energy_mwh: 12500,
+          avg_windfarm_power_mw: Number((12500 / 8760).toFixed(2)),
+          peak_windfarm_power_mw: 12.75,
+          capacity_factor: Number(((12500 / 8760) / 15).toFixed(3)),
+          monthly_energy_mwh: {
+            '2003-01': 1150,
+            '2003-02': 980,
+            '2003-03': 1120,
+            '2003-04': 1060,
+            '2003-05': 1000,
+            '2003-06': 980,
+            '2003-07': 1010,
+            '2003-08': 1040,
+            '2003-09': 1060,
+            '2003-10': 1060,
+            '2003-11': 1020,
+            '2003-12': 1030,
+          },
+          per_component_energy_mwh: { T01: 2100, T02: 2120, T03: 2150, T04: 2180, T05: 2200 },
+        },
+      },
     },
   });
   fs.set('results\\report.html', {
@@ -481,27 +521,87 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
         return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const taskId = `task-${Math.random().toString(36).slice(2, 10)}`;
-      tasks.set(taskId, { clientId: cid, status: 'running' });
-      // Complete asynchronously
+      const startedAt = Date.now();
+      const initialProgress: Progress = { now: startedAt, percent: 0, message: 'starting' };
+      tasks.set(taskId, { clientId: cid, status: 'running', progress: initialProgress, startedAt });
+      // Simulate progress over ~8-12 seconds with a finalizing phase
+      const tickMs = 500;
+      let percent = 0;
+      let phase: 'starting' | 'simulating' | 'finalizing' = 'starting';
+      const timerId = setInterval(() => {
+        const t = tasks.get(taskId);
+        if (!t || t.status !== 'running') {
+          clearInterval(timerId);
+          progressTimers.delete(taskId);
+          return;
+        }
+        // Phase transitions and easing
+        if (percent < 5) {
+          phase = 'starting';
+          percent += 1.5;
+        } else if (percent < 92) {
+          phase = 'simulating';
+          // Ease as we approach 92%
+          percent += Math.max(0.8, 5 - (percent / 25));
+        } else if (percent < 98) {
+          phase = 'finalizing';
+          percent += 0.5;
+        } else {
+          phase = 'finalizing';
+          percent = 98; // hold until simulation completes
+        }
+        t.progress = { now: Date.now(), percent: Math.min(98, Math.round(percent * 10) / 10), message: phase };
+        tasks.set(taskId, t);
+      }, tickMs);
+      progressTimers.set(taskId, timerId);
+
+      // Complete asynchronously, then finalize progress to 100
       setTimeout(() => {
-        const store = ensureClientStore(cid);
-        const result = runMockSimulation(store);
-        tasks.set(taskId, { clientId: cid, status: 'finished', result });
-      }, 1000);
-      return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running' } };
+        try {
+          const store = ensureClientStore(cid);
+          const result = runMockSimulation(store);
+          const t = tasks.get(taskId);
+          if (t) {
+            if (progressTimers.has(taskId)) {
+              clearInterval(progressTimers.get(taskId));
+              progressTimers.delete(taskId);
+            }
+            t.status = 'finished';
+            t.result = result;
+            t.progress = { now: Date.now(), percent: 100, message: 'finished' };
+            tasks.set(taskId, t);
+          }
+        } catch {
+          const t = tasks.get(taskId);
+          if (t) {
+            if (progressTimers.has(taskId)) {
+              clearInterval(progressTimers.get(taskId));
+              progressTimers.delete(taskId);
+            }
+            t.status = 'failed';
+            t.result = { error: 'mock failure' };
+            t.progress = { now: Date.now(), percent: null, message: 'failed' };
+            tasks.set(taskId, t);
+          }
+        }
+      }, 9000 + Math.floor(Math.random() * 3000));
+
+      return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: initialProgress } };
     }
 
     if (simulateStatusMatch && method === 'GET') {
       const taskId = simulateStatusMatch[1];
       const t = tasks.get(taskId);
       if (!t) {
-        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'unknown' } };
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'not_found' } };
       }
       if (t.status === 'finished') {
         const store = ensureClientStore(t.clientId);
-        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'finished', result: t.result, files: scanFiles(store) } };
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'finished', result: t.result, files: scanFiles(store), progress: t.progress || { now: Date.now(), percent: 100, message: 'finished' } } };
+      } else if (t.status === 'failed') {
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'failed', result: t.result, progress: t.progress || { now: Date.now(), percent: null, message: 'failed' } } };
       } else {
-        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running' } };
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: t.progress || { now: Date.now(), percent: null, message: 'running' } } };
       }
     }
 
@@ -636,14 +736,82 @@ function runMockSimulation(store: Map<string, FileEntry>) {
   // Read some inputs to influence results
   const base = store.get('project\\config\\base.yaml');
   const nTurbines = Number((base && base.kind === 'yaml' && base.data?.parameters?.turbines) || 5);
-  const energy = 2500 * nTurbines; // MWh, mock scaling
+  // Define a fixed mock time range for consistency
+  const startTime = new Date('2003-01-01T00:00:00Z');
+  const endTime = new Date('2003-12-31T23:59:59Z');
+  const hours = Math.round((endTime.getTime() - startTime.getTime()) / 3_600_000);
+  // Energy scales with turbine count (kept moderate to produce realistic CF)
+  const energy = 2500 * nTurbines; // MWh total energy
+  const capacityMw = 3 * nTurbines; // 3 MW per V90
+  const avgPowerMw = energy / hours; // average power based on energy and hours
+  const peakPowerMw = Math.max(avgPowerMw * 2.5, Math.min(capacityMw * 0.85, capacityMw));
+  const capacityFactor = capacityMw > 0 ? avgPowerMw / capacityMw : 0;
+  // Create a simple monthly breakdown that sums to energy using a cosine seasonal pattern
+  const monthly_energy_mwh: Record<string, number> = {};
+  let monthlySum = 0;
+  for (let m = 1; m <= 12; m++) {
+    // Seasonal weight peaks mid-winter/spring for mock purposes
+    const w = 1 + 0.3 * Math.cos(((m - 3) / 12) * 2 * Math.PI);
+    const key = `${startTime.getUTCFullYear()}-${String(m).padStart(2, '0')}`;
+    monthly_energy_mwh[key] = w;
+    monthlySum += w;
+  }
+  for (let m = 1; m <= 12; m++) {
+    const key = `${startTime.getUTCFullYear()}-${String(m).padStart(2, '0')}`;
+    monthly_energy_mwh[key] = Number(((monthly_energy_mwh[key] / monthlySum) * energy).toFixed(2));
+  }
+  // Simple per-component allocation across a handful of turbines
+  const per_component_energy_mwh: Record<string, number> = {};
+  const components = Math.min(nTurbines, 6);
+  const perComp = energy / components;
+  for (let i = 1; i <= components; i++) {
+    const name = `T${String(i).padStart(2, '0')}`;
+    // small variation
+    per_component_energy_mwh[name] = Number((perComp * (0.9 + 0.02 * i)).toFixed(2));
+  }
+  // Maintenance mock stats
+  const totalRequests = Math.round(8 * (nTurbines / 5));
+  const avgPerMonth = totalRequests / 12;
+  const peakMonth = `${startTime.getUTCFullYear()}-03`;
+  const peakMonthCount = Math.max(1, Math.round(avgPerMonth * 1.5));
+  const requests_by_type = { repair: Math.round(totalRequests * 0.6), service: Math.round(totalRequests * 0.4) } as Record<string, number>;
+  const requests_by_component: Record<string, number> = {};
+  for (let i = 1; i <= Math.min(nTurbines, 5); i++) {
+    requests_by_component[`T${String(i).padStart(2, '0')}`] = Math.max(0, Math.round(totalRequests / Math.min(nTurbines, 5) + (i - 3)));
+  }
   const summaryPath = 'results\\summary.yaml';
   const summary: any = {
     summary: 'Mock simulation complete',
+    status: 'finished',
     finished_at: new Date().toISOString(),
-    energy_mwh: energy,
     task: 'mock',
-    stats: { maintenance: { average_requests_per_month: 2.5 } },
+    // Top-level quick figures (optional)
+    energy_mwh: energy,
+    capacity_mw: capacityMw,
+    // Structured stats consumed by ResultsSummary
+    stats: {
+      maintenance: {
+        total_requests: totalRequests,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        average_requests_per_month: Number(avgPerMonth.toFixed(1)),
+        peak_month: peakMonth,
+        peak_month_count: peakMonthCount,
+        requests_by_type,
+        requests_by_component,
+      },
+      power_production: {
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        hours,
+        windfarm_energy_mwh: Number(energy.toFixed(2)),
+        avg_windfarm_power_mw: Number(avgPowerMw.toFixed(2)),
+        peak_windfarm_power_mw: Number(peakPowerMw.toFixed(2)),
+        capacity_factor: Number(capacityFactor.toFixed(3)),
+        monthly_energy_mwh,
+        per_component_energy_mwh,
+      },
+    },
   };
   store.set(summaryPath, { kind: 'yaml', data: summary });
   // Create a results CSV
