@@ -4,6 +4,7 @@ import { useApiContext } from '../context/ApiContext'
 import { readFile } from '../api'
 import FileSelector from '../components/FileSelector'
 import PageWithLibrary from '../components/PageWithLibrary'
+import ResizeWrapper from '../components/ResizeWrapper'
 
 // Minimal Leaflet usage without react-leaflet to avoid extra deps
 // Dynamically load Leaflet CSS to keep scope local to this page
@@ -331,6 +332,7 @@ export default function LayoutMap() {
         </>
       )}
     >
+      <ResizeWrapper lsKey="layout-map-sidebar-width" defaultWidth={700} minWidth={260} maxWidth={1500} collapsible>
       <div style={{ marginTop: 12 }}>
         <div ref={mapRef} style={{ width: '100%', height: 520, border: '1px solid var(--color-border)', borderRadius: 6 }} />
       </div>
@@ -351,6 +353,7 @@ export default function LayoutMap() {
           <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(Object.fromEntries(Object.entries(turbineMaint).slice(0, 50)), null, 2)}</pre>
         </details>
       )}
+      </ResizeWrapper>
     </PageWithLibrary>
   )
 }
