@@ -19,16 +19,16 @@ export default function RunSimulation() {
   const handleRun = () => {
     const p = runSimulation()
     // optionally refresh files after completion (route already returns files)
-    p.finally(() => { fetchLibraryFiles().catch(() => {}) })
+    p.finally(() => { fetchLibraryFiles().catch(() => { }) })
   }
 
-  const handleGetConfig = () => { getConfig().catch(() => {}) }
-  const handleClearTemp = () => { clearClientTemp().catch(() => {}) }
-  const handleGetLibraryFiles = () => { fetchLibraryFiles().catch(() => {}) }
+  const handleGetConfig = () => { getConfig().catch(() => { }) }
+  const handleClearTemp = () => { clearClientTemp().catch(() => { }) }
+  const handleGetLibraryFiles = () => { fetchLibraryFiles().catch(() => { }) }
   const handleSaveLibrary = () => {
     const name = window.prompt('Enter a project name to save the current library:', selectedSavedLibrary || '')?.trim()
     if (!name) return
-    saveLibrary(name).catch(() => {})
+    saveLibrary(name).catch(() => { })
     setSelectedSavedLibrary(name)
   }
 
@@ -50,7 +50,7 @@ export default function RunSimulation() {
           onGetLibraryFiles={handleGetLibraryFiles}
           onSaveLibrary={handleSaveLibrary}
         />
-        <ResizeWrapper minWidth={260} maxWidth={1200} lsKey="runpage.testwidth" defaultWidth={1000}>
+        <ResizeWrapper minWidth={260} maxWidth={1200} lsKey="runpage.testwidth" defaultWidth={1000} collapsible={true} defaultCollapsed={false}>
           <div className="card" style={{ marginTop: 12 }}>
             <div className="card-header">Progress</div>
             <div className="card-body">
