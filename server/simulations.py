@@ -16,12 +16,12 @@ logger = logging.getLogger("uvicorn.error")
 _TASKS: Dict[str, dict] = {}
 
 def get_simulation(library: str = "DINWOODIE"):
-    from wombat.api.simulation_runner import get_simulation_dict
+    from wombat_api.api.simulation_runner import get_simulation_dict
     return get_simulation_dict(library)
 
 def run_wombat_simulation(library: str = "DINWOODIE", config: str = "base.yaml") -> dict[str, Any]:
     # Local import to keep example self-contained and to avoid import cycles.
-    from wombat.api.simulation_runner import run_simulation
+    from wombat_api.api.simulation_runner import run_simulation
     
     # If a specific library path is provided (from client manager), use it directly
     if library != "DINWOODIE" and Path(library).exists():

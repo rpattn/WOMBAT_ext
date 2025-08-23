@@ -5,7 +5,7 @@ from wombat.core.library import load_yaml
 from pathlib import Path
 import json
 import time
-from wombat.api.simulation_results import create_detailed_gantt_chart_plotly
+from wombat_api.api.simulation_results import create_detailed_gantt_chart_plotly
 
 def get_simulation_dict(library: str = "DINWOODIE"):
     source_lib = Path("library/code_comparison/dinwoodie")
@@ -13,7 +13,7 @@ def get_simulation_dict(library: str = "DINWOODIE"):
     yaml = load_yaml(source_lib / "project/config", "base.yaml")
     return json.dumps(yaml)
 
-def run_simulation(library: str = "DINWOODIE", config: str = "base.yaml") -> dict[str, Any]:
+def run_simulation(library: str = "DINWOODIE", config: str = "base.yaml", create_metrics: bool = True, delete_logs: bool = False, save_metrics_inputs: bool = True) -> dict[str, Any]:
     """Run a WOMBAT simulation and return result info, including output file paths.
 
     Parameters
@@ -25,12 +25,19 @@ def run_simulation(library: str = "DINWOODIE", config: str = "base.yaml") -> dic
         The configuration YAML filename inside `<library>/project/config/>`.
     """
     from wombat import Simulation
-    from wombat.api.simulation_results import extract_maintenance_requests, maintenance_summary_statistics, power_production_summary_statistics
+    from wombat_api.api.simulation_results import extract_maintenance_requests, maintenance_summary_statistics, power_production_summary_statistics
 
     sim = Simulation.from_config(library, config)   
-    sim.run()
+    sim.env.run()
 
     env = sim.env
+
+    if create_metrics:
+        sim.initialize_metrics()
+    if delete_logs:
+        sim.env.cleanup_log_files()
+    if save_metrics_inputs:
+        sim.save_metrics_inputs()
 
     # Extract maintenance data
     maintenance_data = extract_maintenance_requests(sim)
