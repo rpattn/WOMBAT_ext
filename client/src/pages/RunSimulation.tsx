@@ -118,6 +118,7 @@ export default function RunSimulation() {
   const pct = typeof progress?.percent === 'number' ? Math.max(0, Math.min(100, progress!.percent!)) : null
   const now = progress?.now ?? 0
   const msg = progress?.message || (pct === 100 ? 'finished' : 'idle')
+  const isActive = pct != null && pct > 0 && pct < 100
 
   return (
     <PageWithLibrary
@@ -158,21 +159,14 @@ export default function RunSimulation() {
           onGetLibraryFiles={handleGetLibraryFiles}
           onSaveLibrary={handleSaveLibrary}
         />
-        <ResizeWrapper minWidth={260} maxWidth={1200} lsKey="runpage.testwidth" defaultWidth={1000} collapsible={true} defaultCollapsed={false}>
+        <ResizeWrapper minWidth={260} maxWidth={1200} lsKey="runpage.testwidth" defaultWidth={1000} collapsible={true} defaultCollapsed={false} disableBelow={768}>
           <div className="card" style={{ marginTop: 12 }}>
             <div className="card-header">Progress</div>
             <div className="card-body">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ height: 14, background: '#eee', borderRadius: 7, overflow: 'hidden' }} aria-label="progress">
-                    <div
-                      style={{
-                        width: pct == null ? '0%' : `${pct}%`,
-                        height: '100%',
-                        background: '#3b82f6',
-                        transition: 'width 200ms ease',
-                      }}
-                    />
+                  <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? 0} aria-label="Progress">
+                    <div className={`progress-bar${isActive ? ' is-animating' : ''}`} style={{ width: pct == null ? '0%' : `${pct}%` }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 6 }}>
                     <span>{pct == null ? '—' : `${pct.toFixed(1)}%`}</span>

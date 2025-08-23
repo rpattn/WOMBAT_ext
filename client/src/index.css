@@ -71,6 +71,10 @@
   /* Misc */
   --nav-margin: 5px;
   --app-max-width: 1600px;
+
+  /* Progress */
+  --progress-track: #e5e7eb;      /* gray-200 */
+  --progress-fill: var(--primary);
 }
 
 p {
@@ -170,6 +174,10 @@ html.dark, html.dark body, html.dark #root {
   --btn-bg: #1f2937;            /* slate-800 */
   --btn-fg: rgba(255,255,255,0.95);
   --btn-border-color: #374151;  /* slate-700 */
+
+  /* Progress */
+  --progress-track: #2a2e34;    /* neutral border/darker track */
+  --progress-fill: var(--primary-600);
 }
 
 html.light { color-scheme: light; }
@@ -182,4 +190,43 @@ html.light {
   --btn-bg: #f9f9f9;
   --btn-fg: #111827;
   --btn-border-color: var(--color-border);
+}
+
+/* Progress component */
+.progress {
+  height: 12px;
+  background: var(--progress-track);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--progress-fill) 0%, var(--primary-700) 100%);
+  transition: width 200ms ease;
+}
+.progress-bar.is-animating::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(45deg,
+    rgba(255,255,255,0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255,255,255,0.15) 50%,
+    rgba(255,255,255,0.15) 75%,
+    transparent 75%,
+    transparent);
+  background-size: 1rem 1rem;
+  animation: progress-stripes 1s linear infinite;
+  pointer-events: none;
+}
+@keyframes progress-stripes {
+  from { background-position: 0 0; }
+  to   { background-position: 1rem 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar { transition: none; }
+  .progress-bar.is-animating::after { animation: none; }
 }

@@ -107,13 +107,6 @@ export default function App() {
           <Suspense fallback={null}>
             <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
           </Suspense>
-          <button
-            className="btn"
-            title="Toggle Sidebar"
-            aria-label="Toggle Sidebar"
-            onClick={() => { try { window.dispatchEvent(new Event('wombat:toggle-sidebar')) } catch {} }}
-            style={{ marginLeft: 'auto' }}
-          >Toggle Sidebar</button>
         </div>
       </div>
     </ApiProvider>
