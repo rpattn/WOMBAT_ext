@@ -7,6 +7,7 @@ import { useApiContext } from '../context/ApiContext';
 import LibraryPanel from '../components/LibraryPanel';
 import { useToasts } from '../hooks/useToasts';
 import PageWithLibrary from '../components/PageWithLibrary';
+import ResizeWrapper from '../components/ResizeWrapper';
 
 const EditorPanel = lazy(() => import('../components/EditorPanel'));
 
@@ -217,7 +218,7 @@ export default function SimulationManager() {
         </>
       )}
     >
-      <div className="card">
+      <ResizeWrapper minWidth={400} maxWidth={1200} lsKey="simpage.testwidth" defaultWidth={1000}> 
         <div className="row stack-sm">
           {configData && Object.keys(configData || {}).length > 0 && (
             <Suspense fallback={null}>
@@ -232,7 +233,7 @@ export default function SimulationManager() {
             </Suspense>
           )}
         </div>
-      </div>
+      </ResizeWrapper>
       <CsvPreview preview={csvPreview} filePath={selectedFile} />
     </PageWithLibrary>
     </>

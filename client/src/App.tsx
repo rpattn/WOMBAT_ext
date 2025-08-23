@@ -7,6 +7,7 @@ import Splash from './pages/Splash.tsx';
 
 const SimulationManager = lazy(() => import('./pages/SimulationManager'));
 const Results = lazy(() => import('./pages/Results'));
+const RunSimulation = lazy(() => import('./pages/RunSimulation'));
 const ThemeSelector = lazy(() => import('./components/ThemeSelector'));
 const ResultsCompare = lazy(() => import('./pages/ResultsCompare.tsx'));
 const Gantt = lazy(() => import('./pages/Gantt.tsx'));
@@ -90,6 +91,7 @@ export default function App() {
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<Splash />} />
+          <Route path="/run" element={<RunSimulation />} />
           <Route path="/sim" element={<SimulationManager />} />
           <Route path="/results" element={<Results />} />
           <Route path="/results/compare" element={<ResultsCompare />} />

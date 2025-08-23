@@ -7,9 +7,10 @@ type Props = {
     maxWidth?: number
     lsKey?: string
     addFillerPane?: boolean
+    defaultWidth?: number
 }
 
-export default function ResizeWrapper({ children, minWidth = 240, maxWidth = 900, lsKey = 'wombat-resize', addFillerPane = true }: Props) {
+export default function ResizeWrapper({ children, minWidth = 240, maxWidth = 900, lsKey = 'wombat-resize', addFillerPane = true, defaultWidth = 400 }: Props) {
 
     const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
         try {
@@ -53,13 +54,12 @@ export default function ResizeWrapper({ children, minWidth = 240, maxWidth = 900
                     maxWidth: maxWidth,
                     borderRight: '1px solid var(--color-border)'
                 }}
-                className="panel"
             >
                 {children}
             </aside>
             <div
                 onMouseDown={() => { draggingRef.current = true }}
-                onDoubleClick={() => setSidebarWidth(400)}
+                onDoubleClick={() => setSidebarWidth(defaultWidth)}
                 style={{
                     width: 8,
                     cursor: 'col-resize',

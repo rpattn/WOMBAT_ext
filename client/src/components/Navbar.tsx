@@ -51,6 +51,12 @@ export default function Navbar() {
                 Overview
               </NavLink>
               <NavLink
+                to="/run"
+                className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
+              >
+                Run
+              </NavLink>
+              <NavLink
                 to="/simulation/layout"
                 className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
               >
