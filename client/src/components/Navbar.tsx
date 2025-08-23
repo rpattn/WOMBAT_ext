@@ -30,14 +30,6 @@ export default function Navbar() {
           </div>
           <div className="dropdown">
             <NavLink
-              to="/connect"
-              className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
-            >
-              Connection Manager
-            </NavLink>
-          </div>
-          <div className="dropdown">
-            <NavLink
               to="/sim"
               className={({ isActive }: { isActive: boolean }) => isActive ? 'link active' : 'link'}
             >
@@ -48,7 +40,7 @@ export default function Navbar() {
                 to="/sim"
                 className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
               >
-                Overview
+                Setup
               </NavLink>
               <NavLink
                 to="/run"
@@ -61,6 +53,12 @@ export default function Navbar() {
                 className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
               >
                 Layout Map
+              </NavLink>
+              <NavLink
+                to="/connect"
+                className={({ isActive }: { isActive: boolean }) => (isActive ? 'link active' : 'link') + ' dropdown-item'}
+              >
+                Server Settings
               </NavLink>
             </div>
           </div>

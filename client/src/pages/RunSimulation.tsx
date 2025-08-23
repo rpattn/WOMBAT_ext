@@ -6,6 +6,7 @@ import ResizeWrapper from '../components/ResizeWrapper'
 import FileSelector from '../components/FileSelector'
 import SelectedFileInfo from '../components/SelectedFileInfo'
 import ResultsSummary from '../components/ResultsSummary'
+import { useToasts } from '../hooks/useToasts'
  
 
 export default function RunSimulation() {
@@ -24,6 +25,8 @@ export default function RunSimulation() {
     readFile,
     progress,
   } = useApiContext()
+
+  const { info, success, warning, error, simulation, tempSweep } = useToasts()
 
   // Track latest libraryFiles in a ref so async callbacks see fresh data
   const libFilesRef = useRef(libraryFiles)
@@ -55,6 +58,7 @@ export default function RunSimulation() {
 
   const handleRun = () => {
     const p = runSimulation()
+    simulation(p)
     // optionally refresh files after completion (route already returns files)
     p.finally(() => {
       // Refresh files after run, then open most recent results/<DATE>/summary.yaml
@@ -64,7 +68,14 @@ export default function RunSimulation() {
           // Retry a few times to avoid race with async state updates
           const tryOpen = (attempt = 0) => {
             const ok = openMostRecentSummary()
-            if (ok || attempt >= 10) return
+            if (ok) {
+              success('Opened latest results summary')
+              return
+            }
+            if (attempt >= 10) {
+              warning('Results summary not found yet')
+              return
+            }
             setTimeout(() => tryOpen(attempt + 1), 300)
           }
           tryOpen(0)
@@ -72,13 +83,22 @@ export default function RunSimulation() {
     })
   }
 
-  const handleGetConfig = () => { getConfig().catch(() => { }) }
-  const handleClearTemp = () => { clearClientTemp().catch(() => { }) }
-  const handleGetLibraryFiles = () => { fetchLibraryFiles().catch(() => { }) }
+  const handleGetConfig = () => {
+    info('Fetching base configuration…')
+    getConfig().then(() => success('Configuration loaded')).catch(() => error('Failed to load configuration'))
+  }
+  const handleClearTemp = () => {
+    tempSweep(clearClientTemp().then(ok => (ok ? 1 : 0)))
+  }
+  const handleGetLibraryFiles = () => {
+    info('Refreshing files…')
+    fetchLibraryFiles().then(() => success('Files refreshed')).catch(() => error('Failed to refresh files'))
+  }
   const handleSaveLibrary = () => {
     const name = window.prompt('Enter a project name to save the current library:', selectedSavedLibrary || '')?.trim()
     if (!name) return
-    saveLibrary(name).catch(() => { })
+    info('Saving project…')
+    saveLibrary(name).then(() => success('Project saved')).catch(() => error('Failed to save project'))
     setSelectedSavedLibrary(name)
   }
 
@@ -116,12 +136,13 @@ export default function RunSimulation() {
                 projectName={selectedSavedLibrary || undefined}
                 onDownloadFile={handleDownloadFile}
                 defaultExpandFolders={['results']}
+                showActions={false}
               />
               <SelectedFileInfo selectedFile={selectedFile} />
               <div style={{ marginTop: 12 }}>
                 <button
                   className="btn-app btn-secondary"
-                  onClick={() => fetchLibraryFiles().catch(() => { })}
+                  onClick={() => { info('Refreshing files…'); fetchLibraryFiles().then(() => success('Files refreshed')).catch(() => error('Failed to refresh files')) }}
                 >Refresh Files</button>
               </div>
             </div>
@@ -158,7 +179,7 @@ export default function RunSimulation() {
                     <span>now: {now.toFixed(1)}</span>
                   </div>
                 </div>
-                <div style={{ minWidth: 120, textAlign: 'right', fontSize: 12 }}>
+                <div style={{ minWidth: 120, fontSize: 12 }}>
                   <span>{msg}</span>
                 </div>
               </div>

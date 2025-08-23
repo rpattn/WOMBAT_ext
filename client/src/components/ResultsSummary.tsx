@@ -25,15 +25,6 @@ export default function ResultsSummary({ data }: ResultsSummaryProps) {
         <h3 style={{ marginTop: 0 }}>Simulation</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', rowGap: 6, columnGap: 12 }}>
           <div>Status</div><div>{src.status ?? 'unknown'}</div>
-          {src.results && (
-            <>
-              <div>Events log</div><div>{src.results.events}</div>
-              <div>Operations log</div><div>{src.results.operations}</div>
-              <div>Power potential</div><div>{src.results.power_potential}</div>
-              <div>Power production</div><div>{src.results.power_production}</div>
-              <div>Metrics input</div><div>{src.results.metrics_input}</div>
-            </>
-          )}
         </div>
       </div>
 
