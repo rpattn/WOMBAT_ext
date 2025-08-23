@@ -277,8 +277,25 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
         return title || id || 'provided schema';
     }, [schema]);
 
+    // Save on Enter when focused within an input/select field inside the editor
+    const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+        if (e.key !== 'Enter') return;
+        if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+        const tgt = e.target as HTMLElement | null;
+        if (!tgt) return;
+        const tag = tgt.tagName;
+        // Only react to key presses from inputs/selects (not buttons/textarea)
+        const isEditable = tag === 'INPUT' || tag === 'SELECT';
+        if (!isEditable) return;
+        // Do not save if validation errors are present
+        if (hasErrors) return;
+        // Prevent accidental form submissions or other defaults
+        e.preventDefault();
+        onSave?.(formData);
+    }, [formData, hasErrors, onSave]);
+
     return (
-        <div className="json-editor json-editor-container">
+        <div className="json-editor json-editor-container" onKeyDown={handleKeyDown}>
             {(Object.entries(formData).length === 0) ?
                 <p>Open a .yaml file to edit it</p> :
                 <div className="je-flex je-justify-start">
