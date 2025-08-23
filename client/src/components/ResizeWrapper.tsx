@@ -67,7 +67,6 @@ export default function ResizeWrapper({ children, minWidth = 240, maxWidth = 900
                     flex: collapsed ? `0 0 0px` : `0 0 ${sidebarWidth}px`,
                     maxWidth: collapsed ? 0 : maxWidth,
                     overflow: collapsed ? 'hidden' as const : undefined,
-                    borderRight: collapsed ? 'none' : '1px solid var(--color-border)'
                 }}
             >
                 {children}

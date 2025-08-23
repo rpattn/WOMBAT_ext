@@ -89,7 +89,6 @@ html {
 .row {
   display: flex;
   gap: var(--space-12);
-  width: 100%;
 }
 .col { flex: 1; }
 

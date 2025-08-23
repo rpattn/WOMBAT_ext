@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { } from 'react'
 import SavedLibrariesDropdown from './SavedLibrariesDropdown'
 import { useApiContext } from '../context/ApiContext'
+import ResizeWrapper from './ResizeWrapper'
 
 export type PageWithLibraryProps = {
   title: string
@@ -21,60 +22,6 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
     restoreWorking,
   } = useApiContext()
 
-  // Sidebar layout controls
-  const LS_KEY = 'pageWithLibrary.sidebarWidth'
-  const DEFAULT_WIDTH = 380
-  const MIN_WIDTH = 260
-  const MAX_WIDTH = 800
-  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
-    try {
-      const v = Number(window.localStorage.getItem(LS_KEY) || '')
-      return Number.isFinite(v) && v >= MIN_WIDTH && v <= MAX_WIDTH ? v : DEFAULT_WIDTH
-    } catch { return DEFAULT_WIDTH }
-  })
-  const [collapsed, setCollapsed] = useState<boolean>(false)
-  const draggingRef = useRef(false)
-
-  useEffect(() => {
-    try { window.localStorage.setItem(LS_KEY, String(sidebarWidth)) } catch {}
-  }, [sidebarWidth])
-
-  useEffect(() => {
-    function onMove(e: MouseEvent) {
-      if (!draggingRef.current) return
-      const dx = e.movementX
-      setSidebarWidth(w => {
-        let nw = w + dx
-        if (nw < MIN_WIDTH) nw = MIN_WIDTH
-        if (nw > MAX_WIDTH) nw = MAX_WIDTH
-        return nw
-      })
-      e.preventDefault()
-    }
-    function onUp() { draggingRef.current = false }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-  }, [])
-
-  // Listen for global toggle events dispatched from the App toolbar
-  useEffect(() => {
-    const onToggle = () => setCollapsed(c => !c)
-    const onShow = () => setCollapsed(false)
-    const onHide = () => setCollapsed(true)
-    window.addEventListener('wombat:toggle-sidebar', onToggle as any)
-    window.addEventListener('wombat:show-sidebar', onShow as any)
-    window.addEventListener('wombat:hide-sidebar', onHide as any)
-    return () => {
-      window.removeEventListener('wombat:toggle-sidebar', onToggle as any)
-      window.removeEventListener('wombat:show-sidebar', onShow as any)
-      window.removeEventListener('wombat:hide-sidebar', onHide as any)
-    }
-  }, [])
-
   // (dropdown now rendered inline in the sidebar when projectPlacement==='sidebar')
 
   return (
@@ -82,59 +29,43 @@ export default function PageWithLibrary({ title, sidebar, children, projectLabel
       <h2>{title}</h2>
 
       <div className="row stack-sm" style={{ gap: 0, alignItems: 'stretch' }}>
-        {sidebar && !collapsed && (
-          <aside
-            style={{
-              minWidth: MIN_WIDTH,
-              flex: `0 0 ${sidebarWidth}px`,
-              maxWidth: MAX_WIDTH,
-              borderRight: '1px solid var(--color-border)'
-            }}
-            className="panel"
+        {sidebar && (
+          <ResizeWrapper
+            minWidth={260}
+            maxWidth={800}
+            defaultWidth={380}
+            lsKey={'pageWithLibrary.sidebarWidth'}
+            addFillerPane={false}
+            collapsible={true}
+            defaultCollapsed={false}
           >
-            {projectPlacement === 'sidebar' && (
-              <div>
-                <h3 className="panel-title">{projectLabel}</h3>
-                <div className="panel-body">
-                  <SavedLibrariesDropdown
-                    libraries={savedLibraries}
-                    value={selectedSavedLibrary}
-                    onChange={(val: string) => {
-                      setSelectedSavedLibrary(val)
-                      try { window.localStorage.setItem('lastSavedLibraryName', val || '') } catch {}
-                      if (val) {
-                        loadSaved(val).catch(() => {})
-                      } else {
-                        // switching back to working session: restore from server-side backup
-                        restoreWorking().catch(() => {})
-                      }
-                    }}
-                  >
-                    {projectActions}
-                  </SavedLibrariesDropdown>
+            <>
+              {projectPlacement === 'sidebar' && (
+                <div>
+                  <h3 className="panel-title">{projectLabel}</h3>
+                  <div className="panel-body">
+                    <SavedLibrariesDropdown
+                      libraries={savedLibraries}
+                      value={selectedSavedLibrary}
+                      onChange={(val: string) => {
+                        setSelectedSavedLibrary(val)
+                        try { window.localStorage.setItem('lastSavedLibraryName', val || '') } catch {}
+                        if (val) {
+                          loadSaved(val).catch(() => {})
+                        } else {
+                          // switching back to working session: restore from server-side backup
+                          restoreWorking().catch(() => {})
+                        }
+                      }}
+                    >
+                      {projectActions}
+                    </SavedLibrariesDropdown>
+                  </div>
                 </div>
-              </div>
-            )}
-            {sidebar}
-          </aside>
-        )}
-        {sidebar && !collapsed && (
-          <div
-            onMouseDown={() => { draggingRef.current = true }}
-            onDoubleClick={() => setSidebarWidth(DEFAULT_WIDTH)}
-            style={{
-              width: 6,
-              cursor: 'col-resize',
-              userSelect: 'none',
-              background: 'transparent',
-              position: 'relative',
-              margin: '0px 2px'
-            }}
-            aria-label="Resize sidebar"
-            title="Drag to resize. Double-click to reset."
-          >
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 2, width: 2, background: 'var(--color-border)' }} />
-          </div>
+              )}
+              {sidebar}
+            </>
+          </ResizeWrapper>
         )}
         <main style={{ flex: 1, minWidth: 320}}>
           {children}

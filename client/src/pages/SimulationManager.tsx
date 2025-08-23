@@ -218,7 +218,7 @@ export default function SimulationManager() {
         </>
       )}
     >
-      <ResizeWrapper minWidth={400} maxWidth={1200} lsKey="simpage.testwidth" defaultWidth={1000}> 
+      <ResizeWrapper minWidth={400} maxWidth={1200} lsKey="simpage.testwidth" defaultWidth={1000} collapsible={true} defaultCollapsed={false}> 
         <div className="row stack-sm">
           {configData && Object.keys(configData || {}).length > 0 && (
             <Suspense fallback={null}>
