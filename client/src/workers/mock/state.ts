@@ -1,4 +1,4 @@
-import type { FileEntry, Progress, Task } from './types';
+import type { FileEntry, Task } from './types';
 
 export const activeClients = new Set<string>();
 export const clientStores = new Map<string, Map<string, FileEntry>>();
@@ -208,6 +208,34 @@ export function templateLibrary(name = 'Dinwoodie Mock'): Map<string, FileEntry>
   });
   fs.set('results\\report.html', { kind: 'text', mime: 'text/html', data: '<!doctype html><html><head><meta charset="utf-8"><title>Mock Report</title></head><body><h1>Mock Report</h1><p>This is a mock HTML report.</p></body></html>' });
   fs.set('results\\plot.png', { kind: 'binary', mime: 'image/png', data: tinyPngB64() });
+  // Default operations.csv for Operations page (pipe-delimited)
+  {
+    const header = ['env_datetime', 'env_time', 'T01', 'T02', 'T03', 'T04', 'T05'].join('|');
+    const start = new Date('2003-01-01T00:00:00Z');
+    const mk = (h: number, a1: number, a2: number, a3: number, a4: number, a5: number) => [
+      new Date(start.getTime() + h * 3_600_000).toISOString(),
+      String(h),
+      a1.toFixed(3),
+      a2.toFixed(3),
+      a3.toFixed(3),
+      a4.toFixed(3),
+      a5.toFixed(3),
+    ].join('|');
+    const rows = [
+      header,
+      mk(0, 0.95, 0.93, 0.92, 0.91, 0.94),
+      mk(1, 0.96, 0.92, 0.91, 0.90, 0.95),
+      mk(2, 0.97, 0.94, 0.93, 0.88, 0.96),
+      mk(3, 0.98, 0.95, 0.90, 0.87, 0.97),
+      mk(4, 0.99, 0.96, 0.89, 0.86, 0.98),
+      mk(5, 0.95, 0.90, 0.85, 0.80, 0.94),
+      mk(6, 0.92, 0.88, 0.83, 0.78, 0.91),
+      mk(7, 0.94, 0.90, 0.85, 0.80, 0.93),
+      mk(8, 0.96, 0.92, 0.87, 0.82, 0.95),
+      mk(9, 0.97, 0.93, 0.88, 0.83, 0.96),
+    ];
+    fs.set('results\\operations.csv', { kind: 'text', mime: 'text/csv', data: rows.join('\n') + '\n' });
+  }
   return fs;
 }
 

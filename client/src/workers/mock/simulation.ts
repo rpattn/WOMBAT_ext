@@ -84,5 +84,35 @@ export function runMockSimulation(store: Map<string, FileEntry>) {
     mime: 'text/html',
     data: `<!doctype html><html><head><meta charset="utf-8"><title>Mock Report</title></head><body><h1>Mock Report</h1><p>Energy (MWh): ${energy}</p></body></html>`,
   });
+  // Create a lightweight operations.csv for the Operations page
+  // Pipe-delimited with columns: env_datetime | env_time | T01 | T02 | ...
+  const systems: string[] = [];
+  for (let i = 1; i <= Math.min(nTurbines, 12); i++) {
+    systems.push(`T${String(i).padStart(2, '0')}`);
+  }
+  const header = ['env_datetime', 'env_time', ...systems].join('|');
+  const rows: string[] = [header];
+  const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  for (let h = 0; h < hours; h++) {
+    const dt = new Date(startTime.getTime() + h * 3_600_000);
+    const envTime = h; // hours since start
+    const vals: number[] = [];
+    for (let s = 0; s < systems.length; s++) {
+      // Deterministic availability between 0 and 1 with occasional dips
+      const base = 0.9 + 0.08 * Math.sin((h / 24) * 2 * Math.PI + s * 0.5);
+      const weekly = 0.03 * Math.sin((h / (24 * 7)) * 2 * Math.PI + s);
+      let avail = clamp01(base + weekly);
+      // Periodic short outage windows per-system
+      const outageSpan = 2 + (s % 2); // 2-3 hours
+      const outageEvery = 160 + s * 7; // staggered pattern
+      if (h % outageEvery < outageSpan) {
+        avail = Math.max(0, avail - 0.8);
+      }
+      vals.push(Number(avail.toFixed(3)));
+    }
+    rows.push([dt.toISOString(), String(envTime), ...vals.map(v => String(v))].join('|'));
+  }
+  const operationsCsv = rows.join('\n') + '\n';
+  store.set('results\\operations.csv', { kind: 'text', mime: 'text/csv', data: operationsCsv });
   return { ok: true, energy_mwh: energy };
 }
