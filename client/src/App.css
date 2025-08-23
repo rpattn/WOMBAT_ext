@@ -73,6 +73,20 @@ html {
 /* Full-width variant for pages that need to span the viewport */
 .app-full { max-width: var(--app-max-width); width: 95%; }
 
+/* Small screens: force full-width containers to avoid horizontal overflow */
+@media (max-width: 768px) {
+  .app-container,
+  .app-container-slim,
+  .app-full,
+  .row aside {
+    max-width: 100% !important;
+    min-width: auto !important;
+  }
+  .row {
+    display: contents !important;
+  }
+}
+
 .section-title {
   margin-bottom: var(--space-8);
   color: var(--color-text);
@@ -89,7 +103,6 @@ html {
 .row {
   display: flex;
   gap: var(--space-12);
-  width: 100%;
 }
 .col { flex: 1; }
 

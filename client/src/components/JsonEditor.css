@@ -14,7 +14,7 @@
 .json-editor-container {
   background-color: var(--color-surface);
   color: var(--color-text);
-  border-radius: 0;
+  border-radius: 5px;
   padding: var(--space-10);
   border: 1px solid var(--color-border);
 }

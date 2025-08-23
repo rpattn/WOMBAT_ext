@@ -4,7 +4,7 @@ from typing import Dict, Any
 from pathlib import Path
 import time
 import plotly.express as px
-from wombat.utilities.gantt import (
+from wombat_api.utilities.gantt import (
     ensure_results_directory,
     extract_maintenance_requests as util_extract_maintenance_requests,
     build_completed_tasks,

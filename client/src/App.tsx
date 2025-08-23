@@ -3,16 +3,17 @@ import { Routes, Route } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import { ApiProvider, useApiContext } from './context/ApiContext';
+import Splash from './pages/Splash.tsx';
 
 const SimulationManager = lazy(() => import('./pages/SimulationManager'));
 const Results = lazy(() => import('./pages/Results'));
+const RunSimulation = lazy(() => import('./pages/RunSimulation'));
 const ThemeSelector = lazy(() => import('./components/ThemeSelector'));
 const ResultsCompare = lazy(() => import('./pages/ResultsCompare.tsx'));
 const Gantt = lazy(() => import('./pages/Gantt.tsx'));
 const LayoutMap = lazy(() => import('./pages/LayoutMap.tsx'));
 const Operations = lazy(() => import('./pages/Operations.tsx'));
 const ConnectionManager = lazy(() => import('./pages/ConnectionManager'));
-const Splash = lazy(() => import('./pages/Splash.tsx'));
 
 // Guard to avoid double auto-init under React StrictMode in development
 let __appAutoInitDone = false;
@@ -90,6 +91,7 @@ export default function App() {
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<Splash />} />
+          <Route path="/run" element={<RunSimulation />} />
           <Route path="/sim" element={<SimulationManager />} />
           <Route path="/results" element={<Results />} />
           <Route path="/results/compare" element={<ResultsCompare />} />
@@ -105,13 +107,6 @@ export default function App() {
           <Suspense fallback={null}>
             <ThemeSelector style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, padding: '0px' }} />
           </Suspense>
-          <button
-            className="btn"
-            title="Toggle Sidebar"
-            aria-label="Toggle Sidebar"
-            onClick={() => { try { window.dispatchEvent(new Event('wombat:toggle-sidebar')) } catch {} }}
-            style={{ marginLeft: 'auto' }}
-          >Toggle Sidebar</button>
         </div>
       </div>
     </ApiProvider>

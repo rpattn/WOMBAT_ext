@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## v0.11.12 - 23 August 2025
+
+### Client (UI)
+
+- Run Simulation (`client/src/pages/RunSimulation.tsx`):
+  - Added a themed progress bar with stripes animation during active runs, ARIA attributes, and percent/now labels.
+  - Integrated toasts via `useToasts()` for run, fetch config, clear temp, refresh files, and save project.
+  - Open most recent `results/<DATE>/summary.yaml` after run with success/warning feedback.
+- Theming and dark mode:
+  - Introduced `.progress`/`.progress-bar` classes and progress CSS variables in `client/src/index.css` with light/dark tokens.
+  - General styling polish for controls and feedback to align with theme tokens.
+- Responsive panels and layout:
+  - `client/src/components/ResizeWrapper.tsx`: added `disableBelow?: number` to automatically disable the resizer and use full-width on small screens.
+  - Applied `disableBelow={768}` on Run page; ensured aside does not overflow viewport when disabled.
+  - `client/src/App.css`: on small screens, force containers and side panes to `max-width: 100%`; adjusted `.row` to prevent overflow.
+- Minor UI tweaks:
+  - `client/src/components/SimulationControls.tsx`: simplified wrapper structure for tighter spacing.
+  - `client/src/components/ResultsSummary.tsx`: trimmed noisy fields from the Simulation section for a cleaner summary.
+
 ## v0.11.11 - 20 August 2025
 
 ### Client (UI)

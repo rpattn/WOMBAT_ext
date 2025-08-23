@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type PropsWithChildren } from 'react'
+import { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect, type PropsWithChildren } from 'react'
 import { mockApiRequest } from '../workers/mockApiClient'
 import type { JsonDict, LibraryFiles } from '../types'
 import { useSession } from '../hooks/useSession'
@@ -36,6 +36,8 @@ export type ApiContextType = {
   // Results
   results: any | null
   setResults: React.Dispatch<React.SetStateAction<any | null>>
+  // Simulation progress
+  progress: { now: number, percent?: number | null, message?: string } | null
 
   // API helpers
   refreshAll: () => Promise<void>
@@ -83,6 +85,7 @@ export function ApiProvider({ children }: PropsWithChildren) {
   const [binaryPreviewUrl, setBinaryPreviewUrl] = useState<string | null>(null)
   const pendingDownloadRef = useRef<string | null>(null)
   const [results, setResults] = useState<any | null>(null)
+  const [progressState, setProgressState] = useState<{ now: number, percent?: number | null, message?: string } | null>(null)
 
   // Compose feature hooks
   const {
@@ -107,13 +110,16 @@ export function ApiProvider({ children }: PropsWithChildren) {
     setSelectedFile,
   })
 
-  const { runSimulation } = useSimulation({
+  const { runSimulation, progress } = useSimulation({
     apiBaseUrl,
     requireSession,
     setResults,
     setLibraryFiles,
     fetchLibraryFiles,
   })
+
+  // Mirror hook progress into local state so it can be provided in context value
+  useEffect(() => { setProgressState(progress ?? null) }, [progress])
 
   const { clearClientTemp, sweepTemp, sweepTempAll } = useTemp({ apiBaseUrl, requireSession })
 
@@ -284,6 +290,7 @@ export function ApiProvider({ children }: PropsWithChildren) {
 
     results,
     setResults,
+    progress: progressState,
 
     refreshAll,
     getConfig,
@@ -316,6 +323,7 @@ export function ApiProvider({ children }: PropsWithChildren) {
     csvPreview,
     binaryPreviewUrl,
     results,
+    progressState,
     refreshAll,
     getConfig,
     fetchLibraryFiles,

@@ -100,7 +100,7 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
       }
     }
     return () => { active = false }
-  }, [selectedFile, data, getSchema])
+  }, [selectedFile, getSchema])
 
   return (
     <div className="col">

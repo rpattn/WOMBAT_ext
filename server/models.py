@@ -68,6 +68,7 @@ class SimulationStatusResponse(BaseModel):
     status: str
     result: Optional[Any] = None
     files: Optional[dict] = None
+    progress: Optional[Any] = None
 
 
 class SavedListResponse(BaseModel):

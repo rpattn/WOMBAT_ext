@@ -1,12 +1,12 @@
 import { useEffect, lazy, Suspense } from 'react';
 import '../App.css';
 import { type JsonObject } from '../components/JsonEditor';
-import SimulationControls from '../components/SimulationControls';
 import CsvPreview from '../components/CsvPreview';
 import { useApiContext } from '../context/ApiContext';
 import LibraryPanel from '../components/LibraryPanel';
 import { useToasts } from '../hooks/useToasts';
 import PageWithLibrary from '../components/PageWithLibrary';
+import ResizeWrapper from '../components/ResizeWrapper';
 
 const EditorPanel = lazy(() => import('../components/EditorPanel'));
 
@@ -34,12 +34,7 @@ export default function SimulationManager() {
     readFile,
     addOrReplaceFile,
     deleteFile,
-    getConfig,
-    runSimulation,
-    fetchLibraryFiles,
-    saveLibrary,
     deleteSaved,
-    sweepTemp,
   } = useApiContext();
   const toasts = useToasts();
 
@@ -110,41 +105,6 @@ export default function SimulationManager() {
 
   // State is updated centrally in App.tsx; no page-level subscription needed
 
-  const handleGetConfig = () => { getConfig().catch(() => {}); };
-
-  const handleClearTemp = () => { toasts.tempSweep(sweepTemp()); };
-
-  const handleRunSimulation = () => {
-    const p = runSimulation();
-    toasts.simulation(p);
-    p.then(() => {
-      // Ensure latest files are reflected (server returns files, but refresh in case of race)
-      fetchLibraryFiles().catch(() => {});
-    }).catch(() => {});
-  };
-
-  const handleGetLibraryFiles = () => { fetchLibraryFiles().catch(() => {}); };
-
-  const handleSaveLibrary = () => {
-    // Ask user for a project name
-    let storedName = '';
-    try {
-      storedName = window.localStorage.getItem(LS_KEY_LAST_SAVED) || '';
-    } catch { /* ignore */ }
-    const defaultName = storedName || selectedSavedLibrary || `project-${new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16)}`;
-    const name = window.prompt('Enter a project name to save the current library:', defaultName)?.trim();
-    if (!name) {
-      console.log('Save library cancelled or empty name');
-      return;
-    }
-    saveLibrary(name)
-      .then(() => {
-        console.log('Requested save_library for', name);
-        try { window.localStorage.setItem(LS_KEY_LAST_SAVED, name); } catch { /* ignore */ }
-      })
-      .catch(() => console.error('Failed to save library'));
-  };
-
   const handleSave = (data: JsonObject) => {
     // Persist via REST: use selected YAML file or fallback to base config
     const sel = (selectedFile || '').toLowerCase();
@@ -169,13 +129,6 @@ export default function SimulationManager() {
 
   return (
     <>
-    <SimulationControls
-        onRun={handleRunSimulation}
-        onGetConfig={handleGetConfig}
-        onClearTemp={handleClearTemp}
-        onGetLibraryFiles={handleGetLibraryFiles}
-        onSaveLibrary={handleSaveLibrary}
-      />
     <PageWithLibrary
       title="Simulation Manager"
       projectPlacement="sidebar"
@@ -217,7 +170,7 @@ export default function SimulationManager() {
         </>
       )}
     >
-      <div className="card">
+      <ResizeWrapper minWidth={400} maxWidth={1200} lsKey="simpage.testwidth" defaultWidth={1000} collapsible={true} defaultCollapsed={false}> 
         <div className="row stack-sm">
           {configData && Object.keys(configData || {}).length > 0 && (
             <Suspense fallback={null}>
@@ -232,7 +185,7 @@ export default function SimulationManager() {
             </Suspense>
           )}
         </div>
-      </div>
+      </ResizeWrapper>
       <CsvPreview preview={csvPreview} filePath={selectedFile} />
     </PageWithLibrary>
     </>

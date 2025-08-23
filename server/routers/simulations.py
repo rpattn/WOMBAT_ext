@@ -22,22 +22,15 @@ def run_simulation(client_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Unknown client_id")
 
     project_dir = client_manager.get_client_project_dir(client_id)
-    if project_dir:
-        result = run_wombat_simulation(library=project_dir)
-    else:
-        result = run_wombat_simulation()
-
-    try:
-        import time
-        from pathlib import Path
-        from server.services.libraries import delete_client_library_file
-        ts = time.strftime('%Y-%m-%d_%H-%M-%S')
-        base_dir = f"results/{ts}"
-        add_client_library_file(client_id, f"{base_dir}/summary.yaml", content=result)
-
-        # Persist artifacts like events/operations/power/gantt
+    # Build a post-finalize callback to copy artifacts before WOMBAT cleanup
+    from pathlib import Path
+    def _post_finalize_cb(result_dict: dict):
         try:
-            res_files = (result or {}).get("results", {})
+            import time
+            ts = time.strftime('%Y-%m-%d_%H-%M-%S')
+            base_dir = f"results/{ts}"
+            add_client_library_file(client_id, f"{base_dir}/summary.yaml", content=result_dict)
+            res_files = (result_dict or {}).get("results", {})
             file_map = {
                 "events": "events.csv",
                 "operations": "operations.csv",
@@ -52,7 +45,6 @@ def run_simulation(client_id: str) -> dict:
                     continue
                 try:
                     p = Path(src)
-                    # Resolve relative paths to the project_dir when not absolute
                     if not p.is_absolute() and project_dir:
                         p = Path(project_dir) / p
                     if p.exists() and p.is_file():
@@ -61,7 +53,6 @@ def run_simulation(client_id: str) -> dict:
                         except Exception:
                             content_text = p.read_bytes().decode('latin-1', errors='replace')
                         add_client_library_file(client_id, f"{base_dir}/{target_name}", content=content_text)
-                        # If gantt HTML, also try to copy PNG sibling
                         if key == "gantt":
                             try:
                                 p_png = p.with_suffix('.png')
@@ -71,31 +62,37 @@ def run_simulation(client_id: str) -> dict:
                                     except Exception:
                                         png_text = p_png.read_text(encoding='utf-8', errors='replace')
                                     add_client_library_file(client_id, f"{base_dir}/gantt.png", content=png_text)
-                                    if project_dir:
+                                if project_dir:
+                                    try:
                                         proj = Path(project_dir).resolve()
-                                        try:
-                                            rel_png = str(p_png.resolve().relative_to(proj))
-                                            if not rel_png.replace('\\','/').startswith(f"{base_dir}/"):
-                                                delete_client_library_file(client_id, rel_png)
-                                        except Exception:
-                                            pass
+                                        rel_html = str(p.resolve().relative_to(proj)).replace('\\','/')
+                                        if not rel_html.startswith(f"{base_dir}/") and p.exists():
+                                            try:
+                                                p.unlink()
+                                            except Exception:
+                                                pass
+                                        if p_png.exists():
+                                            rel_png = str(p_png.resolve().relative_to(proj)).replace('\\','/')
+                                            if not rel_png.startswith(f"{base_dir}/"):
+                                                try:
+                                                    p_png.unlink()
+                                                except Exception:
+                                                    pass
+                                    except Exception:
+                                        pass
                             except Exception:
                                 pass
-                        # Delete original file to avoid duplicates where possible
-                        try:
-                            if project_dir:
-                                proj = Path(project_dir).resolve()
-                                rel = str(p.resolve().relative_to(proj))
-                                if not rel.replace('\\','/').startswith(f"{base_dir}/"):
-                                    delete_client_library_file(client_id, rel)
-                        except Exception:
-                            pass
                 except Exception:
                     continue
         except Exception:
             pass
-    except Exception:
-        pass
+
+    # Run simulation with delete_logs=True, copying via callback pre-cleanup
+    if project_dir:
+        result = run_wombat_simulation(library=project_dir, post_finalize_cb=_post_finalize_cb)
+    else:
+        result = run_wombat_simulation(post_finalize_cb=_post_finalize_cb)
+
     files = scan_client_library_files(client_id)
     return {"status": "finished", "results": result, "files": files}
 
