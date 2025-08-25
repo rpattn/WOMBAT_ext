@@ -141,7 +141,7 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
     const orbitSimSyncMatch = path.match(/^\/api\/(.+?)\/orbit\/simulate$/);
     const orbitSimTriggerMatch = path.match(/^\/api\/(.+?)\/orbit\/simulate\/trigger$/);
     const orbitSimStatusMatch = path.match(/^\/api\/orbit\/simulate\/status\/(.+)$/);
-
+    
     // Simulation handlers
     if (simulateSyncMatch && method === 'POST') {
       const cid = simulateSyncMatch[1];
@@ -164,7 +164,7 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
       return { id, ok: true, status: 200, json: { status: 'finished', results: result, files: scanFiles(store) } };
     }
 
-    if (simulateTriggerMatch && method === 'POST') {
+    if (simulateTriggerMatch && !orbitSimTriggerMatch && method === 'POST') {
       const cid = simulateTriggerMatch[1];
       if (!activeClients.has(cid)) {
         return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
@@ -236,6 +236,7 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
 
     // ORBIT async trigger (mirrors regular simulate/trigger)
     if (orbitSimTriggerMatch && method === 'POST') {
+      console.log('ORBIT async trigger', orbitSimTriggerMatch);
       const cid = orbitSimTriggerMatch[1];
       if (!activeClients.has(cid)) {
         return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
@@ -275,6 +276,7 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
       setTimeout(() => {
         try {
           const store = ensureClientStore(cid);
+          console.log('runMockSimulation', store);
           const result = runMockSimulation(store);
           const t = tasks.get(taskId);
           if (t) {
@@ -288,6 +290,7 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
             tasks.set(taskId, t);
           }
         } catch {
+          console.log('runMockSimulation failed', taskId);
           const t = tasks.get(taskId);
           if (t) {
             if (progressTimers.has(taskId)) {
@@ -302,11 +305,29 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
         }
       }, 9000 + Math.floor(Math.random() * 3000));
 
+      console.log('runMockSimulation', taskId);
+
       return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: initialProgress } };
     }
 
     if (simulateStatusMatch && method === 'GET') {
       const taskId = simulateStatusMatch[1];
+      const t = tasks.get(taskId);
+      if (!t) {
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'not_found' } };
+      }
+      if (t.status === 'finished') {
+        const store = ensureClientStore(t.clientId);
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'finished', result: t.result, files: scanFiles(store), progress: t.progress || { now: Date.now(), percent: 100, message: 'finished' } } };
+      } else if (t.status === 'failed') {
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'failed', result: t.result, progress: t.progress || { now: Date.now(), percent: null, message: 'failed' } } };
+      } else {
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: t.progress || { now: Date.now(), percent: null, message: 'running' } } };
+      }
+    }
+
+    if (orbitSimStatusMatch && method === 'GET') {
+      const taskId = orbitSimStatusMatch[1];
       const t = tasks.get(taskId);
       if (!t) {
         return { id, ok: true, status: 200, json: { task_id: taskId, status: 'not_found' } };
