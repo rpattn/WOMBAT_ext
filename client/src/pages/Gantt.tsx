@@ -265,13 +265,14 @@ export default function Gantt() {
           orientation: 'h',
           x: 0,
           xanchor: 'left',
-          y: 1.08,
-          yanchor: 'bottom',
+          y: -0.2,
+          yanchor: 'top',
           title: { text: 'Agent' },
         }
         ;(layout as any).margin = {
           ...((layout as any).margin || {}),
           t: Math.max(60, ((layout as any).margin?.t ?? 40)),
+          b: Math.max(56, ((layout as any).margin?.b ?? 40)),
         }
       }
 
@@ -361,44 +362,49 @@ export default function Gantt() {
               </div>
             </div>
 
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <strong>Vessels</strong>
-                <button className="btn btn-secondary" onClick={selectAllVessels} disabled={vesselList.length === 0}>All</button>
-                <button className="btn btn-secondary" onClick={clearVessels} disabled={selectedVessels.length === 0}>None</button>
+            <details>
+              <summary style={{ cursor: 'pointer', fontWeight: 600, marginBottom: 8 }}>Vessels and Actions</summary>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                <div style={{ minWidth: 280, flex: '1 1 280px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <strong>Vessels</strong>
+                    <button className="btn btn-secondary" onClick={selectAllVessels} disabled={vesselList.length === 0}>All</button>
+                    <button className="btn btn-secondary" onClick={clearVessels} disabled={selectedVessels.length === 0}>None</button>
+                  </div>
+                  <div style={{ maxHeight: 140, overflow: 'auto', border: '1px solid var(--color-border)', padding: 8, borderRadius: 4 }}>
+                    {vesselList.length === 0 ? (
+                      <small>No vessels.</small>
+                    ) : (
+                      vesselList.map(v => (
+                        <label key={v} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 12, marginBottom: 6 }}>
+                          <input type="checkbox" checked={selectedVessels.includes(v)} onChange={() => toggleVessel(v)} />
+                          <span>{v}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div style={{ minWidth: 280, flex: '1 1 280px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <strong>Actions</strong>
+                    <button className="btn btn-secondary" onClick={selectAllActions} disabled={actionList.length === 0}>All</button>
+                    <button className="btn btn-secondary" onClick={clearActions} disabled={selectedActions.length === 0}>None</button>
+                  </div>
+                  <div style={{ maxHeight: 140, overflow: 'auto', border: '1px solid var(--color-border)', padding: 8, borderRadius: 4 }}>
+                    {actionList.length === 0 ? (
+                      <small>No actions.</small>
+                    ) : (
+                      actionList.map(a => (
+                        <label key={a} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 12, marginBottom: 6 }}>
+                          <input type="checkbox" checked={selectedActions.includes(a)} onChange={() => toggleAction(a)} />
+                          <span>{a}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
-              <div style={{ maxHeight: 140, overflow: 'auto', border: '1px solid var(--color-border)', padding: 8, borderRadius: 4 }}>
-                {vesselList.length === 0 ? (
-                  <small>No vessels.</small>
-                ) : (
-                  vesselList.map(v => (
-                    <label key={v} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 12, marginBottom: 6 }}>
-                      <input type="checkbox" checked={selectedVessels.includes(v)} onChange={() => toggleVessel(v)} />
-                      <span>{v}</span>
-                    </label>
-                  ))
-                )}
-              </div>
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <strong>Actions</strong>
-                <button className="btn btn-secondary" onClick={selectAllActions} disabled={actionList.length === 0}>All</button>
-                <button className="btn btn-secondary" onClick={clearActions} disabled={selectedActions.length === 0}>None</button>
-              </div>
-              <div style={{ maxHeight: 140, overflow: 'auto', border: '1px solid var(--color-border)', padding: 8, borderRadius: 4 }}>
-                {actionList.length === 0 ? (
-                  <small>No actions.</small>
-                ) : (
-                  actionList.map(a => (
-                    <label key={a} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 12, marginBottom: 6 }}>
-                      <input type="checkbox" checked={selectedActions.includes(a)} onChange={() => toggleAction(a)} />
-                      <span>{a}</span>
-                    </label>
-                  ))
-                )}
-              </div>
-            </div>
+            </details>
           </div>
         </div>
         <div ref={plotRef} style={{ width: '100%', height: 500 }} />
