@@ -18,6 +18,18 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
     // minimally: fetch configuration schema for YAML files
     if (file.endsWith('.yaml') || file.endsWith('.yml')) {
       const isVessel = file.includes('vessels') || file.includes('vessel') || file.includes('service_equipment')
+      const isOrbitConfig = (
+        file.includes('orbit') ||
+        file.includes('project/config') ||
+        file.includes('project\\config') ||
+        (
+          !!data && typeof data === 'object' && (
+            Object.prototype.hasOwnProperty.call(data as any, 'site') ||
+            Object.prototype.hasOwnProperty.call(data as any, 'plant') ||
+            Object.prototype.hasOwnProperty.call(data as any, 'landfall')
+          )
+        )
+      )
       const isSubstation = file.includes('substation')
       const isTurbine = file.includes('turbine')
       const isCable = file.includes('cable')
@@ -26,7 +38,12 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
         file.includes('project\\port') ||
         (file.includes('project') && file.includes('port'))
       )
-      if (isVessel) {
+      if (isOrbitConfig) {
+        // ORBIT project configuration schema
+        getSchema('orbit_config')
+          .then((s) => { if (active) setSchema(s) })
+          .catch(() => { if (active) setSchema(null) })
+      } else if (isVessel) {
         const strategy = (data as any)?.strategy
         const strat = typeof strategy === 'string' ? strategy.toLowerCase() : ''
         const isUnscheduled = strat === 'unscheduled' || strat === 'requests' || strat === 'downtime'

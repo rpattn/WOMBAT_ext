@@ -13,7 +13,7 @@ plant:
 landfall:
   interconnection_distance: 3
   trench_length: 2
-turbine: vestas_v90
+turbine: 15MW_generic
 # Vessels
 array_cable_install_vessel: example_cable_lay_vessel
 export_cable_install_vessel: example_cable_lay_vessel

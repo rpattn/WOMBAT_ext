@@ -155,13 +155,25 @@ export default function Gantt() {
   const [endDate, setEndDate] = useState<string>('')
   const vesselList = useMemo(() => Array.from(new Set((segments || []).map(s => s.vessel))).sort(), [segments])
   const [selectedVessels, setSelectedVessels] = useState<string[]>([])
+  const actionList = useMemo(() => Array.from(new Set((segments || []).map(s => s.action).filter(Boolean))).sort(), [segments])
+  const [selectedActions, setSelectedActions] = useState<string[]>([])
   // Reset selected vessels when data changes (default to all)
   useEffect(() => {
     setSelectedVessels(vesselList)
   }, [vesselList])
+  useEffect(() => {
+    // Initialize actions once (exclude 'delay') when we first get a non-empty actionList
+    if (selectedActions.length === 0 && actionList.length > 0) {
+      const noDelay = actionList.filter(a => String(a).toLowerCase() !== 'delay')
+      setSelectedActions(noDelay)
+    }
+  }, [actionList])
   const toggleVessel = (v: string) => setSelectedVessels(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])
   const selectAllVessels = () => setSelectedVessels(vesselList)
   const clearVessels = () => setSelectedVessels([])
+  const toggleAction = (a: string) => setSelectedActions(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a])
+  const selectAllActions = () => setSelectedActions(actionList)
+  const clearActions = () => setSelectedActions([])
 
   const filteredSegments = useMemo(() => {
     if (!segments || segments.length === 0) return [] as Segment[]
@@ -171,6 +183,8 @@ export default function Gantt() {
     const endMs = endDate ? new Date(endDate).getTime() : Infinity
     return segments.filter(s => {
       if (selectedVessels.length && !selectedVessels.includes(s.vessel)) return false
+      // Enforce actions filter whenever we have any actions in the dataset.
+      if (actionList.length > 0 && !selectedActions.includes(s.action)) return false
       if (s.duration_hours < (Number.isFinite(minDuration) ? Number(minDuration) : 0)) return false
       const sMs = new Date(s.start).getTime()
       const fMs = new Date(s.finish).getTime()
@@ -181,7 +195,7 @@ export default function Gantt() {
       }
       return true
     })
-  }, [segments, selectedVessels, minDuration, textFilter, startDate, endDate])
+  }, [segments, selectedVessels, selectedActions, actionList, minDuration, textFilter, startDate, endDate])
 
   // Chart variant selector
   const [chartType, setChartType] = useState<ChartType>('ctv_vessel')
@@ -234,7 +248,7 @@ export default function Gantt() {
           xanchor: 'left',
           y: -0.2,
           yanchor: 'top',
-          title: { text: 'CTV' },
+          title: { text: 'Agent' },
           font: { size: 10 },
         }
         ;(layout as any).margin = {
@@ -253,7 +267,7 @@ export default function Gantt() {
           xanchor: 'left',
           y: 1.08,
           yanchor: 'bottom',
-          title: { text: 'CTV' },
+          title: { text: 'Agent' },
         }
         ;(layout as any).margin = {
           ...((layout as any).margin || {}),
@@ -366,6 +380,25 @@ export default function Gantt() {
                 )}
               </div>
             </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <strong>Actions</strong>
+                <button className="btn btn-secondary" onClick={selectAllActions} disabled={actionList.length === 0}>All</button>
+                <button className="btn btn-secondary" onClick={clearActions} disabled={selectedActions.length === 0}>None</button>
+              </div>
+              <div style={{ maxHeight: 140, overflow: 'auto', border: '1px solid var(--color-border)', padding: 8, borderRadius: 4 }}>
+                {actionList.length === 0 ? (
+                  <small>No actions.</small>
+                ) : (
+                  actionList.map(a => (
+                    <label key={a} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 12, marginBottom: 6 }}>
+                      <input type="checkbox" checked={selectedActions.includes(a)} onChange={() => toggleAction(a)} />
+                      <span>{a}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
         <div ref={plotRef} style={{ width: '100%', height: 500 }} />
@@ -404,7 +437,7 @@ export type Segment = {
   start: string // ISO string
   finish: string // ISO string
   duration_hours: number
-  action: 'maintenance' | 'repair'
+  action: string
   request_id?: string
   system_id?: string | number
   part_name?: string
@@ -413,27 +446,44 @@ export type Segment = {
 function buildCtvSegments(rows: EventRow[]): Segment[] {
   if (!rows || rows.length === 0) return []
   const out: Segment[] = []
+  // Use a stable base epoch if only relative time (hours) is provided (e.g., Orbit actions.csv "time")
+  const baseEpoch = new Date('2000-01-01T00:00:00Z').getTime()
   for (const r of rows) {
-    const action = String(r.action || r.Action || '').toLowerCase()
-    if (action !== 'maintenance' && action !== 'repair') continue
-
+    // Accept both WOMBAT event rows and Orbit actions rows
+    const actionVal = String(r.action || r.Action || '').trim()
+    const level = String(r.level || r.Level || '').trim()
     const dur = Number(r.duration ?? r.Duration ?? 0)
     if (!Number.isFinite(dur) || dur <= 0) continue
 
     const agent = String(r.agent ?? r.Agent ?? '').trim()
-    if (!agent) continue // require a vessel/agent name
+    if (!agent) continue // require a vessel/agent name (Orbit uses agent)
 
-    const start = new Date(String(r.env_datetime ?? r.datetime ?? r.DateTime ?? '')).toISOString()
-    const finish = new Date(new Date(start).getTime() + dur * 3600_000).toISOString()
+    // Derive start: prefer absolute datetime if present, otherwise map relative hours (Orbit "time") to a base epoch
+    let startMs: number | null = null
+    const dt = r.env_datetime ?? r.datetime ?? r.DateTime
+    if (dt) {
+      const t = new Date(String(dt)).getTime()
+      if (Number.isFinite(t)) startMs = t
+    }
+    if (startMs == null) {
+      const relHrs = Number(r.time ?? r.Time)
+      if (Number.isFinite(relHrs)) startMs = baseEpoch + relHrs * 3600_000
+    }
+    if (startMs == null) continue // require a usable start
+
+    const start = new Date(startMs).toISOString()
+    const finish = new Date(startMs + dur * 3600_000).toISOString()
+    // Part label: prefer explicit part name; otherwise use phase/action text for readability
+    const part = (r.part_name ?? r.PartName ?? '').toString() || [r.phase_name, r.phase, actionVal].filter(Boolean).join(' · ')
     out.push({
       vessel: agent,
       start,
       finish,
       duration_hours: dur,
-      action: action as 'maintenance' | 'repair',
+      action: actionVal || (level ? level.toLowerCase() : 'action'),
       request_id: r.request_id?.toString?.() ?? r.RequestID?.toString?.(),
       system_id: r.system_id ?? r.SystemID,
-      part_name: r.part_name ?? r.PartName,
+      part_name: part,
     })
   }
   return out
@@ -458,9 +508,9 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
       const y = segs.map(() => vessel)
       const text = segs.map(s => `${s.part_name ?? ''}`)
       const hover = segs.map(s =>
-        `CTV: ${vessel}<br>Start: ${s.start}<br>Finish: ${s.finish}` +
+        `Agent: ${vessel}<br>Start: ${s.start}<br>Finish: ${s.finish}` +
         `<br>Duration (h): ${s.duration_hours.toFixed(2)}` +
-        (s.part_name ? `<br>Part: ${s.part_name}` : '') +
+        (s.part_name ? `<br>Label: ${s.part_name}` : '') +
         (s.system_id != null ? `<br>System: ${s.system_id}` : '') +
         (s.request_id ? `<br>Request: ${s.request_id}` : '')
       )
@@ -470,7 +520,7 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
       })
     }
     const layout = {
-      barmode: 'stack', title: 'CTV Work Timeline by CTV',
+      barmode: 'stack', title: 'Actions Timeline by Agent',
       xaxis: { title: 'Time', type: 'date' },
       yaxis: { title: '', categoryorder: 'array', categoryarray: vessels, automargin: true },
       height: Math.max(400, 60 * Math.max(1, vessels.length)),
@@ -480,7 +530,7 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
   }
 
   if (chartType === 'ctv_duration') {
-    const segs = segments.filter(s => s.action === 'repair')
+    const segs = segments // include all actions for duration coloring
     const byVessel = new Map<string, Segment[]>()
     for (const s of segs) {
       if (!byVessel.has(s.vessel)) byVessel.set(s.vessel, [])
@@ -496,9 +546,9 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
       const base = rows.map(s => new Date(s.start))
       const y = rows.map(() => vessel)
       const hover = rows.map(s =>
-        `CTV: ${vessel}<br>Start: ${s.start}<br>Finish: ${s.finish}` +
+        `Agent: ${vessel}<br>Start: ${s.start}<br>Finish: ${s.finish}` +
         `<br>Duration (h): ${s.duration_hours.toFixed(2)}` +
-        (s.part_name ? `<br>Part: ${s.part_name}` : '') +
+        (s.part_name ? `<br>Label: ${s.part_name}` : '') +
         (s.system_id != null ? `<br>System: ${s.system_id}` : '') +
         (s.request_id ? `<br>Request: ${s.request_id}` : '')
       )
@@ -517,7 +567,7 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
       })
     }
     const layout = {
-      barmode: 'stack', title: 'CTV Work Duration (short→green, long→red)',
+      barmode: 'stack', title: 'Action Duration by Agent (short→green, long→red)',
       xaxis: { title: 'Time', type: 'date' },
       yaxis: { title: '', categoryorder: 'array', categoryarray: vessels, automargin: true },
       height: Math.max(400, 60 * Math.max(1, vessels.length)),
@@ -557,7 +607,7 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
   const base = rows.map(r => r.start)
   const y = rows.map(r => r.label)
   const hover = rows.map(r => `Request: ${r.rid}<br>Start: ${r.start.toISOString()}<br>Finish: ${r.finish.toISOString()}<br>Duration (h): ${r.duration_hours.toFixed(2)}` +
-    (r.part ? `<br>Part: ${r.part}` : '') + (r.system != null ? `<br>System: ${r.system}` : '') + (r.vessel ? `<br>CTV: ${r.vessel}` : ''))
+    (r.part ? `<br>Label: ${r.part}` : '') + (r.system != null ? `<br>System: ${r.system}` : '') + (r.vessel ? `<br>Agent: ${r.vessel}` : ''))
   const traces = [{
     type: 'bar', orientation: 'h', x, base, y,
     name: 'Request duration', hovertext: hover, hoverinfo: 'text',

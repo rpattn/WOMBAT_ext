@@ -1,25 +1,5 @@
 capacity_kw: 3000
 capex_kw: 1300
-rotor_diameter: 240
-hub_height: 120
-rated_windspeed: 12
-turbine_rating: 3000
-blade:
-  deck_space: 480
-  length: 120
-  type: Blade
-  mass: 72
-nacelle:
-  deck_space: 242
-  type: Nacelle
-  mass: 797
-tower:
-  deck_space: 78.5
-  sections: 2
-  type: Tower
-  length: 150
-  mass: 480
-turbine_rating: 15
 power_curve:
   file: vestas_v90_power_curve.csv
   bin_width: 0.5

@@ -398,6 +398,148 @@ def schema_service_equipment_variants() -> dict[str, dict[str, Any]]:
     }
 
 
+def schema_orbit_turbine() -> dict[str, Any]:
+    """JSON Schema for ORBIT-style turbine YAML files.
+
+    Matches fields commonly used by ORBIT libraries, e.g. capacity_kw, capex_kw,
+    rotor_diameter, hub_height, rated_windspeed, turbine_rating, component blocks
+    (blade, nacelle, tower), and power_curve either as CSV reference or array.
+    """
+    component = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "type": {"type": "string"},
+            "deck_space": {"type": ["integer", "number"], "minimum": 0},
+            "length": {"type": ["integer", "number"], "minimum": 0},
+            "mass": {"type": ["integer", "number"], "minimum": 0},
+            "sections": {"type": "integer", "minimum": 0},
+        },
+    }
+
+    power_curve_point = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "wind_speed_mps": {"type": ["integer", "number"], "minimum": 0},
+            "power_kw": {"type": ["integer", "number"], "minimum": 0},
+        },
+        "required": ["wind_speed_mps", "power_kw"],
+    }
+
+    schema: dict[str, Any] = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ORBIT_Turbine",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "capacity_kw": {"type": ["integer", "number"], "minimum": 0},
+            "capex_kw": {"type": ["integer", "number"], "minimum": 0},
+            "rotor_diameter": {"type": ["integer", "number"], "minimum": 0},
+            "hub_height": {"type": ["integer", "number"], "minimum": 0},
+            "rated_windspeed": {"type": ["integer", "number"], "minimum": 0},
+            "turbine_rating": {"type": ["integer", "number"], "minimum": 0},
+            "blade": component,
+            "nacelle": component,
+            "tower": component,
+            "power_curve": {
+                "oneOf": [
+                    {"type": "array", "items": power_curve_point},
+                    {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "file": {"type": "string"},
+                            "bin_width": {"type": ["integer", "number"], "minimum": 0},
+                        },
+                        "required": ["file", "bin_width"],
+                    },
+                ]
+            },
+        },
+    }
+    return schema
+
+
+def schema_orbit_config() -> dict[str, Any]:
+    """JSON Schema for ORBIT project configuration YAML files.
+
+    Designed around typical ORBIT examples, including site/plant/landfall blocks,
+    turbine reference (string id or path), vessel selections, and optional module
+    toggles/blocks.
+    """
+    site = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "depth": {"type": ["integer", "number"]},
+            "distance": {"type": ["integer", "number"]},
+            "distance_to_landfall": {"type": ["integer", "number"]},
+            "mean_windspeed": {"type": ["integer", "number"]},
+        },
+    }
+
+    plant = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "layout": {"type": "string"},
+            "num_turbines": {"type": "integer", "minimum": 0},
+            "row_spacing": {"type": ["integer", "number"], "minimum": 0},
+            "substation_distance": {"type": ["integer", "number"], "minimum": 0},
+            "turbine_spacing": {"type": ["integer", "number"], "minimum": 0},
+            "turbine": {"type": ["string", "object"]},
+        },
+    }
+
+    landfall = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "interconnection_distance": {"type": ["integer", "number"], "minimum": 0},
+            "trench_length": {"type": ["integer", "number"], "minimum": 0},
+        },
+    }
+
+    vessels = {
+        "array_cable_install_vessel": {"type": "string"},
+        "export_cable_install_vessel": {"type": "string"},
+        "export_cable_bury_vessel": {"type": "string"},
+        "oss_install_vessel": {"type": "string"},
+        "spi_vessel": {"type": "string"},
+        "wtiv": {"type": "string"},
+    }
+
+    modules_relaxed = {
+        # Allow module keys to be present as empty object or config object
+        k: {"type": "object", "additionalProperties": True}
+        for k in [
+            "OffshoreSubstationInstallation",
+            "ArrayCableInstallation",
+            "ExportCableInstallation",
+            "MonopileInstallation",
+            "ScourProtectionInstallation",
+            "TurbineInstallation",
+        ]
+    }
+
+    schema: dict[str, Any] = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ORBIT_ProjectConfiguration",
+        "type": "object",
+        "additionalProperties": True,  # permit unknown top-level keys used by ORBIT
+        "properties": {
+            "site": site,
+            "plant": plant,
+            "landfall": landfall,
+            "turbine": {"type": ["string", "object"]},
+            **vessels,
+            **modules_relaxed,
+        },
+    }
+    return schema
+
+
 def schema_substation() -> dict[str, Any]:
     """JSON Schema for substation YAML configuration files.
 
@@ -673,6 +815,8 @@ def schema_by_name(name: str) -> dict[str, Any]:
     name = name.lower()
     if name in ("configuration", "config"):
         return schema_configuration()
+    if name in ("orbit_config", "orbit"):
+        return schema_orbit_config()
     if name in ("service_equipment", "vessel", "vessels"):
         return schema_service_equipment_variants()["combined"]
     if name in ("service_equipment_scheduled", "vessel_scheduled"):
@@ -687,6 +831,8 @@ def schema_by_name(name: str) -> dict[str, Any]:
         return schema_substation()
     if name in ("turbine", "turbines"):
         return schema_turbine()
+    if name in ("orbit_turbine", "turbine_orbit"):
+        return schema_orbit_turbine()
     if name in ("equipment_turbine", "turbine_equipment"):
         return schema_equipment_turbine()
     if name in ("cable", "cables"):
