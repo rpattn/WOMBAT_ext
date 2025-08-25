@@ -370,6 +370,8 @@ def schema_configuration() -> dict[str, Any]:
         if ty == "string" or ty is None:
             pc["type"] = ["integer", "number"]
             props["project_capacity"] = pc
+    # Accept optional top-level library reference as a string
+    props["library"] = {"type": "string"}
     base["properties"] = props
     return base
 
