@@ -9,27 +9,37 @@ export type EditorPanelProps = {
 }
 
 export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps) {
-  const { selectedFile, getSchema } = useApiContext()
+  const { selectedFile, getSchema, listSchemas } = useApiContext()
   const [schema, setSchema] = useState<any | null>(null)
+  const [schemaOverride, setSchemaOverride] = useState<string>('')
+  const [availableSchemas, setAvailableSchemas] = useState<string[]>([])
+
+  // Load available schemas once
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      try {
+        const arr = await listSchemas()
+        if (active) setAvailableSchemas(arr)
+      } catch {
+        if (active) setAvailableSchemas([])
+      }
+    })()
+    return () => { active = false }
+  }, [listSchemas])
 
   useEffect(() => {
     let active = true
     const file = (selectedFile || '').toLowerCase()
     // minimally: fetch configuration schema for YAML files
-    if (file.endsWith('.yaml') || file.endsWith('.yml')) {
+    if (schemaOverride) {
+      // User override takes precedence
+      getSchema(schemaOverride)
+        .then((s) => { if (active) setSchema(s) })
+        .catch(() => { if (active) setSchema(null) })
+    } else if (file.endsWith('.yaml') || file.endsWith('.yml')) {
       const isVessel = file.includes('vessels') || file.includes('vessel') || file.includes('service_equipment')
-      const isOrbitConfig = (
-        file.includes('orbit') ||
-        file.includes('project/config') ||
-        file.includes('project\\config') ||
-        (
-          !!data && typeof data === 'object' && (
-            Object.prototype.hasOwnProperty.call(data as any, 'site') ||
-            Object.prototype.hasOwnProperty.call(data as any, 'plant') ||
-            Object.prototype.hasOwnProperty.call(data as any, 'landfall')
-          )
-        )
-      )
+      const isOrbitConfig = file.includes('orbit')
       const isSubstation = file.includes('substation')
       const isTurbine = file.includes('turbine')
       const isCable = file.includes('cable')
@@ -117,7 +127,7 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
       }
     }
     return () => { active = false }
-  }, [selectedFile, getSchema])
+  }, [selectedFile, getSchema, schemaOverride])
 
   return (
     <div className="col">
@@ -128,6 +138,19 @@ export default function EditorPanel({ data, onChange, onSave }: EditorPanelProps
           onChange={(newData) => onChange(newData as JsonObject)}
           onSave={(newData) => onSave(newData as JsonObject)}
         />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+          <label htmlFor="schema-override" style={{ fontWeight: 500 }}>Schema</label>
+          <select
+            id="schema-override"
+            value={schemaOverride}
+            onChange={(e) => setSchemaOverride(e.target.value)}
+          >
+            <option value="">Auto (detected)</option>
+            {availableSchemas.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   )
