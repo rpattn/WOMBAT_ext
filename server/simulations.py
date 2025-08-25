@@ -15,6 +15,38 @@ logger = logging.getLogger("uvicorn.error")
 
 _TASKS: Dict[str, dict] = {}
 
+def build_orbit_summary_payload(result_dict: dict) -> dict:
+    """Build a compact ORBIT summary with highlights plus the original result."""
+    try:
+        import time
+        ts = time.strftime('%Y-%m-%d_%H-%M-%S')
+    except Exception:
+        ts = ''
+    highlights: Dict[str, Any] = {
+        "engine": "ORBIT",
+        "status": result_dict.get("status"),
+    }
+    def pick(key: str):
+        if key in result_dict:
+            return result_dict.get(key)
+        inner = result_dict.get("results") or {}
+        return inner.get(key)
+    for k in [
+        "total_cost",
+        "duration_days",
+        "num_turbines",
+        "capacity_mw",
+        "lcoe",
+    ]:
+        v = pick(k)
+        if v is not None:
+            highlights[k] = v
+    return {
+        "generated_at": ts,
+        "highlights": highlights,
+        "result": result_dict,
+    }
+
 def get_simulation(library: str = "DINWOODIE"):
     from wombat_api.api.simulation_runner import get_simulation_dict
     return get_simulation_dict(library)
@@ -240,13 +272,14 @@ def start_orbit_simulation_task(client_id: str, project_dir: Optional[str]) -> s
                     pass
 
             def _post_finalize_cb(result_dict: dict):
-                # For ORBIT we don't know artifact paths a priori, but preserve summary
+                # For ORBIT, write a richer summary including highlights
                 try:
                     import time
                     from server.services.libraries import add_client_library_file
                     ts = time.strftime('%Y-%m-%d_%H-%M-%S')
                     base_dir = f"results/{ts}"
-                    add_client_library_file(client_id, f"{base_dir}/orbit_summary.json", content=result_dict)
+                    payload = build_orbit_summary_payload(result_dict)
+                    add_client_library_file(client_id, f"{base_dir}/orbit_summary.json", content=payload)
                 except Exception:
                     pass
 

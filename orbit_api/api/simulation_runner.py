@@ -85,17 +85,68 @@ def run_simulation_with_progress(
     start = time.time()
     try:
         # Instantiate; support both dict and explicit kw styles
-        try:
-            pm = ProjectManager(cfg_dict)  # common signature
-        except TypeError:
-            pm = ProjectManager(input_dict=cfg_dict)
+        pm = ProjectManager(cfg_dict)  # common signature
 
-        results: dict[str, Any]
+        results_raw: dict[str, Any]
+        
         try:
-            results = pm.run()  # typical ORBIT API returns a results dict
-        except TypeError:
-            # Some versions use execute()
-            results = pm.execute()
+            pm.run()  # typical ORBIT API returns a results dict
+            results_raw = pm.capex_breakdown
+            df = pd.DataFrame(project.actions)
+        except Exception as e:
+            print(f"ERROR: ORBIT simulation failed: {e}")
+            pass
+
+        # Enrich results by probing common ORBIT exports, if available
+        enriched: dict[str, Any] = {}
+        if isinstance(results_raw, dict) and results_raw:
+            enriched.update(results_raw)
+        # Try to include high-level project/system exports
+        try:
+            if hasattr(pm, "export_project_outputs"):
+                proj_out = pm.export_project_outputs()
+                if proj_out:
+                    enriched["project_outputs"] = proj_out
+        except Exception:
+            pass
+        try:
+            if hasattr(pm, "export_system_design"):
+                sys_design = pm.export_system_design()
+                if sys_design:
+                    enriched["system_design"] = sys_design
+        except Exception:
+            pass
+        # Other common locations across ORBIT versions
+        try:
+            if hasattr(pm, "results") and pm.results:
+                enriched.setdefault("raw_results", pm.results)
+        except Exception:
+            pass
+        try:
+            if hasattr(pm, "get_results"):
+                gr = pm.get_results()
+                if gr:
+                    enriched.setdefault("raw_results", gr)
+        except Exception:
+            pass
+        try:
+            proj = getattr(pm, "project", None)
+            if proj is not None:
+                if hasattr(proj, "export_system_design"):
+                    sd = proj.export_system_design()
+                    if sd:
+                        enriched.setdefault("system_design", sd)
+                if hasattr(proj, "export_project_outputs"):
+                    po = proj.export_project_outputs()
+                    if po:
+                        enriched.setdefault("project_outputs", po)
+                # Sometimes design is accessible as attribute
+                if hasattr(proj, "system_design"):
+                    sd2 = getattr(proj, "system_design")
+                    if sd2:
+                        enriched.setdefault("system_design", sd2)
+        except Exception:
+            pass
 
         # Build a normalized result payload similar to WOMBAT
         out: dict[str, Any] = {
@@ -104,7 +155,7 @@ def run_simulation_with_progress(
             or cfg_dict.get("project_name")
             or "ORBIT Project",
             "library": str(Path(library).resolve()),
-            "results": results or {},
+            "results": enriched or {},
             "stats": {
                 "runtime_seconds": round(time.time() - start, 3),
             },
