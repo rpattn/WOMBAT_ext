@@ -23,10 +23,12 @@ async def list_schemas() -> dict[str, list[str]]:
             "substation",
             "turbine",
             "orbit_turbine",
+            "orbit_cable",
             "equipment_turbine",
             "cable",
             "equipment_cable",
             "project_port",
+            "fixed_costs",
         ]
     }
 

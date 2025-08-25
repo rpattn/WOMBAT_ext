@@ -206,6 +206,21 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
     const validateForm = React.useCallback((value: JsonObject, sch: any | undefined) => {
         const out: Record<string, string[]> = {};
         if (sch) validateValue(value, sch, [], out);
+        // Targeted debug logging for power_curve-related validation errors
+        try {
+            const pcErrs = Object.entries(out).filter(([k]) => k.split('.').includes('power_curve'));
+            if (pcErrs.length > 0) {
+                // Collapsed group to avoid noisy console
+                // Shows each JSON path and its associated messages
+                console.groupCollapsed('[JsonEditor] power_curve validation errors:', pcErrs.length);
+                for (const [k, msgs] of pcErrs) {
+                    console.log(k, msgs);
+                }
+                console.groupEnd();
+            }
+        } catch {
+            // ignore logging issues
+        }
         setErrors(out);
     }, []);
 

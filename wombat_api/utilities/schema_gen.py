@@ -324,6 +324,49 @@ def build_schema_for_attrs_class(cls: Any, *, title: str | None = None) -> dict[
     return schema
 
 
+def schema_orbit_cable() -> dict[str, Any]:
+    """JSON Schema for ORBIT-style cable YAML files.
+
+    Pragmatic structure capturing common ORBIT cable attributes, allowing both
+    unit-suffixed and unit-less naming variants commonly found in examples.
+    """
+    number_nonneg = {"type": ["integer", "number"], "minimum": 0}
+    schema: dict[str, Any] = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ORBIT_Cable",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            # Identifier
+            "name": {"type": "string"},
+            "cable_type": {"type": "string"},
+            # Voltage
+            "voltage": number_nonneg,
+            "voltage_kv": number_nonneg,
+            "rated_voltage": number_nonneg,
+            # Conductor cross-section
+            "conductor_area": number_nonneg,
+            "conductor_area_mm2": number_nonneg,
+            "conductor_size": number_nonneg,
+            # Current carrying capability
+            "max_current": number_nonneg,
+            "max_current_a": number_nonneg,
+            "current_capacity": number_nonneg,
+            # Mass/weight per unit length
+            "mass_per_length": number_nonneg,
+            "weight_kg_m": number_nonneg,
+            "linear_density": number_nonneg,
+            # Electrical parameters
+            "ac_resistance": number_nonneg,
+            "capacitance": number_nonneg,
+            "inductance": number_nonneg,
+            # Optional typical ORBIT fields
+            "length_m": number_nonneg,
+            "cost_per_km": number_nonneg,
+        },
+    }
+    return schema
+
 # Convenience builders for known WOMBAT models
 
 def schema_configuration() -> dict[str, Any]:
@@ -411,6 +454,7 @@ def schema_orbit_turbine() -> dict[str, Any]:
         "type": "object",
         "additionalProperties": False,
         "properties": {
+            "name": {"type": "string"},
             "type": {"type": "string"},
             "deck_space": {"type": ["integer", "number"], "minimum": 0},
             "length": {"type": ["integer", "number"], "minimum": 0},
@@ -433,31 +477,19 @@ def schema_orbit_turbine() -> dict[str, Any]:
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "ORBIT_Turbine",
         "type": "object",
-        "additionalProperties": False,
+        "additionalProperties": True,
         "properties": {
+            "name": {"type": "string"},
             "capacity_kw": {"type": ["integer", "number"], "minimum": 0},
             "capex_kw": {"type": ["integer", "number"], "minimum": 0},
             "rotor_diameter": {"type": ["integer", "number"], "minimum": 0},
             "hub_height": {"type": ["integer", "number"], "minimum": 0},
             "rated_windspeed": {"type": ["integer", "number"], "minimum": 0},
             "turbine_rating": {"type": ["integer", "number"], "minimum": 0},
+            "power_curve": {"type": "object"},
             "blade": component,
             "nacelle": component,
-            "tower": component,
-            "power_curve": {
-                "oneOf": [
-                    {"type": "array", "items": power_curve_point},
-                    {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "file": {"type": "string"},
-                            "bin_width": {"type": ["integer", "number"], "minimum": 0},
-                        },
-                        "required": ["file", "bin_width"],
-                    },
-                ]
-            },
+            "tower": component
         },
     }
     return schema
@@ -687,29 +719,19 @@ def schema_turbine() -> dict[str, Any]:
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Turbine",
         "type": "object",
-        "additionalProperties": False,
+        "additionalProperties": True,
         "properties": {
             "model": {"type": "string"},
+            "name": {"type": "string"},
+            "capacity_kw": {"type": ["integer", "number"], "minimum": 0},
+            "capex_kw": {"type": ["integer", "number"], "minimum": 0},
             "rated_power_kw": {"type": ["integer", "number"], "minimum": 0},
             "rotor_diameter_m": {"type": ["integer", "number"], "minimum": 0},
             "hub_height_m": {"type": ["integer", "number"], "minimum": 0},
             "cut_in_wind_speed_mps": {"type": ["integer", "number"], "minimum": 0},
             "cut_out_wind_speed_mps": {"type": ["integer", "number"]},
-            "power_curve": {
-                "oneOf": [
-                    {"type": "array", "items": power_curve_point},
-                    {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "file": {"type": "string"},
-                            "bin_width": {"type": ["integer", "number"], "minimum": 0},
-                        },
-                        "required": ["file", "bin_width"],
-                    },
-                ]
-            },
             "maintenance": {"type": "array", "items": maintenance_item},
+            "power_curve": {"type": "object"},
             "failures": {"type": "array", "items": failure_item},
         },
     }
@@ -726,10 +748,11 @@ def schema_equipment_turbine() -> dict[str, Any]:
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "EquipmentTurbine",
         "type": "object",
-        "additionalProperties": False,
+        "additionalProperties": True,
         "properties": {
             "capacity_kw": {"type": ["integer", "number"], "minimum": 0},
             "capex_kw": {"type": ["integer", "number"], "minimum": 0},
+            "power_curve": {"type": "object"},
             "turbine": schema_turbine(),
         },
     }
@@ -788,10 +811,19 @@ def schema_cable() -> dict[str, Any]:
         "additionalProperties": False,
         "properties": {
             "name": {"type": "string"},
+            "cable_type": {"type": "string"},
             "voltage_kv": {"type": ["integer", "number"], "minimum": 0},
+            "rated_voltage": {"type": ["integer", "number"], "minimum": 0},
             "conductor_area_mm2": {"type": ["integer", "number"], "minimum": 0},
+            "conductor_size": {"type": ["integer", "number"], "minimum": 0},
             "max_current_a": {"type": ["integer", "number"], "minimum": 0},
+            "current_capacity": {"type": ["integer", "number"], "minimum": 0},
             "weight_kg_m": {"type": ["integer", "number"], "minimum": 0},
+            "linear_density": {"type": ["integer", "number"], "minimum": 0},
+            "ac_resistance": {"type": ["integer", "number"], "minimum": 0},
+            "capacitance": {"type": ["integer", "number"], "minimum": 0},
+            "inductance": {"type": ["integer", "number"], "minimum": 0},
+            "cost_per_km": {"type": ["integer", "number"], "minimum": 0},
             "maintenance": {"type": "array", "items": maintenance_item},
             "failures": {"type": "array", "items": failure_item},
         },
@@ -835,13 +867,42 @@ def schema_by_name(name: str) -> dict[str, Any]:
         return schema_turbine()
     if name in ("orbit_turbine", "turbine_orbit"):
         return schema_orbit_turbine()
+    if name in ("orbit_cable", "cable_orbit"):
+        return schema_orbit_cable()
     if name in ("equipment_turbine", "turbine_equipment"):
         return schema_equipment_turbine()
     if name in ("cable", "cables"):
         return schema_cable()
     if name in ("equipment_cable", "cable_equipment"):
         return schema_equipment_cable()
+    if name in ("fixed_costs", "fixed_cost"):
+        return schema_fixed_costs()
     raise KeyError(
         "Unknown schema name. Use one of: configuration, service_equipment, "
         "service_equipment_scheduled, service_equipment_unscheduled, project_port, substation, turbine, equipment_turbine, cable, equipment_cable"
     )
+
+
+def schema_fixed_costs() -> dict[str, Any]:
+    """Schema for fixed_costs.yaml files used in project configurations.
+
+    Example keys seen in library/code_comparison/iea26/project/config/fixed_costs.yaml
+    are modeled as non-negative numeric values. Additional properties are disallowed
+    to help catch typos.
+    """
+    nonneg_number = {"type": ["integer", "number"], "minimum": 0}
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "FixedCosts",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "operations_management_administration": nonneg_number,
+            "insurance": nonneg_number,
+            "annual_leases_fees": nonneg_number,
+            "operating_facilities": nonneg_number,
+            "environmental_health_safety_monitoring": nonneg_number,
+            "onshore_electrical_maintenance": nonneg_number,
+            "labor": nonneg_number,
+        },
+    }
