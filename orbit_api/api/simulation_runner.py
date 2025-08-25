@@ -91,15 +91,17 @@ def run_simulation_with_progress(
         # Instantiate; support both dict and explicit kw styles
         pm = ProjectManager(cfg_dict)  # common signature
 
-        results_raw: dict[str, Any]
-        
+        # Always initialize to a safe default to avoid UnboundLocalError
+        results_raw: dict[str, Any] = {}
+
         try:
-            pm.run()  # typical ORBIT API returns a results dict
-            results_raw = pm.capex_breakdown
-            df = pd.DataFrame(project.actions)
+            pm.run()  # typical ORBIT API executes the pipeline
+            # Prefer capex_breakdown if available
+            if hasattr(pm, "capex_breakdown") and isinstance(getattr(pm, "capex_breakdown"), dict):
+                results_raw = getattr(pm, "capex_breakdown")  # type: ignore[assignment]
         except Exception as e:
             print(f"ERROR: ORBIT simulation failed: {e}")
-            pass
+            # keep results_raw as {}
 
         # Enrich results by probing common ORBIT exports, if available
         enriched: dict[str, Any] = {}
