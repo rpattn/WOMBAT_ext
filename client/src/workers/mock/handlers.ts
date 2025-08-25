@@ -238,6 +238,23 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
       return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: initialProgress } };
     }
 
+    // Non-ORBIT async simulate status
+    if (simulateStatusMatch && method === 'GET') {
+      const taskId = simulateStatusMatch[1];
+      const t = tasks.get(taskId);
+      if (!t) {
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'not_found' } };
+      }
+      if (t.status === 'finished') {
+        const store = ensureClientStore(t.clientId);
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'finished', result: t.result, files: scanFiles(store), progress: t.progress || { now: Date.now(), percent: 100, message: 'finished' } } };
+      } else if (t.status === 'failed') {
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'failed', result: t.result, progress: t.progress || { now: Date.now(), percent: null, message: 'failed' } } };
+      } else {
+        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: t.progress || { now: Date.now(), percent: null, message: 'running' } } };
+      }
+    }
+
     // ORBIT async trigger (mirrors regular simulate/trigger)
     if (orbitSimTriggerMatch && method === 'POST') {
       console.log('ORBIT async trigger', orbitSimTriggerMatch);

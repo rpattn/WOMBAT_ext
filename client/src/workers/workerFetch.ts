@@ -69,24 +69,29 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit, api
         }
         let workerPath = toWorkerPath(url, apiBaseUrl)
 
+        // Do NOT remap non client-scoped status endpoints
+        const isStatusEndpoint = /^\/api\/(?:orbit\/)?simulate\/status\//.test(workerPath)
+
         // If the path is client-scoped (/api/{cid}/...), map real server session IDs to a worker session ID
         // Cache mapping so subsequent requests use the same worker session
-        const m = workerPath.match(/^\/(?:api)\/([^/]+)(\/.*)$/)
-        if (m && m[1] && m[2]) {
-          const originalCid = m[1]
-          // Maintain a per-page map from originalCid -> workerCid
-          const g = (window as any)
-          g.__workerCidMap = g.__workerCidMap || new Map<string, string>()
-          let workerCid = g.__workerCidMap.get(originalCid)
-          if (!workerCid) {
-            const sessionRes = await mockApiRequest('POST', '/api/session')
-            if (sessionRes.ok && sessionRes.json?.client_id) {
-              workerCid = String(sessionRes.json.client_id)
-              g.__workerCidMap.set(originalCid, workerCid)
+        if (!isStatusEndpoint) {
+          const m = workerPath.match(/^\/(?:api)\/([^/]+)(\/.*)$/)
+          if (m && m[1] && m[2]) {
+            const originalCid = m[1]
+            // Maintain a per-page map from originalCid -> workerCid
+            const g = (window as any)
+            g.__workerCidMap = g.__workerCidMap || new Map<string, string>()
+            let workerCid = g.__workerCidMap.get(originalCid)
+            if (!workerCid) {
+              const sessionRes = await mockApiRequest('POST', '/api/session')
+              if (sessionRes.ok && sessionRes.json?.client_id) {
+                workerCid = String(sessionRes.json.client_id)
+                g.__workerCidMap.set(originalCid, workerCid)
+              }
             }
-          }
-          if (workerCid) {
-            workerPath = `/api/${encodeURIComponent(workerCid)}${m[2]}`
+            if (workerCid) {
+              workerPath = `/api/${encodeURIComponent(workerCid)}${m[2]}`
+            }
           }
         }
 
@@ -109,21 +114,24 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit, api
           }
         }
         let workerPath = toWorkerPath(url, apiBaseUrl)
-        const m = workerPath.match(/^\/(?:api)\/([^/]+)(\/.*)$/)
-        if (m && m[1] && m[2]) {
-          const originalCid = m[1]
-          const g = (window as any)
-          g.__workerCidMap = g.__workerCidMap || new Map<string, string>()
-          let workerCid = g.__workerCidMap.get(originalCid)
-          if (!workerCid) {
-            const sessionRes = await mockApiRequest('POST', '/api/session')
-            if (sessionRes.ok && sessionRes.json?.client_id) {
-              workerCid = String(sessionRes.json.client_id)
-              g.__workerCidMap.set(originalCid, workerCid)
+        const isStatusEndpoint = /^\/api\/(?:orbit\/)?simulate\/status\//.test(workerPath)
+        if (!isStatusEndpoint) {
+          const m = workerPath.match(/^\/(?:api)\/([^/]+)(\/.*)$/)
+          if (m && m[1] && m[2]) {
+            const originalCid = m[1]
+            const g = (window as any)
+            g.__workerCidMap = g.__workerCidMap || new Map<string, string>()
+            let workerCid = g.__workerCidMap.get(originalCid)
+            if (!workerCid) {
+              const sessionRes = await mockApiRequest('POST', '/api/session')
+              if (sessionRes.ok && sessionRes.json?.client_id) {
+                workerCid = String(sessionRes.json.client_id)
+                g.__workerCidMap.set(originalCid, workerCid)
+              }
             }
-          }
-          if (workerCid) {
-            workerPath = `/api/${encodeURIComponent(workerCid)}${m[2]}`
+            if (workerCid) {
+              workerPath = `/api/${encodeURIComponent(workerCid)}${m[2]}`
+            }
           }
         }
         const wr = await mockApiRequest(method, workerPath, body)
