@@ -47,7 +47,7 @@ export function runMockOrbitSimulation(store: Map<string, FileEntry>, opts?: { c
   };
 
   // Write top-level summary so UI can load it easily if selected
-  store.set('orbit_summary.yaml', { kind: 'yaml', data: summary });
+  store.set('results\\orbit_summary.yaml', { kind: 'yaml', data: summary });
 
   // Also write into a timestamped results directory
   const stamp = nowStamp();

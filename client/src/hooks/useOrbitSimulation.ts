@@ -3,25 +3,25 @@ import type { LibraryFiles } from '../types'
 import { mockApiRequest } from '../workers/mockApiClient'
 import { useToasts } from './useToasts'
 
-let workerFallbackWarned_orbit = false
-let orbitWorkerSessionId: string | null = null
-
-async function ensureOrbitWorkerSession(): Promise<string> {
-  if (orbitWorkerSessionId) return orbitWorkerSessionId
-  const wr = await mockApiRequest('POST', '/api/session')
-  if (wr.ok && wr.json?.client_id) {
-    orbitWorkerSessionId = String(wr.json.client_id)
-    return orbitWorkerSessionId
-  }
-  throw new Error(wr.error || 'Failed to initialize mock worker session')
-}
-
 export type UseOrbitSimulationDeps = {
   apiBaseUrl: string
   requireSession: () => string
   setResults: React.Dispatch<React.SetStateAction<any | null>>
   setLibraryFiles: React.Dispatch<React.SetStateAction<LibraryFiles | null>>
   fetchLibraryFiles: () => Promise<void>
+}
+
+let workerFallbackWarned_orbit = false
+let workerSessionId_orbit: string | null = null
+
+async function ensureWorkerSession_orbit(): Promise<string> {
+  if (workerSessionId_orbit) return workerSessionId_orbit
+  const wr = await mockApiRequest('POST', '/api/session')
+  if (wr.ok && wr.json?.client_id) {
+    workerSessionId_orbit = String(wr.json.client_id)
+    return workerSessionId_orbit
+  }
+  throw new Error(wr.error || 'Failed to initialize mock worker session')
 }
 
 export function useOrbitSimulation({ apiBaseUrl, requireSession, setResults, setLibraryFiles, fetchLibraryFiles }: UseOrbitSimulationDeps) {
@@ -31,7 +31,7 @@ export function useOrbitSimulation({ apiBaseUrl, requireSession, setResults, set
 
   const runOrbitSimulation = useCallback(async (configPath?: string) => {
     const id = requireSession()
-    // Prefer async trigger + poll; fallback to sync
+    // Prefer server async trigger + poll; fallback to server sync, then worker async, then worker sync
     try {
       const q = configPath ? `?config=${encodeURIComponent(configPath)}` : ''
       const triggerRes = await fetch(`${apiBaseUrl}/${id}/orbit/simulate/trigger${q}`, { method: 'POST' })
@@ -75,17 +75,28 @@ export function useOrbitSimulation({ apiBaseUrl, requireSession, setResults, set
         return
       }
     } catch (e) {
-      console.warn('Async ORBIT simulation not available or failed, falling back to sync', e)
+      // fall through to server sync attempt handled by same transparent fetch
     }
 
-    // Try worker async ORBIT simulate
+    // Sync simulate as a final fallback via the same endpoint
+    const syncRes = await fetch(`${apiBaseUrl}/${id}/orbit/simulate`, { method: 'POST' })
+    if (syncRes.ok) {
+      const data = await syncRes.json() as any
+      setResults(data.results)
+      setLibraryFiles(data.files)
+      setProgress(prev => prev ? { ...prev, percent: 100, message: 'finished' } : { now: 0, percent: 100, message: 'finished' })
+      return
+    }
+
+    // Try worker async ORBIT
     try {
-      const wid = await ensureOrbitWorkerSession()
-      const t = await mockApiRequest('POST', `/api/${wid}/orbit/simulate/trigger`)
+      const wid = await ensureWorkerSession_orbit()
+      const q = configPath ? `?config=${encodeURIComponent(configPath)}` : ''
+      const t = await mockApiRequest('POST', `/api/${wid}/orbit/simulate/trigger${q}`)
       if (t.ok && t.json?.task_id) {
         if (!workerFallbackWarned_orbit) {
           workerFallbackWarned_orbit = true
-          warning('Server unavailable. Using mock Web Worker (ORBIT). Some behavior may be unexpected.')
+          warning('Server unavailable. Using mock Web Worker. Some behavior may be unexpected.')
         }
         const taskId = t.json.task_id as string
         let attempts = 0
@@ -94,7 +105,7 @@ export function useOrbitSimulation({ apiBaseUrl, requireSession, setResults, set
         while (attempts < maxAttempts) {
           attempts++
           const st = await mockApiRequest('GET', `/api/orbit/simulate/status/${taskId}`)
-          if (!st.ok) throw new Error(st.error || 'mock ORBIT status error')
+          if (!st.ok) throw new Error(st.error || 'mock orbit status error')
           const sdata = st.json as { status: string, result?: any, files?: any, progress?: { now: number, percent?: number | null, message?: string } }
           if (sdata && sdata.progress) setProgress(sdata.progress)
           if (sdata && sdata.status === 'not_found') {
@@ -118,18 +129,19 @@ export function useOrbitSimulation({ apiBaseUrl, requireSession, setResults, set
       // ignore and try sync worker
     }
 
-    // Fallback to sync worker ORBIT simulate
-    const wid = await ensureOrbitWorkerSession()
+    // Worker sync ORBIT
+    const wid = await ensureWorkerSession_orbit()
     const wr = await mockApiRequest('POST', `/api/${wid}/orbit/simulate`)
     if (!wr.ok) throw new Error(wr.error || 'ORBIT simulation failed')
     if (!workerFallbackWarned_orbit) {
       workerFallbackWarned_orbit = true
-      warning('Server unavailable. Using mock Web Worker (ORBIT). Some behavior may be unexpected.')
+      warning('Server unavailable. Using mock Web Worker. Some behavior may be unexpected.')
     }
     const data = wr.json as any
     setResults(data.results)
     setLibraryFiles(data.files)
     setProgress(prev => prev ? { ...prev, percent: 100, message: 'finished' } : { now: 0, percent: 100, message: 'finished' })
+    return
   }, [apiBaseUrl, requireSession, setResults, setLibraryFiles, fetchLibraryFiles])
 
   return { runOrbitSimulation, progress }

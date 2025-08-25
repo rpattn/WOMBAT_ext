@@ -2,6 +2,7 @@ import type { WorkerRequest, WorkerResponse, FileEntry, Progress } from './types
 import { activeClients, clientStores, ensureClientStore, progressTimers, savedLibraries, tasks, templateLibrary } from './state';
 import { getConfig, scanFiles } from './files';
 import { runMockSimulation } from './simulation';
+import { runMockOrbitSimulation } from './orbit';
 
 function randomId(): string {
   return 'mock-' + Math.random().toString(36).slice(2, 10);
@@ -138,8 +139,8 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
     const simulateTriggerMatch = path.match(/^\/api\/(.+?)\/simulate\/trigger$/);
     const simulateStatusMatch = path.match(/^\/api\/simulate\/status\/(.+)$/);
     // ORBIT endpoints
-    const orbitSimSyncMatch = path.match(/^\/api\/(.+?)\/orbit\/simulate$/);
-    const orbitSimTriggerMatch = path.match(/^\/api\/(.+?)\/orbit\/simulate\/trigger$/);
+    const orbitSimSyncMatch = path.match(/^\/api\/(.+?)\/orbit\/simulate(?:\?.*)?$/);
+    const orbitSimTriggerMatch = path.match(/^\/api\/(.+?)\/orbit\/simulate\/trigger(?:\?.*)?$/);
     const orbitSimStatusMatch = path.match(/^\/api\/orbit\/simulate\/status\/(.+)$/);
     
     // Simulation handlers
@@ -160,7 +161,10 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
         return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
       const store = ensureClientStore(cid);
-      const result = runMockSimulation(store);
+      // Optional config path via query string
+      const url = new URL('http://x' + path);
+      const configPath = url.searchParams.get('config') || undefined;
+      const result = runMockOrbitSimulation(store, { configPath });
       return { id, ok: true, status: 200, json: { status: 'finished', results: result, files: scanFiles(store) } };
     }
 
@@ -276,8 +280,11 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
       setTimeout(() => {
         try {
           const store = ensureClientStore(cid);
-          console.log('runMockSimulation', store);
-          const result = runMockSimulation(store);
+          // Read optional config path from the original request URL
+          const url = new URL('http://x' + path);
+          const configPath = url.searchParams.get('config') || undefined;
+          console.log(configPath)
+          const result = runMockOrbitSimulation(store, { configPath });
           const t = tasks.get(taskId);
           if (t) {
             if (progressTimers.has(taskId)) {
@@ -290,7 +297,7 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
             tasks.set(taskId, t);
           }
         } catch {
-          console.log('runMockSimulation failed', taskId);
+          console.log('runMockOrbitSimulation failed', taskId);
           const t = tasks.get(taskId);
           if (t) {
             if (progressTimers.has(taskId)) {
@@ -305,25 +312,9 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
         }
       }, 9000 + Math.floor(Math.random() * 3000));
 
-      console.log('runMockSimulation', taskId);
+      console.log('runMockOrbitSimulation', taskId);
 
       return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: initialProgress } };
-    }
-
-    if (simulateStatusMatch && method === 'GET') {
-      const taskId = simulateStatusMatch[1];
-      const t = tasks.get(taskId);
-      if (!t) {
-        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'not_found' } };
-      }
-      if (t.status === 'finished') {
-        const store = ensureClientStore(t.clientId);
-        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'finished', result: t.result, files: scanFiles(store), progress: t.progress || { now: Date.now(), percent: 100, message: 'finished' } } };
-      } else if (t.status === 'failed') {
-        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'failed', result: t.result, progress: t.progress || { now: Date.now(), percent: null, message: 'failed' } } };
-      } else {
-        return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: t.progress || { now: Date.now(), percent: null, message: 'running' } } };
-      }
     }
 
     if (orbitSimStatusMatch && method === 'GET') {
