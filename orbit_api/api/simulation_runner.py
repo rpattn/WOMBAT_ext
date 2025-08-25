@@ -4,6 +4,10 @@ from typing import Any, Callable, Optional
 from pathlib import Path
 import json
 import time
+try:
+    import pandas as pd  # used by user-added code paths
+except Exception:  # pragma: no cover
+    pd = None  # type: ignore
 
 # Reuse WOMBAT's YAML loader to read config from the shared library layout
 try:
@@ -145,6 +149,19 @@ def run_simulation_with_progress(
                     sd2 = getattr(proj, "system_design")
                     if sd2:
                         enriched.setdefault("system_design", sd2)
+        except Exception:
+            pass
+
+        # Try to capture action log if exposed by ORBIT
+        try:
+            actions = None
+            proj = getattr(pm, "project", None)
+            if proj is not None and hasattr(proj, "actions"):
+                actions = getattr(proj, "actions")
+            elif hasattr(pm, "actions"):
+                actions = getattr(pm, "actions")
+            if actions:
+                enriched.setdefault("actions", actions)
         except Exception:
             pass
 
