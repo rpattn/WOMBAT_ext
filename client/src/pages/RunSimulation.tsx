@@ -6,6 +6,7 @@ import ResizeWrapper from '../components/ResizeWrapper'
 import FileSelector from '../components/FileSelector'
 import SelectedFileInfo from '../components/SelectedFileInfo'
 import ResultsSummary from '../components/ResultsSummary'
+import OrbitResultsSummary from '../components/OrbitResultsSummary'
 import { useToasts } from '../hooks/useToasts'
 import { useOrbitSimulation } from '../hooks/useOrbitSimulation'
  
@@ -247,7 +248,14 @@ export default function RunSimulation() {
           <div className="card" style={{ marginTop: 12 }}>
             <div className="card-header">Results Summary</div>
             <div className="card-body">
-              <ResultsSummary data={configData} />
+              {(() => {
+                const isOrbit = !!(configData && typeof configData === 'object' && (configData as any).highlights && (configData as any).highlights.engine === 'ORBIT')
+                const sf = (selectedFile || '').toLowerCase()
+                const isOrbitFile = sf.endsWith('/orbit_summary.yaml') || sf.endsWith('\\orbit_summary.yaml') || sf === 'orbit_summary.yaml'
+                return (isOrbit || isOrbitFile)
+                  ? <OrbitResultsSummary data={configData} />
+                  : <ResultsSummary data={configData} />
+              })()}
             </div>
           </div>
           <Suspense fallback={null}>
