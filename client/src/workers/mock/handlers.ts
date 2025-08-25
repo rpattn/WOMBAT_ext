@@ -29,6 +29,7 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
       }
     }
 
+
     // Saved libraries
     if (method === 'GET' && path === '/api/saved') {
       return { id, ok: true, status: 200, json: { dirs: Array.from(savedLibraries) } };
@@ -136,6 +137,10 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
     const simulateSyncMatch = path.match(/^\/api\/(.+?)\/simulate$/);
     const simulateTriggerMatch = path.match(/^\/api\/(.+?)\/simulate\/trigger$/);
     const simulateStatusMatch = path.match(/^\/api\/simulate\/status\/(.+)$/);
+    // ORBIT endpoints
+    const orbitSimSyncMatch = path.match(/^\/api\/(.+?)\/orbit\/simulate$/);
+    const orbitSimTriggerMatch = path.match(/^\/api\/(.+?)\/orbit\/simulate\/trigger$/);
+    const orbitSimStatusMatch = path.match(/^\/api\/orbit\/simulate\/status\/(.+)$/);
 
     // Simulation handlers
     if (simulateSyncMatch && method === 'POST') {
@@ -148,8 +153,90 @@ export async function handleWorkerRequest(msg: WorkerRequest): Promise<WorkerRes
       return { id, ok: true, status: 200, json: { status: 'finished', results: result, files: scanFiles(store) } };
     }
 
+    // ORBIT sync simulate (mirrors regular simulate)
+    if (orbitSimSyncMatch && method === 'POST') {
+      const cid = orbitSimSyncMatch[1];
+      if (!activeClients.has(cid)) {
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
+      }
+      const store = ensureClientStore(cid);
+      const result = runMockSimulation(store);
+      return { id, ok: true, status: 200, json: { status: 'finished', results: result, files: scanFiles(store) } };
+    }
+
     if (simulateTriggerMatch && method === 'POST') {
       const cid = simulateTriggerMatch[1];
+      if (!activeClients.has(cid)) {
+        return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
+      }
+      const taskId = `task-${Math.random().toString(36).slice(2, 10)}`;
+      const startedAt = Date.now();
+      const initialProgress: Progress = { now: startedAt, percent: 0, message: 'starting' };
+      tasks.set(taskId, { clientId: cid, status: 'running', progress: initialProgress, startedAt });
+      const tickMs = 500;
+      let percent = 0;
+      let phase: 'starting' | 'simulating' | 'finalizing' = 'starting';
+      const timerId = setInterval(() => {
+        const t = tasks.get(taskId);
+        if (!t || t.status !== 'running') {
+          clearInterval(timerId);
+          progressTimers.delete(taskId);
+          return;
+        }
+        if (percent < 5) {
+          phase = 'starting';
+          percent += 1.5;
+        } else if (percent < 92) {
+          phase = 'simulating';
+          percent += Math.max(0.8, 5 - (percent / 25));
+        } else if (percent < 98) {
+          phase = 'finalizing';
+          percent += 0.5;
+        } else {
+          phase = 'finalizing';
+          percent = 98;
+        }
+        t.progress = { now: Date.now(), percent: Math.min(98, Math.round(percent * 10) / 10), message: phase };
+        tasks.set(taskId, t);
+      }, tickMs);
+      progressTimers.set(taskId, timerId);
+
+      setTimeout(() => {
+        try {
+          const store = ensureClientStore(cid);
+          const result = runMockSimulation(store);
+          const t = tasks.get(taskId);
+          if (t) {
+            if (progressTimers.has(taskId)) {
+              clearInterval(progressTimers.get(taskId));
+              progressTimers.delete(taskId);
+            }
+            t.status = 'finished';
+            t.result = result;
+            t.progress = { now: Date.now(), percent: 100, message: 'finished' };
+            tasks.set(taskId, t);
+          }
+        } catch {
+          const t = tasks.get(taskId);
+          if (t) {
+            if (progressTimers.has(taskId)) {
+              clearInterval(progressTimers.get(taskId));
+              progressTimers.delete(taskId);
+            }
+            t.status = 'failed';
+            t.result = { error: 'mock failure' };
+            t.progress = { now: Date.now(), percent: null, message: 'failed' };
+            tasks.set(taskId, t);
+          }
+        }
+      }, 9000 + Math.floor(Math.random() * 3000));
+
+      return { id, ok: true, status: 200, json: { task_id: taskId, status: 'running', progress: initialProgress } };
+    }
+
+    // ORBIT async trigger (mirrors regular simulate/trigger)
+    if (orbitSimTriggerMatch && method === 'POST') {
+      const cid = orbitSimTriggerMatch[1];
       if (!activeClients.has(cid)) {
         return { id, ok: false, status: 404, json: { error: 'Unknown client_id' } };
       }
