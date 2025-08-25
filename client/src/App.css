@@ -71,7 +71,7 @@ html {
 }
 
 /* Full-width variant for pages that need to span the viewport */
-.app-full { max-width: var(--app-max-width); width: 95%; }
+.app-full { max-width: var(--app-max-width); }
 
 /* Small screens: force full-width containers to avoid horizontal overflow */
 @media (max-width: 768px) {
@@ -85,6 +85,11 @@ html {
   .row {
     display: contents !important;
   }
+  /* Reduce paddings on small screens for denser layout */
+  .app-container { padding: var(--space-8); }
+  .app-container-slim { padding-top: var(--space-8); }
+  .panel { padding: var(--space-6); }
+  .controls { gap: var(--space-4); }
 }
 
 .section-title {

@@ -41,7 +41,7 @@
       <path d="M0 40 L 44 40" stroke="#bcd3ea" stroke-width="3" stroke-linecap="round"/>
       <path d="M0 40 L -20 0" stroke="#bcd3ea" stroke-width="3" stroke-linecap="round"/>
       <path d="M0 40 L -24 76" stroke="#bcd3ea" stroke-width="3" stroke-linecap="round"/>
-      <animateTransform attributeName="transform" type="rotate" from="0 0 40" to="360 0 40" dur="25s" begin="-0.6s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="rotate" from="0 0 40" to="360 0 40" dur="100s" begin="-0.6s" repeatCount="indefinite"/>
     </g>
   </g>
   <g transform="translate(640,108) scale(0.9)">
@@ -51,7 +51,7 @@
       <path d="M0 40 L 44 40" stroke="#bcd3ea" stroke-width="3" stroke-linecap="round"/>
       <path d="M0 40 L -20 0" stroke="#bcd3ea" stroke-width="3" stroke-linecap="round"/>
       <path d="M0 40 L -24 76" stroke="#bcd3ea" stroke-width="3" stroke-linecap="round"/>
-      <animateTransform attributeName="transform" type="rotate" from="0 0 40" to="360 0 40" dur="25s" begin="0s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="rotate" from="0 0 40" to="360 0 40" dur="100s" begin="0s" repeatCount="indefinite"/>
     </g>
   </g>
 </svg>
