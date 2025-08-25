@@ -49,6 +49,41 @@ def _import_orbit_project_manager():
     ) from exc
 
 
+def _resolve_local_library_paths(library: str, cfg: dict[str, Any]) -> dict[str, Any]:
+    """Rewrite config entries to prefer client project's local library files.
+
+    Currently handles:
+    - turbine: if a YAML exists at <library>/library/turbines/<name>.yaml and the
+      config value looks like a bare name (no slashes), replace with absolute path.
+    This helps avoid ORBIT looking up resources from a package-installed 'library/'.
+    """
+    try:
+        root = Path(library)
+        if not root.exists():
+            return cfg
+        cfg2 = dict(cfg)
+        # Common locations for turbine reference: top-level 'turbine' or under 'plant.turbine'
+        def _maybe_resolve(name: Optional[str]) -> Optional[str]:
+            if not name or "/" in name or "\\" in name:
+                return name
+            cand = root / "library" / "turbines" / f"{name}.yaml"
+            if cand.exists():
+                return str(cand.resolve())
+            return name
+        # top-level
+        if isinstance(cfg2.get("turbine"), str):
+            cfg2["turbine"] = _maybe_resolve(cfg2.get("turbine"))
+        # nested under plant
+        plant = cfg2.get("plant")
+        if isinstance(plant, dict) and isinstance(plant.get("turbine"), str):
+            plant = dict(plant)
+            plant["turbine"] = _maybe_resolve(plant.get("turbine"))
+            cfg2["plant"] = plant
+        return cfg2
+    except Exception:
+        return cfg
+
+
 def get_simulation_dict(library: str = "DINWOODIE") -> str:
     """Return the default ORBIT configuration as JSON string for the given library.
 
@@ -73,7 +108,9 @@ def run_simulation_with_progress(
     emit coarse progress signals: started -> running -> finalizing.
     """
     # Resolve configuration
+    print(f"Loading configuration from {library}/{config}")
     cfg_dict = _load_config_from_library(library, config)
+    cfg_dict = _resolve_local_library_paths(library, cfg_dict)
 
     # Obtain ORBIT's ProjectManager
     ProjectManager = _import_orbit_project_manager()
@@ -89,7 +126,7 @@ def run_simulation_with_progress(
     start = time.time()
     try:
         # Instantiate; support both dict and explicit kw styles
-        pm = ProjectManager(cfg_dict)  # common signature
+        pm = ProjectManager(cfg_dict, library_path=library)  # common signature
 
         # Always initialize to a safe default to avoid UnboundLocalError
         results_raw: dict[str, Any] = {}
