@@ -225,6 +225,42 @@ export default function Gantt() {
         linecolor: tokens.border,
         tickcolor: tokens.border,
       }
+      // Legend placement responsive to small screens
+      const isSmall = (plotDiv.clientWidth || window.innerWidth || 0) < 700
+      if (isSmall) {
+        ;(layout as any).legend = {
+          orientation: 'h',
+          x: 0,
+          xanchor: 'left',
+          y: -0.2,
+          yanchor: 'top',
+          title: { text: 'CTV' },
+          font: { size: 10 },
+        }
+        ;(layout as any).margin = {
+          ...((layout as any).margin || {}),
+          // tighter paddings on small screens while keeping labels readable
+          l: Math.min(72, ((layout as any).margin?.l ?? 120)),
+          r: Math.min(8, ((layout as any).margin?.r ?? 30)),
+          t: Math.min(28, ((layout as any).margin?.t ?? 40)),
+          b: Math.max(56, ((layout as any).margin?.b ?? 40)),
+        }
+        ;(layout as any).autosize = true
+      } else {
+        ;(layout as any).legend = {
+          orientation: 'h',
+          x: 0,
+          xanchor: 'left',
+          y: 1.08,
+          yanchor: 'bottom',
+          title: { text: 'CTV' },
+        }
+        ;(layout as any).margin = {
+          ...((layout as any).margin || {}),
+          t: Math.max(60, ((layout as any).margin?.t ?? 40)),
+        }
+      }
+
       const config = { responsive: true, displaylogo: false } as any
       await Plotly.react(plotDiv, traces as any, layout as any, config)
     })()
@@ -251,7 +287,7 @@ export default function Gantt() {
           />
         </div>
       </div>
-      <div className="panel">
+      <div>
         <h3 className="panel-title">CSV File</h3>
         <div className="panel-body">
           <FileSelector
@@ -276,7 +312,7 @@ export default function Gantt() {
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <div className="panel" style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 8 }}>
           <h3 className="panel-title">Filters</h3>
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -336,7 +372,7 @@ export default function Gantt() {
       </div>
 
       {latestGantt && (
-        <div className="panel" style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12 }}>
           <h3 className="panel-title">Gantt Assets (latest run: results/{latestGantt.run})</h3>
           <div className="panel-body" style={{ fontFamily: 'monospace', fontSize: 13 }}>
             {latestGantt.html ? (
@@ -422,7 +458,7 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
       const y = segs.map(() => vessel)
       const text = segs.map(s => `${s.part_name ?? ''}`)
       const hover = segs.map(s =>
-        `Vessel: ${vessel}<br>Start: ${s.start}<br>Finish: ${s.finish}` +
+        `CTV: ${vessel}<br>Start: ${s.start}<br>Finish: ${s.finish}` +
         `<br>Duration (h): ${s.duration_hours.toFixed(2)}` +
         (s.part_name ? `<br>Part: ${s.part_name}` : '') +
         (s.system_id != null ? `<br>System: ${s.system_id}` : '') +
@@ -434,7 +470,7 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
       })
     }
     const layout = {
-      barmode: 'stack', title: 'CTV Work Timeline by Vessel',
+      barmode: 'stack', title: 'CTV Work Timeline by CTV',
       xaxis: { title: 'Time', type: 'date' },
       yaxis: { title: '', categoryorder: 'array', categoryarray: vessels, automargin: true },
       height: Math.max(400, 60 * Math.max(1, vessels.length)),
@@ -460,7 +496,7 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
       const base = rows.map(s => new Date(s.start))
       const y = rows.map(() => vessel)
       const hover = rows.map(s =>
-        `Vessel: ${vessel}<br>Start: ${s.start}<br>Finish: ${s.finish}` +
+        `CTV: ${vessel}<br>Start: ${s.start}<br>Finish: ${s.finish}` +
         `<br>Duration (h): ${s.duration_hours.toFixed(2)}` +
         (s.part_name ? `<br>Part: ${s.part_name}` : '') +
         (s.system_id != null ? `<br>System: ${s.system_id}` : '') +
@@ -521,7 +557,7 @@ function buildPlotlyTimeline(segments: Segment[], chartType: ChartType) {
   const base = rows.map(r => r.start)
   const y = rows.map(r => r.label)
   const hover = rows.map(r => `Request: ${r.rid}<br>Start: ${r.start.toISOString()}<br>Finish: ${r.finish.toISOString()}<br>Duration (h): ${r.duration_hours.toFixed(2)}` +
-    (r.part ? `<br>Part: ${r.part}` : '') + (r.system != null ? `<br>System: ${r.system}` : '') + (r.vessel ? `<br>Vessel: ${r.vessel}` : ''))
+    (r.part ? `<br>Part: ${r.part}` : '') + (r.system != null ? `<br>System: ${r.system}` : '') + (r.vessel ? `<br>CTV: ${r.vessel}` : ''))
   const traces = [{
     type: 'bar', orientation: 'h', x, base, y,
     name: 'Request duration', hovertext: hover, hoverinfo: 'text',
