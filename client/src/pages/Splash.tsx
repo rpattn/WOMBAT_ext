@@ -54,7 +54,7 @@ export default function Splash() {
     <main className="app-container splash-page" style={{ width: '100%', padding: 0, maxWidth: '100%' }}>
       <section className="splash-hero">
         <div className="splash-hero-content splash-inner">
-          <h1 className="splash-title">WOMBAT_ext</h1>
+          <h1 className="splash-title">WindOps Sim</h1>
           <p className="splash-subtitle">
             Plan, run, and analyze offshore wind operations. <br />
             Powerful simulation manager. <br />
