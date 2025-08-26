@@ -15,16 +15,20 @@ async def list_schemas() -> dict[str, list[str]]:
     return {
         "available": [
             "configuration",
+            "orbit_config",
             "service_equipment",
             "service_equipment/variants",
             "service_equipment_scheduled",
             "service_equipment_unscheduled",
             "substation",
             "turbine",
+            "orbit_turbine",
+            "orbit_cable",
             "equipment_turbine",
             "cable",
             "equipment_cable",
             "project_port",
+            "fixed_costs",
         ]
     }
 

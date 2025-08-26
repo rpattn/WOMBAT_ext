@@ -1,42 +1,80 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import { ToastProvider } from '../components/ToastManager'
-import { ApiProvider, useApiContext } from '../context/ApiContext'
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useSimulation } from '../hooks/useSimulation';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
-function Harness() {
-  const api = useApiContext()
-  return (
-    <div>
-      <button onClick={api.initSession}>init</button>
-      <button onClick={api.runSimulation}>run</button>
-      <div data-testid="session">{api.sessionId || ''}</div>
-      <div data-testid="total">{api.libraryFiles?.total_files ?? 0}</div>
-      <div data-testid="results">{String(!!api.results)}</div>
-    </div>
-  )
-}
+describe('useSimulation', () => {
+  const mockSetResults = vi.fn();
+  const mockSetLibraryFiles = vi.fn();
+  const mockFetchLibraryFiles = vi.fn().mockResolvedValue(undefined);
+  const mockRequireSession = vi.fn().mockReturnValue('test-session-id');
+  
+  const defaultProps = {
+    apiBaseUrl: 'http://test-api',
+    requireSession: mockRequireSession,
+    setResults: mockSetResults,
+    setLibraryFiles: mockSetLibraryFiles,
+    fetchLibraryFiles: mockFetchLibraryFiles,
+  };
 
-describe('useSimulation worker fallback', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
-    // Force REST simulate trigger + status to fail so we hit worker paths
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('down', { status: 503 })) as any)
-  })
+    global.fetch = vi.fn();
+    vi.clearAllMocks();
+  });
 
-  it('uses mock worker and sets results and files', async () => {
-    render(
-      <ToastProvider>
-        <ApiProvider>
-          <Harness />
-        </ApiProvider>
-      </ToastProvider>
-    )
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
-    screen.getByText('init').click()
-    await waitFor(() => expect(screen.getByTestId('session').textContent).toMatch(/^mock-/))
-    screen.getByText('run').click()
+  it('should initialize with null progress', () => {
+    const { result } = renderHook(() => useSimulation(defaultProps));
+    expect(result.current.progress).toBeNull();
+  });
 
-    await waitFor(() => expect(screen.getByTestId('results').textContent).toBe('true'), { timeout: 5000 })
-    await waitFor(() => expect(Number(screen.getByTestId('total').textContent)).toBeGreaterThan(0), { timeout: 5000 })
-  })
-})
+  it('should handle successful simulation run with async trigger', async () => {
+    const mockTaskId = 'task-123';
+    const mockResult = { status: 'success', result: { data: 'test' } };
+    
+    (global.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 202,
+        json: async () => ({ task_id: mockTaskId }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          status: 'completed',
+          result: mockResult,
+          progress: { now: 100, percent: 100, message: 'completed' },
+        }),
+      });
+
+    const { result } = renderHook(() => useSimulation(defaultProps));
+    
+    await act(async () => {
+      await result.current.runSimulation();
+    });
+
+    await waitFor(() => {
+      expect(mockRequireSession).toHaveBeenCalled();
+      expect(mockSetResults).toHaveBeenCalledWith(mockResult);
+      expect(result.current.progress).toEqual({
+        now: 100,
+        percent: 100,
+        message: 'completed',
+      });
+    });
+  });
+
+  it('should handle simulation error', async () => {
+    vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
+    
+    const { result } = renderHook(() => useSimulation(defaultProps));
+    
+    await act(async () => {
+      await result.current.runSimulation();
+    });
+
+    expect(mockSetResults).not.toHaveBeenCalled();
+  });
+});

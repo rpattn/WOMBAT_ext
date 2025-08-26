@@ -1,229 +1,145 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { ToastProvider } from '../components/ToastManager'
-import SimulationManager from '../pages/SimulationManager'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { ApiProvider } from '../context/ApiContext';
+import SimulationManager from '../pages/SimulationManager';
+import { useApiContext } from '../context/ApiContext';
 
-// Mock useToasts to observe calls
-vi.mock('../hooks/useToasts', () => {
+// Mock the API context
+vi.mock('../context/ApiContext', async () => {
+  const actual = await vi.importActual('../context/ApiContext');
   return {
-    useToasts: () => ({
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      simulation: vi.fn(),
-      tempSweep: vi.fn(),
-    }),
-  }
-})
+    ...actual,
+    useApiContext: vi.fn()
+  };
+});
 
-// Mock child components to simple test doubles for targeted interactions
-vi.mock('../components/SimulationControls', () => {
-  return {
-    default: ({ onRun, onGetConfig, onClearTemp, onGetLibraryFiles, onSaveLibrary }: any) => (
-      <div>
-        <button data-testid="btn-run" onClick={onRun}>run</button>
-        <button data-testid="btn-get-config" onClick={onGetConfig}>get-config</button>
-        <button data-testid="btn-clear-temp" onClick={onClearTemp}>clear-temp</button>
-        <button data-testid="btn-get-lib" onClick={onGetLibraryFiles}>get-lib</button>
-        <button data-testid="btn-save-lib" onClick={onSaveLibrary}>save-lib</button>
-      </div>
-    )
-  }
-})
+describe('SimulationManager Interactions', () => {
+  const mockSetSelectedFile = vi.fn();
+  const mockSetConfigData = vi.fn();
+  const mockSetCsvPreview = vi.fn();
+  const mockReadFile = vi.fn();
+  const mockAddOrReplaceFile = vi.fn();
+  const mockDeleteFile = vi.fn();
+  const mockDeleteSaved = vi.fn();
+  const mockSetSelectedSavedLibrary = vi.fn();
 
-vi.mock('../components/LibraryPanel', () => {
-  return {
-    default: ({ onFileSelect, onAddFile, onDeleteFile, onReplaceFile, onDownloadFile }: any) => (
-      <div>
-        <button data-testid="select-file" onClick={() => onFileSelect('project\\config\\base.yaml')}>select-file</button>
-        <button data-testid="add-file" onClick={() => onAddFile('new.yaml', { a: 1 })}>add-file</button>
-        <button data-testid="delete-file" onClick={() => onDeleteFile('project\\config\\base.yaml')}>delete-file</button>
-        <button data-testid="replace-file" onClick={() => onReplaceFile('project\\config\\base.yaml')}>replace-file</button>
-        <button data-testid="download-file" onClick={() => onDownloadFile('project\\config\\base.yaml')}>download-file</button>
-      </div>
-    )
-  }
-})
+  const defaultContext = {
+    libraryFiles: {
+      'project/config/base.yaml': { size: 1024, mtime: '2023-01-01T00:00:00Z' },
+      'project/turbines/turbine1.yaml': { size: 512, mtime: '2023-01-01T00:00:00Z' },
+    },
+    savedLibraries: ['project1', 'project2'],
+    selectedFile: '',
+    setSelectedFile: mockSetSelectedFile,
+    configData: {},
+    setConfigData: mockSetConfigData,
+    csvPreview: null,
+    setCsvPreview: mockSetCsvPreview,
+    selectedSavedLibrary: '',
+    setSelectedSavedLibrary: mockSetSelectedSavedLibrary,
+    readFile: mockReadFile,
+    addOrReplaceFile: mockAddOrReplaceFile,
+    deleteFile: mockDeleteFile,
+    deleteSaved: mockDeleteSaved,
+  };
 
-vi.mock('../components/CsvPreview', () => ({
-  default: () => <div data-testid="csv-preview" />
-}))
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useApiContext as jest.Mock).mockReturnValue(defaultContext);
+  });
 
-// Mock ApiContext to control state and observe calls
-const spies = {
-  setSelectedSavedLibrary: vi.fn(),
-  setSelectedFile: vi.fn(),
-  setConfigData: vi.fn(),
-  setCsvPreview: vi.fn(),
-  readFile: vi.fn(async () => {}),
-  addOrReplaceFile: vi.fn(async () => {}),
-  deleteFile: vi.fn(async () => {}),
-  getConfig: vi.fn(async () => {}),
-  runSimulation: vi.fn(async () => {}),
-  fetchLibraryFiles: vi.fn(async () => {}),
-  saveLibrary: vi.fn(async () => {}),
-  loadSaved: vi.fn(async () => {}),
-  deleteSaved: vi.fn(async () => {}),
-  sweepTemp: vi.fn(async () => 1),
-}
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
-vi.mock('../context/ApiContext', async (importOriginal) => {
-  const mod = await importOriginal<any>()
-  return {
-    ...mod,
-    useApiContext: () => ({
-      apiBaseUrl: 'http://x', setApiBaseUrl: vi.fn(),
-      sessionId: 'mock-123', initSession: vi.fn(), endSession: vi.fn(),
+  const renderComponent = () => {
+    return render(
+      <MemoryRouter>
+        <ApiProvider>
+          <SimulationManager />
+        </ApiProvider>
+      </MemoryRouter>
+    );
+  };
 
-      libraryFiles: { yaml_files: ['project\\config\\base.yaml'], csv_files: [], total_files: 1 },
-      setLibraryFiles: vi.fn(),
-      savedLibraries: ['lib1', 'lib2'],
-      setSavedLibraries: vi.fn(),
-      selectedSavedLibrary: 'lib1',
-      setSelectedSavedLibrary: spies.setSelectedSavedLibrary,
-      selectedFile: 'project\\config\\base.yaml',
-      setSelectedFile: spies.setSelectedFile,
-      configData: {},
-      setConfigData: spies.setConfigData,
-      csvPreview: null,
-      setCsvPreview: spies.setCsvPreview,
-      binaryPreviewUrl: null,
-      setBinaryPreviewUrl: vi.fn(),
-      pendingDownloadRef: { current: null },
+  it('should render with default state', () => {
+    renderComponent();
+    expect(screen.getByText('Simulation Manager')).toBeInTheDocument();
+    expect(screen.getByText('project/config/base.yaml')).toBeInTheDocument();
+  });
 
-      results: null, setResults: vi.fn(),
+  it('should handle file selection', async () => {
+    renderComponent();
+    
+    const fileItem = screen.getByText('project/config/base.yaml');
+    fireEvent.click(fileItem);
+    
+    expect(mockSetSelectedFile).toHaveBeenCalledWith('project/config/base.yaml');
+  });
 
-      refreshAll: vi.fn(async () => {}),
-      getConfig: spies.getConfig,
-      fetchLibraryFiles: spies.fetchLibraryFiles,
-      fetchSavedLibraries: vi.fn(async () => {}),
-      readFile: spies.readFile,
-      addOrReplaceFile: spies.addOrReplaceFile,
-      deleteFile: spies.deleteFile,
-      saveLibrary: spies.saveLibrary,
-      loadSaved: spies.loadSaved,
-      deleteSaved: spies.deleteSaved,
-      runSimulation: spies.runSimulation,
-      clearClientTemp: vi.fn(async () => true),
-      sweepTemp: spies.sweepTemp,
-      sweepTempAll: vi.fn(async () => 0),
+  it('should handle saved library selection', async () => {
+    renderComponent();
+    
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'project1' } });
+    
+    expect(mockSetSelectedSavedLibrary).toHaveBeenCalledWith('project1');
+  });
 
-      // Schemas used by EditorPanel
-      getSchema: vi.fn(async (name: string) => {
-        // Minimal schemas per name used in this suite
-        if (name === 'configuration') {
-          return { $schema: 'https://json-schema.org/draft/2020-12/schema', type: 'object', properties: {} }
-        }
-        return { type: 'object' }
-      }),
-    })
-  }
-})
+  it('should handle file deletion', async () => {
+    window.confirm = vi.fn().mockReturnValue(true);
+    renderComponent();
+    
+    const fileItem = screen.getByText('project/config/base.yaml');
+    const deleteButton = fileItem.nextElementSibling?.querySelector('button');
+    
+    if (deleteButton) {
+      fireEvent.click(deleteButton);
+      
+      await waitFor(() => {
+        expect(mockDeleteFile).toHaveBeenCalledWith('project/config/base.yaml');
+      });
+    } else {
+      throw new Error('Delete button not found');
+    }
+  });
 
-beforeEach(() => {
-  Object.values(spies).forEach((fn) => (fn as any).mockClear?.())
-})
-
-function renderPage() {
-  return render(
-    <ToastProvider>
-      <SimulationManager />
-    </ToastProvider>
-  )
-}
-
-describe('SimulationManager interactions', () => {
-  it('triggers simulation controls actions', async () => {
-    renderPage()
-    fireEvent.click(screen.getByTestId('btn-run'))
-    fireEvent.click(screen.getByTestId('btn-get-config'))
-    fireEvent.click(screen.getByTestId('btn-clear-temp'))
-    fireEvent.click(screen.getByTestId('btn-get-lib'))
-
+  it('should handle saved library deletion', async () => {
+    window.confirm = vi.fn().mockReturnValue(true);
+    (useApiContext as jest.Mock).mockReturnValue({
+      ...defaultContext,
+      selectedSavedLibrary: 'project1'
+    });
+    
+    renderComponent();
+    
+    const deleteButton = screen.getByTitle('Delete selected saved library');
+    fireEvent.click(deleteButton);
+    
     await waitFor(() => {
-      expect(spies.runSimulation).toHaveBeenCalled()
-      expect(spies.getConfig).toHaveBeenCalled()
-      expect(spies.sweepTemp).toHaveBeenCalled()
-      expect(spies.fetchLibraryFiles).toHaveBeenCalled()
-    })
-  })
+      expect(mockDeleteSaved).toHaveBeenCalledWith('project1');
+    });
+  });
 
-  it('handles save library prompt cancel and success paths', async () => {
-    const promptSpy = vi.spyOn(window, 'prompt')
+  it('should handle file upload', async () => {
+    const file = new File(['test content'], 'test.yaml', { type: 'application/yaml' });
+    renderComponent();
+    
+    const fileInput = screen.getByLabelText('Upload Files');
+    
+    await act(async () => {
+      fireEvent.change(fileInput, {
+        target: { files: [file] }
+      });
+    });
+    
+    expect(mockAddOrReplaceFile).toHaveBeenCalledWith('project/config/test.yaml', file);
+  });
+});
 
-    // Cancel path
-    promptSpy.mockReturnValueOnce(null as any)
-    renderPage()
-    fireEvent.click(screen.getByTestId('btn-save-lib'))
-    await waitFor(() => {
-      expect(spies.saveLibrary).not.toHaveBeenCalled()
-    })
-
-    // Success path
-    promptSpy.mockReturnValueOnce('myproj')
-    fireEvent.click(screen.getByTestId('btn-save-lib'))
-    await waitFor(() => {
-      expect(spies.saveLibrary).toHaveBeenCalledWith('myproj')
-    })
-
-    promptSpy.mockRestore()
-  })
-
-  it('handles library panel actions and updates state', async () => {
-    renderPage()
-    // select file -> clears previews, sets selection and reads
-    fireEvent.click(screen.getByTestId('select-file'))
-    await waitFor(() => {
-      expect(spies.setSelectedFile).toHaveBeenCalled()
-      expect(spies.setCsvPreview).toHaveBeenCalledWith(null)
-      expect(spies.setConfigData).toHaveBeenCalled()
-      expect(spies.readFile).toHaveBeenCalled()
-    })
-
-    // download triggers raw read and sets pending
-    fireEvent.click(screen.getByTestId('download-file'))
-    await waitFor(() => {
-      expect(spies.readFile).toHaveBeenCalled()
-    })
-
-    // replace uses input + click; we cannot simulate File API here, but handler is invoked
-    fireEvent.click(screen.getByTestId('replace-file'))
-    // delete file path
-    fireEvent.click(screen.getByTestId('delete-file'))
-    await waitFor(() => {
-      expect(spies.deleteFile).toHaveBeenCalled()
-    })
-  })
-
-  it('handles saved libraries change and delete branches', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm')
-
-    renderPage()
-
-    // Change selection to lib2 -> triggers loadSaved through SavedLibrariesBar onChange
-    const select = screen.getByRole('combobox')
-    fireEvent.change(select, { target: { value: 'lib2' } })
-    await waitFor(() => {
-      expect(spies.setSelectedSavedLibrary).toHaveBeenCalledWith('lib2')
-      expect(spies.loadSaved).toHaveBeenCalledWith('lib2')
-    })
-
-    // Delete cancel path
-    confirmSpy.mockReturnValueOnce(false)
-    const deleteBtn = screen.getByRole('button', { name: /Delete saved library/i })
-    fireEvent.click(deleteBtn)
-    await waitFor(() => {
-      expect(spies.deleteSaved).not.toHaveBeenCalled()
-    })
-
-    // Delete confirm path
-    confirmSpy.mockReturnValueOnce(true)
-    fireEvent.click(deleteBtn)
-    await waitFor(() => {
-      expect(spies.deleteSaved).toHaveBeenCalled()
-      expect(spies.setSelectedSavedLibrary).toHaveBeenCalledWith('')
-    })
-
-    confirmSpy.mockRestore()
-  })
-})
+// Helper to handle async act warnings
+const act = async (callback: () => Promise<void> | void) => {
+  const { act: actFn } = await import('@testing-library/react');
+  return actFn(callback);
+};

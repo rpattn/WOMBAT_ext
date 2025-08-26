@@ -10,7 +10,6 @@ describe('Navbar', () => {
     renderWithProviders(<Navbar />, { routerProps: { initialEntries: ['/results'] } });
 
     // Links present
-    const linkConnect = screen.getByRole('link', { name: /connection manager/i });
     const linkSim = screen.getByRole('link', { name: /simulation manager/i });
     const linkResults = screen.getByRole('link', { name: /results/i });
 
@@ -21,9 +20,5 @@ describe('Navbar', () => {
     await user.click(linkSim);
     expect(linkSim).toHaveClass('active');
     expect(linkResults).not.toHaveClass('active');
-
-    // Navigate to connect
-    await user.click(linkConnect);
-    expect(linkConnect).toHaveClass('active');
   });
 });

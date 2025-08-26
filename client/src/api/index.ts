@@ -76,6 +76,53 @@ export async function triggerRun(apiBaseUrl: string, requireSession: () => strin
   return await r.json()
 }
 
+// ORBIT: synchronous run
+export async function triggerOrbitRun(apiBaseUrl: string, requireSession: () => string): Promise<{ status: string; results?: any; files?: FileList } | null> {
+  const sid = requireSession()
+  try {
+    const r = await fetch(`${apiBaseUrl}/${sid}/orbit/simulate`, { method: 'POST' })
+    if (!r.ok) return null
+    return await r.json()
+  } catch {
+    try {
+      const wr = await mockApiRequest('POST', `/api/${sid}/orbit/simulate`)
+      if (wr.ok) return wr.json as any
+    } catch {}
+    return null
+  }
+}
+
+// ORBIT: async trigger
+export async function triggerOrbitAsync(apiBaseUrl: string, requireSession: () => string): Promise<{ task_id: string; status: string } | null> {
+  const sid = requireSession()
+  try {
+    const r = await fetch(`${apiBaseUrl}/${sid}/orbit/simulate/trigger`, { method: 'POST' })
+    if (!r.ok) return null
+    return await r.json()
+  } catch {
+    try {
+      const wr = await mockApiRequest('POST', `/api/${sid}/orbit/simulate/trigger`)
+      if (wr.ok) return wr.json as any
+    } catch {}
+    return null
+  }
+}
+
+// ORBIT: poll status
+export async function orbitStatus(apiBaseUrl: string, taskId: string): Promise<{ task_id: string; status: string; result?: any; files?: any; progress?: { now: number; percent?: number | null; message?: string } } | null> {
+  try {
+    const r = await fetch(`${apiBaseUrl}/orbit/simulate/status/${encodeURIComponent(taskId)}`)
+    if (!r.ok) return null
+    return await r.json()
+  } catch {
+    try {
+      const wr = await mockApiRequest('GET', `/api/orbit/simulate/status/${encodeURIComponent(taskId)}`)
+      if (wr.ok) return wr.json as any
+    } catch {}
+    return null
+  }
+}
+
 // Saved library read-only helpers (no session load required)
 export async function listSavedFiles(apiBaseUrl: string, name: string): Promise<FileList | null> {
   try {

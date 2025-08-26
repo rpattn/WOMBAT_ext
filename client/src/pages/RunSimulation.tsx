@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import SimulationControls from '../components/SimulationControls'
 import PageWithLibrary from '../components/PageWithLibrary'
 import { useApiContext } from '../context/ApiContext'
@@ -6,11 +6,15 @@ import ResizeWrapper from '../components/ResizeWrapper'
 import FileSelector from '../components/FileSelector'
 import SelectedFileInfo from '../components/SelectedFileInfo'
 import ResultsSummary from '../components/ResultsSummary'
+import OrbitResultsSummary from '../components/OrbitResultsSummary'
 import { useToasts } from '../hooks/useToasts'
+import { useOrbitSimulation } from '../hooks/useOrbitSimulation'
  
 
 export default function RunSimulation() {
   const {
+    apiBaseUrl,
+    sessionId,
     // Shared state
     libraryFiles,
     selectedFile, setSelectedFile,
@@ -23,14 +27,45 @@ export default function RunSimulation() {
     selectedSavedLibrary,
     setSelectedSavedLibrary,
     readFile,
+    setResults,
+    setLibraryFiles,
     progress,
   } = useApiContext()
 
   const { info, success, warning, error, simulation, tempSweep } = useToasts()
 
+  // Engine selection: WOMBAT (default) or ORBIT
+  const [engine, setEngine] = useState<'wombat' | 'orbit'>('wombat')
+
+  // Build requireSession wrapper for the ORBIT hook
+  const requireSession = useCallback((): string => {
+    if (!sessionId) throw new Error('No session')
+    return sessionId
+  }, [sessionId])
+
+  // Use shared ORBIT hook for async trigger+poll with worker fallback
+  const { runOrbitSimulation, progress: orbitProgress } = useOrbitSimulation({
+    apiBaseUrl,
+    requireSession,
+    setResults,
+    setLibraryFiles,
+    fetchLibraryFiles,
+  })
+
   // Track latest libraryFiles in a ref so async callbacks see fresh data
   const libFilesRef = useRef(libraryFiles)
   useEffect(() => { libFilesRef.current = libraryFiles }, [libraryFiles])
+
+  // ORBIT config selection (files under project/config/*.yaml)
+  const [orbitConfig, setOrbitConfig] = useState<string>('')
+  const orbitConfigOptions = (libraryFiles?.yaml_files || []).filter(f => f.replace(/\\/g, '/').toLowerCase().startsWith('project/config/') )
+  useEffect(() => {
+    if (!orbitConfig && orbitConfigOptions.length > 0) {
+      const preferred = orbitConfigOptions.find(f => f.toLowerCase().endsWith('/base.yaml') || f.toLowerCase() === 'config/base.yaml')
+      setOrbitConfig(preferred || orbitConfigOptions[0])
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [libraryFiles])
 
   // Helper: select and read most recent results/<DATE>/summary.yaml
   const openMostRecentSummary = (): boolean => {
@@ -56,7 +91,8 @@ export default function RunSimulation() {
     }
   }, [libraryFiles, fetchLibraryFiles])
 
-  const handleRun = () => {
+  // Run WOMBAT (existing)
+  const handleRunWombat = () => {
     const p = runSimulation()
     simulation(p)
     // optionally refresh files after completion (route already returns files)
@@ -81,6 +117,12 @@ export default function RunSimulation() {
           tryOpen(0)
         })
     })
+  }
+
+  // Unified Run button based on selected engine
+  const handleRun = () => {
+    if (engine === 'orbit') return runOrbitSimulation(orbitConfig || undefined)
+    return handleRunWombat()
   }
 
   const handleGetConfig = () => {
@@ -115,9 +157,11 @@ export default function RunSimulation() {
     // Optional: download not needed on Run page
   }
 
-  const pct = typeof progress?.percent === 'number' ? Math.max(0, Math.min(100, progress!.percent!)) : null
-  const now = progress?.now ?? 0
-  const msg = progress?.message || (pct === 100 ? 'finished' : 'idle')
+  // Show progress from the selected engine
+  const activeProgress = engine === 'orbit' ? orbitProgress : progress
+  const pct = typeof activeProgress?.percent === 'number' ? Math.max(0, Math.min(100, activeProgress!.percent!)) : null
+  const now = activeProgress?.now ?? 0
+  const msg = activeProgress?.message || (pct === 100 ? 'finished' : 'idle')
   const isActive = pct != null && pct > 0 && pct < 100
 
   return (
@@ -152,6 +196,28 @@ export default function RunSimulation() {
       )}
     >
       <div className="app-container-slim app-full">
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 600 }}>Engine</span>
+              <select value={engine} onChange={e => setEngine(e.target.value as any)}>
+                <option value="wombat">WOMBAT</option>
+                <option value="orbit">ORBIT</option>
+              </select>
+            </label>
+            {engine === 'orbit' && (
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontWeight: 600 }}>Config</span>
+                <select value={orbitConfig} onChange={e => setOrbitConfig(e.target.value)}>
+                  {orbitConfigOptions.length === 0 && <option value="">No config files found under config/</option>}
+                  {orbitConfigOptions.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        </div>
         <SimulationControls
           onRun={handleRun}
           onGetConfig={handleGetConfig}
@@ -182,7 +248,14 @@ export default function RunSimulation() {
           <div className="card" style={{ marginTop: 12 }}>
             <div className="card-header">Results Summary</div>
             <div className="card-body">
-              <ResultsSummary data={configData} />
+              {(() => {
+                const isOrbit = !!(configData && typeof configData === 'object' && (configData as any).highlights && (configData as any).highlights.engine === 'ORBIT')
+                const sf = (selectedFile || '').toLowerCase()
+                const isOrbitFile = sf.endsWith('/orbit_summary.yaml') || sf.endsWith('\\orbit_summary.yaml') || sf === 'orbit_summary.yaml'
+                return (isOrbit || isOrbitFile)
+                  ? <OrbitResultsSummary data={configData} />
+                  : <ResultsSummary data={configData} />
+              })()}
             </div>
           </div>
           <Suspense fallback={null}>

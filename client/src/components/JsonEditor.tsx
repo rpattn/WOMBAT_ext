@@ -118,6 +118,26 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
         for (const [k, childSchema] of Object.entries<any>(props)) {
             if ((v as any)[k] !== undefined) validateValue((v as any)[k], childSchema, [...path, k], out);
         }
+        // Enforce additionalProperties === false by flagging any unknown keys
+        if (sch.additionalProperties === false) {
+            const known = new Set(Object.keys(props));
+            for (const k of Object.keys(v as any)) {
+                if (!known.has(k)) {
+                    pushErr(out, [...path, k], 'Unknown property (not allowed by schema)');
+                }
+            }
+        }
+        // Heuristic: if at the root we have a relaxed schema (additionalProperties !== false)
+        // and none of the known properties are present, flag a likely schema mismatch
+        if (path.length === 0 && sch.additionalProperties !== false) {
+            const propNames = Object.keys(props || {});
+            if (propNames.length > 0) {
+                const hasAnyKnown = Object.keys(v as any).some((k) => propNames.includes(String(k)));
+                if (!hasAnyKnown) {
+                    pushErr(out, path, 'Document does not match selected schema (no expected top-level keys)');
+                }
+            }
+        }
     };
 
     const validateEnum = (v: any, sch: any, path: (string | number)[], out: Record<string, string[]>) => {
@@ -186,6 +206,21 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ data, schema, onChange, onSave 
     const validateForm = React.useCallback((value: JsonObject, sch: any | undefined) => {
         const out: Record<string, string[]> = {};
         if (sch) validateValue(value, sch, [], out);
+        // Targeted debug logging for power_curve-related validation errors
+        try {
+            const pcErrs = Object.entries(out).filter(([k]) => k.split('.').includes('power_curve'));
+            if (pcErrs.length > 0) {
+                // Collapsed group to avoid noisy console
+                // Shows each JSON path and its associated messages
+                console.groupCollapsed('[JsonEditor] power_curve validation errors:', pcErrs.length);
+                for (const [k, msgs] of pcErrs) {
+                    console.log(k, msgs);
+                }
+                console.groupEnd();
+            }
+        } catch {
+            // ignore logging issues
+        }
         setErrors(out);
     }, []);
 

@@ -2,6 +2,7 @@ import type { FileEntry } from './types';
 
 // Create/update results files and return a mock result payload
 export function runMockSimulation(store: Map<string, FileEntry>) {
+  console.log('runMockSimulation', store);
   const base = store.get('project\\config\\base.yaml');
   const nTurbines = Number((base && base.kind === 'yaml' && (base as any).data?.parameters?.turbines) || 5);
   const startTime = new Date('2003-01-01T00:00:00Z');
