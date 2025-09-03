@@ -1,8 +1,31 @@
 # Extended WOMBAT (Windfarm Operations & Maintenance cost-Benefit Analysis Tool)
-Extended version of the NREL WOMBAT Project!
+REST API to run WOMBAT and ORBIT windfarm lifecycle simulations
 - And experimenting with Vibe Coding (scary!!)
 
-https://rpattn.github.io/WOMBAT_ext
+REACT VITE Frontend Interface:
+- https://rpattn.github.io/WOMBAT_ext
+
+Features:
+- Run and analuse the results of each simulation.
+- CRUD project file manager.
+- Compare results with graphical interface
+- Rich GANTT chart generation
+- Downtime evaluation linking production and maint events 
+
+See the base WOMBAT and ORBIT NREL WISDEM Projects:
+- https://github.com/WISDEM/WOMBAT
+- https://github.com/WISDEM/ORBIT
+
+This project was originally a fork of the WOMBAT repo. All code in the /server, /X_api(s) and /client folders is now authored by rpattn :). I may fork / make this standalone in the future. 
+
+A version of the server is hosted for free by koyeb.app
+- Go to https://rpattn.github.io/WOMBAT_ext
+- Set the api url to https://partial-jen-rpattn-374c9b50.koyeb.app/api
+- Connect
+
+***Don't put any sensitive info into the project folders, all projects are public! Service is provided as is with no warranty***
+
+I may add auth in the future.
 
 ## Installation
 Reccommended installation vs. WOMBAT guide
