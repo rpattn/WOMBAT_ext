@@ -20,6 +20,13 @@ export default function RestClient() {
   }, [api.apiBaseUrl])
 
   useEffect(() => {
+    // Look in local storage for last used URL
+    const saved = localStorage.getItem('wombat_ext_api_base_url')
+    if (saved) {
+      setBaseUrl(saved)
+      api.setApiBaseUrl(saved)
+    }
+
     // Auto-init a session and prefetch data (guarded for React StrictMode double-mount)
     if (__autoInitDone) return
     __autoInitDone = true
@@ -47,7 +54,10 @@ export default function RestClient() {
           <input
             type="text"
             value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
+            onChange={(e) => {
+              setBaseUrl(e.target.value)
+              localStorage.setItem('wombat_ext_api_base_url', e.target.value)
+            }}
             onBlur={() => api.setApiBaseUrl(baseUrl)}
             placeholder="http://127.0.0.1:8000/api"
             className="ws-input"
