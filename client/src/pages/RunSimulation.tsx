@@ -9,7 +9,7 @@ import ResultsSummary from '../components/ResultsSummary'
 import OrbitResultsSummary from '../components/OrbitResultsSummary'
 import { useToasts } from '../hooks/useToasts'
 import { useOrbitSimulation } from '../hooks/useOrbitSimulation'
- 
+
 
 export default function RunSimulation() {
   const {
@@ -57,14 +57,14 @@ export default function RunSimulation() {
   useEffect(() => { libFilesRef.current = libraryFiles }, [libraryFiles])
 
   // ORBIT config selection (files under project/config/*.yaml)
-  const [orbitConfig, setOrbitConfig] = useState<string>('')
-  const orbitConfigOptions = (libraryFiles?.yaml_files || []).filter(f => f.replace(/\\/g, '/').toLowerCase().startsWith('project/config/') )
+  const [simConfig, setSimConfig] = useState<string>('')
+  const simConfigOptions = (libraryFiles?.yaml_files || []).filter(f => f.replace(/\\/g, '/').toLowerCase().startsWith('project/config/'))
   useEffect(() => {
-    if (!orbitConfig && orbitConfigOptions.length > 0) {
-      const preferred = orbitConfigOptions.find(f => f.toLowerCase().endsWith('/base.yaml') || f.toLowerCase() === 'config/base.yaml')
-      setOrbitConfig(preferred || orbitConfigOptions[0])
+    if (!simConfig && simConfigOptions.length > 0) {
+      const preferred = simConfigOptions.find(f => f.toLowerCase().endsWith('/base.yaml') || f.toLowerCase() === 'config/base.yaml')
+      setSimConfig(preferred || simConfigOptions[0])
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [libraryFiles])
 
   // Helper: select and read most recent results/<DATE>/summary.yaml
@@ -93,7 +93,7 @@ export default function RunSimulation() {
 
   // Run WOMBAT (existing)
   const handleRunWombat = () => {
-    const p = runSimulation()
+    const p = runSimulation(simConfig || undefined)
     simulation(p)
     // optionally refresh files after completion (route already returns files)
     p.finally(() => {
@@ -121,7 +121,7 @@ export default function RunSimulation() {
 
   // Unified Run button based on selected engine
   const handleRun = () => {
-    if (engine === 'orbit') return runOrbitSimulation(orbitConfig || undefined)
+    if (engine === 'orbit') return runOrbitSimulation(simConfig || undefined)
     return handleRunWombat()
   }
 
@@ -205,17 +205,15 @@ export default function RunSimulation() {
                 <option value="orbit">ORBIT</option>
               </select>
             </label>
-            {engine === 'orbit' && (
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontWeight: 600 }}>Config</span>
-                <select value={orbitConfig} onChange={e => setOrbitConfig(e.target.value)}>
-                  {orbitConfigOptions.length === 0 && <option value="">No config files found under config/</option>}
-                  {orbitConfigOptions.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </label>
-            )}
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 600 }}>Config</span>
+              <select value={simConfig} onChange={e => setSimConfig(e.target.value)}>
+                {simConfigOptions.length === 0 && <option value="">No config files found under config/</option>}
+                {simConfigOptions.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
         <SimulationControls

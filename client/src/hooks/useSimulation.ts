@@ -28,11 +28,12 @@ export function useSimulation({ apiBaseUrl, requireSession, setResults, setLibra
   const { warning } = useToasts()
   type Progress = { now: number, percent?: number | null, message?: string } | null
   const [progress, setProgress] = useState<Progress>(null)
-  const runSimulation = useCallback(async () => {
+  const runSimulation = useCallback(async (configPath?: string) => {
     const id = requireSession()
     // Prefer async trigger + poll; fallback to sync
     try {
-      const triggerRes = await fetch(`${apiBaseUrl}/${id}/simulate/trigger`, { method: 'POST' })
+      const q = configPath ? `?config=${encodeURIComponent(configPath)}` : ''
+      const triggerRes = await fetch(`${apiBaseUrl}/${id}/simulate/trigger${q}`, { method: 'POST' })
       if (triggerRes.ok) {
         const tdata = await triggerRes.json() as { task_id: string, status: string }
         const taskId = tdata.task_id

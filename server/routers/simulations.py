@@ -5,7 +5,7 @@ from __future__ import annotations
 Routes are included under the `/api` prefix from `server/rest_api.py`.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from server.client_manager import client_manager
 from server.services.libraries import scan_client_library_files, add_client_library_file
@@ -98,12 +98,12 @@ def run_simulation(client_id: str) -> dict:
 
 
 @router.post("/{client_id}/simulate/trigger", response_model=SimulationTriggerResponse)
-def trigger_simulation(client_id: str) -> dict:
+def trigger_simulation(client_id: str, config: str | None = Query(default=None)) -> dict:
     """Trigger an async simulation and return a task_id to poll."""
     if not client_manager.get_client_project_dir(client_id):
         raise HTTPException(status_code=404, detail="Unknown client_id")
     project_dir = client_manager.get_client_project_dir(client_id)
-    task_id = start_simulation_task(client_id, project_dir)
+    task_id = start_simulation_task(client_id, project_dir, config=config)
     return {"task_id": task_id, "status": "running"}
 
 

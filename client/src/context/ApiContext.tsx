@@ -51,7 +51,7 @@ export type ApiContextType = {
   loadSaved: (name: string) => Promise<void>
   deleteSaved: (name: string) => Promise<void>
   restoreWorking: () => Promise<void>
-  runSimulation: () => Promise<void>
+  runSimulation: (config: string | undefined) => Promise<void>
 
   // Temp maintenance
   clearClientTemp: () => Promise<boolean>

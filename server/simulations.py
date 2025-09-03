@@ -115,7 +115,7 @@ def _normalize_orbit_config(config: Optional[str]) -> Optional[str]:
     except Exception:
         return config
 
-def start_simulation_task(client_id: str, project_dir: Optional[str]) -> str:
+def start_simulation_task(client_id: str, project_dir: Optional[str], config: Optional[str] = None) -> str:
     """Start a background simulation task for a client. Returns task_id."""
 
     task_id = uuid.uuid4().hex
@@ -254,12 +254,14 @@ def start_simulation_task(client_id: str, project_dir: Optional[str]) -> str:
                             continue
                 except Exception:
                     pass
-
+            
+            # Normalize config to avoid double "project/config" prefixing
+            norm_cfg = _normalize_orbit_config(config) or "base.yaml"
             # Run the simulation using client project_dir if available
             if project_dir:
-                result = run_simulation_with_progress(library=project_dir, progress_cb=_progress_cb, progress_interval_steps=2000, delete_logs=True, post_finalize_cb=_post_finalize_cb)
+                result = run_simulation_with_progress(library=project_dir, config=norm_cfg, progress_cb=_progress_cb, progress_interval_steps=2000, delete_logs=True, post_finalize_cb=_post_finalize_cb)
             else:
-                result = run_simulation_with_progress(progress_cb=_progress_cb, progress_interval_steps=2000, delete_logs=True, post_finalize_cb=_post_finalize_cb)
+                result = run_simulation_with_progress(config=norm_cfg, progress_cb=_progress_cb, progress_interval_steps=2000, delete_logs=True, post_finalize_cb=_post_finalize_cb)
 
             # After run, scan client files (artifacts were saved in the callback)
             try:
