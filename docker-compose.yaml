@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  api:
+    container_name: fastapi-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fastapi-app:latest
+    ports:
+      - "8000:8000"
+    environment:
+      # Add your env vars here, e.g.:
+      # DATABASE_URL: postgresql://user:pass@db:5432/app
+      PYTHONUNBUFFERED: "1"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/docs >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    # Uncomment to mount local code (handy for dev hot-reload if you run uvicorn --reload)
+    # volumes:
+    #   - ./server:/app/server:ro
+    # command: ["python", "-m", "uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8000"]

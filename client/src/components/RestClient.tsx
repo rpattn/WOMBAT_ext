@@ -66,7 +66,7 @@ export default function RestClient() {
             <button className="btn-app btn-primary" onClick={api.fetchLibraryFiles} disabled={!api.sessionId}>Refresh Files</button>
             <button className="btn-app btn-primary" onClick={api.fetchSavedLibraries}>Refresh Saved</button>
             <button className="btn-app btn-primary" onClick={api.getConfig} disabled={!api.sessionId}>Get Config</button>
-            <button className="btn-app btn-primary" onClick={api.runSimulation} disabled={!api.sessionId}>Run Simulation</button>
+            <button className="btn-app btn-primary" onClick={()=>{api.runSimulation(undefined)}} disabled={!api.sessionId}>Run Simulation</button>
             <button
               className="btn-app btn-secondary"
               onClick={async () => {
