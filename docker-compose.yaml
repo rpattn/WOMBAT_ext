@@ -2,11 +2,11 @@ version: "3.9"
 
 services:
   api:
-    container_name: fastapi-app
+    container_name: wombat-ext
     build:
       context: .
       dockerfile: Dockerfile
-    image: fastapi-app:latest
+    image: wombat-ext:latest
     ports:
       - "8000:8000"
     environment:

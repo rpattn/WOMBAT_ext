@@ -9,3 +9,5 @@ fastapi==0.116.1
 numpy==2.3.2
 pydantic==2.11.7
 uvicorn==0.35.0
+orbit-nrel>=1.2.1
+wisdem>=3.22
