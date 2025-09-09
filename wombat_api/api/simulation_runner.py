@@ -22,14 +22,17 @@ def _finalize_results(sim, env, library: str, create_metrics: bool, delete_logs:
         sim.save_metrics_inputs()
 
     # Extract maintenance data
+    print("Extract Maint Data")
     maintenance_data = extract_maintenance_requests(sim)
 
     # get summary statistics
+    print("Extract Maint Stats")
     maintenance_stats = maintenance_summary_statistics(maintenance_data)
 
     # get power production summary statistics
+    print("Extract Power Stats")
     power_production_stats = power_production_summary_statistics(env)
-
+    """
     # Attempt to create a detailed Gantt chart in the project's results directory
     import time as _time
     gantt_rel = None
@@ -44,7 +47,7 @@ def _finalize_results(sim, env, library: str, create_metrics: bool, delete_logs:
                 except Exception:
                     gantt_rel = gantt_html
     except Exception:
-        gantt_rel = None
+        gantt_rel = None"""
 
     result: dict[str, Any] = {
         "status": "completed",
@@ -56,7 +59,7 @@ def _finalize_results(sim, env, library: str, create_metrics: bool, delete_logs:
             "power_potential": str(env.power_potential_fname),
             "power_production": str(env.power_production_fname),
             "metrics_input": str(env.metrics_input_fname),
-            **({"gantt": gantt_rel} if gantt_rel else {}),
+            #**({"gantt": gantt_rel} if gantt_rel else {}),
         },
         "stats": {
             "maintenance": maintenance_stats,
@@ -66,12 +69,14 @@ def _finalize_results(sim, env, library: str, create_metrics: bool, delete_logs:
     # Allow caller to copy artifacts before cleanup
     try:
         if post_finalize_cb is not None:
+            print("Copying Artifacts")
             post_finalize_cb(result)
     except Exception:
         # best-effort; copying issues shouldn't crash finalize
         pass
     # Perform WOMBAT log cleanup after copying
     if delete_logs:
+        print("Deleting Log Files")
         try:
             sim.env.cleanup_log_files()
         except Exception:
