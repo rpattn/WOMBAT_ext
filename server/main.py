@@ -24,6 +24,8 @@ app.add_middleware(
         "http://127.0.0.1:8101",
         "http://localhost:8100",
         "http://127.0.0.1:8100",
+        "https://api.windsim.rpattn.co.uk/",
+        "https://windsim.rpattn.co.uk/",
         "https://rpattn.github.io/WOMBAT_ext/",
         "https://rpattn.github.io"
     ],
